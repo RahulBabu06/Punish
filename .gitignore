@@ -1,6 +1,14 @@
 # Eval outputs (keep only the summary)
 results/*
 !results/SUMMARY.md
+!results/README.md
+!results/RESULTS.*
+!results/RESULTS_thresholds.csv
+!results/COST.md
+!results/figures/
+
+# Demo export (scripts/reproduce.sh export-demo)
+dist/
 
 # Secrets
 .env
