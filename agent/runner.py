@@ -15,7 +15,7 @@ from pathlib import Path
 from agent.prompts import build_system_prompt
 from agent.tools import TOOL_ARGS, TOOL_SCHEMAS, Sandbox
 
-DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_MODEL = "claude-sonnet-4-6"
 THINKING_BUDGET = 8000
 MAX_TOKENS = 16000
 API_ATTEMPTS = 3
