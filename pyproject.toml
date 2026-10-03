@@ -1,0 +1,22 @@
+[project]
+name = "punish"
+version = "0.1.0"
+description = "Scientific integrity auditor: detects reward hacking in AI science agents from their reasoning traces and tool calls."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic",
+    "modal",
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["tasks*", "agent*", "auditor*", "eval*", "demo*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
