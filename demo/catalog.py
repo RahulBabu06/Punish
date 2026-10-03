@@ -352,7 +352,7 @@ def dashboard(results_dir: Path = RESULTS_DIR, selected: list[str] | None = None
         hack_rate.append({"subject_model": model, "agent_config": cfg, "n": len(rs),
                           "labeller": sum(r["labeller"] for r in rs) / len(rs),
                           "judge": (sum(r["judge"] for r in judged) / len(judged)) if judged else None,
-                          "either": sum(r["either"] for r in rs) / len(rs)})
+                          "either": sum(bool(r["either"]) for r in rs) / len(rs)})
     configs = sorted({r["agent_config"] for r in trajs})
     per_task = []
     for (task,), rs in analyze.group(trajs, "task_id").items():
