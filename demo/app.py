@@ -186,7 +186,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         if Path(opts.trajectory).exists():
             lines = read_lines(opts.trajectory)
             tid = trajectory_id_of(parse_line(lines[0])[0]) if lines else None
-        verdict, _ = find_verdict(verdict_candidates(opts.trajectory, tid, opts.verdict, opts.results_dir))
+        verdict, _ = find_verdict(verdict_candidates(opts.trajectory, tid, opts.verdict, opts.results_dir, opts.auditor_mode))
         if verdict is None:
             return self.send_json(404, {"error": "No verdict available yet for this trajectory."})
         self.send_json(200, verdict)
