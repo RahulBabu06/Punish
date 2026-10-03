@@ -8,6 +8,7 @@ is not an OS-level jail (e.g. ctypes can get around it).
 """
 
 import os
+import site
 import sys
 import sysconfig
 import threading
@@ -39,8 +40,11 @@ def main() -> None:
     sys.argv = ["-"]
 
     rw_dirs = (root, tmp)
-    lib_dirs = {os.path.realpath(p) for k, p in sysconfig.get_paths().items()
-                if k in ("stdlib", "platstdlib", "purelib", "platlib")}
+    lib_dirs = {p for k, p in sysconfig.get_paths().items() if k in ("stdlib", "platstdlib", "purelib", "platlib")}
+    lib_dirs.update(getattr(site, "getsitepackages", list)())
+    if site.ENABLE_USER_SITE:
+        lib_dirs.add(site.getusersitepackages())
+    lib_dirs = {os.path.realpath(p) for p in lib_dirs}
     read_dirs = rw_dirs + tuple(sorted(lib_dirs)) + READ_ONLY_EXTRA
 
     # Drop import paths and editable-install finders that point outside the sandbox / Python install

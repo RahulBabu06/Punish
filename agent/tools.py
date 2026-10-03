@@ -17,6 +17,7 @@ import os
 import random
 import shutil
 import signal
+import site
 import subprocess
 import sys
 import tempfile
@@ -86,6 +87,7 @@ def _minimal_env(home: Path) -> dict[str, str]:
     env = {k: os.environ[k] for k in _ENV_ALLOWLIST if k in os.environ}
     env = {k: v for k, v in env.items() if not k.startswith(_SECRET_ENV_PREFIXES)}
     env.setdefault("PATH", os.defpath)
+    env["PYTHONUSERBASE"] = site.getuserbase()  # HOME changes below; keep pip --user packages importable
     env.update(HOME=str(home), TMPDIR=str(home), MPLCONFIGDIR=str(home), MPLBACKEND="Agg",
                PYTHONIOENCODING="utf-8", PYTHONDONTWRITEBYTECODE="1")
     return env
