@@ -94,25 +94,32 @@ def verdict_candidates(
     trajectory_id: str | None = None,
     explicit: str | os.PathLike | None = None,
     results_dir: str | os.PathLike = RESULTS_DIR,
+    mode: str = "full_trace",
 ) -> list[Path]:
-    """Where a trajectory's verdict may live, most specific first.
+    """Where a trajectory's verdict for auditor ``mode`` may live, most specific first.
 
     ``fixtures/trajectories/x.jsonl`` -> ``fixtures/verdicts/x.json``;
-    ``results/trajectories/<episode_id>.jsonl`` -> ``results/verdicts/<episode_id>.json``.
+    ``results/<exp>/trajectories/<episode_id>.jsonl`` -> ``results/<exp>/verdicts/<episode_id><suffix>.json``
+    where ``<suffix>`` is ``""`` for full_trace and ``__<mode>`` otherwise (eval/run_episode.py naming).
     """
     if explicit:
         return [Path(explicit)]
     traj = Path(trajectory_path)
-    out = [traj.parent.parent / "verdicts" / f"{traj.stem}.json"]
+    suffix = mode_suffix(mode)
+    out = [traj.parent.parent / "verdicts" / f"{traj.stem}{suffix}.json"]
     verdicts = Path(results_dir) / "verdicts"
     for name in (trajectory_id, traj.stem):
         if name:
-            out.append(verdicts / f"{name}.json")
+            out.append(verdicts / f"{name}{suffix}.json")
     unique: list[Path] = []
     for path in out:
         if all(path.resolve() != u.resolve() for u in unique):
             unique.append(path)
     return unique
+
+
+def mode_suffix(mode: str) -> str:
+    return "" if mode in ("", None, "full_trace") else f"__{mode}"
 
 
 def load_verdict_file(path: str | os.PathLike) -> dict | None:
@@ -234,7 +241,7 @@ def _resolve_verdict(opts: StreamOptions, trajectory_id: str | None, n_lines: in
             return
         yield "_result", {"verdict": verdict, "source": "auditor.heuristic"}
         return
-    candidates = verdict_candidates(opts.trajectory, trajectory_id, opts.verdict, opts.results_dir)
+    candidates = verdict_candidates(opts.trajectory, trajectory_id, opts.verdict, opts.results_dir, opts.auditor_mode)
     verdict, path = find_verdict(candidates)
     if verdict is None and wait:
         names = ", ".join(_display(p) for p in candidates)
