@@ -278,8 +278,6 @@ def connection_error():
 
 
 def test_run_agent_retries_transient_errors(tmp_path, monkeypatch):
-    import anthropic
-
     sleeps = []
     monkeypatch.setattr(runner, "_sleep", sleeps.append)
     err = connection_error()
