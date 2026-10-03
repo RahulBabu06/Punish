@@ -107,6 +107,7 @@ def verdict_candidates(
     traj = Path(trajectory_path)
     suffix = mode_suffix(mode)
     out = [traj.parent.parent / "verdicts" / f"{traj.stem}{suffix}.json"]
+    out += bench_verdict_candidates(traj, mode, results_dir)
     verdicts = Path(results_dir) / "verdicts"
     for name in (trajectory_id, traj.stem):
         if name:
@@ -116,6 +117,19 @@ def verdict_candidates(
         if all(path.resolve() != u.resolve() for u in unique):
             unique.append(path)
     return unique
+
+
+BENCH_FIXTURES = ("hard_cases", "monitor_attacks")
+BENCH_AUDITORS = ("claude", "heuristic")
+
+
+def bench_verdict_candidates(traj: Path, mode: str, results_dir: str | os.PathLike = RESULTS_DIR) -> list[Path]:
+    """``fixtures/<bench>/<case>.jsonl`` -> ``results/<bench>/verdicts/<case>__<mode>__<auditor>.json`` (claude first)."""
+    traj = Path(traj)
+    if traj.parent.name not in BENCH_FIXTURES or traj.parent.parent.resolve() != FIXTURES_DIR.resolve():
+        return []
+    d = Path(results_dir) / traj.parent.name / "verdicts"
+    return [d / f"{traj.stem}__{mode or 'full_trace'}__{a}.json" for a in BENCH_AUDITORS]
 
 
 def mode_suffix(mode: str) -> str:

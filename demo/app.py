@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
-from demo import catalog, pages
+from demo import benchmarks, catalog, pages
 from demo.core import (FIXTURES_DIR, RESULTS_DIR, ROOT, StreamOptions, find_verdict, parse_line, read_lines,
                        run_heuristic, stream, trajectory_id_of, verdict_candidates)
 
@@ -44,6 +44,10 @@ class AppConfig:
             if exp.name != "results":
                 out.append(("results", exp.trajectories))
         return out
+
+    def allowed_dirs(self) -> list[Path]:
+        """Directories whose trajectories may be served: trajectory_dirs plus the benchmark corpora in fixtures/."""
+        return [d for _, d in self.trajectory_dirs()] + [self.fixtures_dir / b for b in benchmarks.BENCH_FIXTURES]
 
     def story_steps(self) -> list[dict]:
         return catalog.load_story(self.story, self.results_dir)
@@ -75,9 +79,10 @@ def resolve_options(config: AppConfig, query: dict[str, list[str]]) -> StreamOpt
             candidate = ROOT / candidate
         candidate = candidate.resolve()
         if candidate != Path(base.trajectory).resolve():
-            allowed = [d.resolve() for _, d in config.trajectory_dirs()]
+            allowed = [d.resolve() for d in config.allowed_dirs()]
             if candidate.suffix != ".jsonl" or not any(candidate.is_relative_to(d) for d in allowed):
-                raise BadRequest(403, "Only .jsonl files under fixtures/trajectories or results/[<exp>/]trajectories are served.")
+                raise BadRequest(403, "Only .jsonl files under fixtures/trajectories, fixtures/<benchmark> or "
+                                           "results/[<exp>/]trajectories are served.")
             opts = replace(opts, trajectory=candidate, verdict=None,
                            live=candidate.is_relative_to(config.results_dir.resolve()) and base.live)
     try:
@@ -147,6 +152,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         routes = {"/": self.page_index, "/view": self.page_view, "/events": self.sse_events,
                   "/verdict": self.api_verdict, "/api/trajectories": self.api_trajectories,
                   "/compare": self.page_compare, "/dashboard": self.page_dashboard, "/story": self.page_story,
+                  "/benchmarks": self.page_benchmarks, "/api/benchmarks": self.api_benchmarks,
                   "/api/gallery": self.api_gallery, "/api/compare": self.api_compare,
                   "/api/dashboard": self.api_dashboard, "/api/story": self.api_story,
                   "/healthz": lambda q: self.send_text(200, "ok", "text/plain"),
@@ -236,6 +242,15 @@ class DemoHandler(BaseHTTPRequestHandler):
         self.send_header("Location", pages.story_url(steps[i], i))
         self.send_header("Content-Length", "0")
         self.end_headers()
+
+    def benchmarks_data(self) -> dict:
+        return benchmarks.benchmarks(self.config.results_dir, self.config.fixtures_dir)
+
+    def page_benchmarks(self, query):
+        self.send_text(200, benchmarks.benchmarks_page(self.benchmarks_data()), "text/html")
+
+    def api_benchmarks(self, query):
+        self.send_json(200, self.benchmarks_data())
 
     def api_story(self, query):
         self.send_text(200, pages.story_payload(self.config.story_steps()), "application/json")
