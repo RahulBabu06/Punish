@@ -7,10 +7,10 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-CLIS = ["agent.runner", "auditor.audit", "auditor.heuristic", "demo.app", "demo.terminal", "eval.analyze",
-        "eval.batch", "eval.cost", "eval.figures", "eval.judge", "eval.metrics", "eval.run_episode", "eval.sweep",
+CLIS = ["agent.runner", "auditor.audit", "auditor.heuristic", "auditor.benchmark", "demo.app", "demo.export", "demo.terminal", "eval.analyze",
+        "eval.batch", "eval.cost", "eval.figures", "eval.hard_cases", "eval.judge", "eval.metrics", "eval.mitigate", "eval.run_episode", "eval.sweep",
         "tasks.build_definitions"]
-SCRIPTS = ["scripts/sweep_commands.py", "scripts/export_demo.py"]
+SCRIPTS = ["scripts/sweep_commands.py"]
 
 
 @pytest.mark.parametrize("argv", [["-m", m] for m in CLIS] + [[s] for s in SCRIPTS], ids=lambda a: a[-1])

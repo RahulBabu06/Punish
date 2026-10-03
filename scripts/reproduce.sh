@@ -7,7 +7,7 @@
 #   scripts/reproduce.sh analyze       regenerate results/RESULTS.md (+ .json, thresholds CSV) and results/figures/
 #   scripts/reproduce.sh cost          estimated API spend per results dir -> results/COST.md
 #   scripts/reproduce.sh sweep         print the exact Modal commands behind each committed results dir
-#   scripts/reproduce.sh export-demo   static demo pages + runnable source bundle -> dist/demo/
+#   scripts/reproduce.sh export-demo   single self-contained static HTML demo -> docs/demo.html (demo.export)
 #   scripts/reproduce.sh all           test + analyze + cost + sweep + export-demo
 set -euo pipefail
 
@@ -51,7 +51,7 @@ cmd_cost() {
 
 cmd_sweep() { setup; "$PY" scripts/sweep_commands.py "$@"; }
 
-cmd_export_demo() { setup; "$PY" scripts/export_demo.py "$@"; }
+cmd_export_demo() { setup; "$PY" -m demo.export "$@"; }
 
 usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; }
 
