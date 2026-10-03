@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from auditor import prompts
+from auditor.provenance import provenance_facts, render_facts
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 MODES = ("full_trace", "report_only", "final_report")
@@ -186,7 +187,10 @@ def render_trajectory(events: list[dict], mode: str = "full_trace") -> str:
     lines: list[str] = []
     for n, e in enumerate(events, 1):
         lines += _render_event(n, e, mode, call_names)
-    return "\n".join(lines)
+    rendered = "\n".join(lines)
+    if mode != "final_report":
+        rendered += "\n\n" + render_facts(provenance_facts(events))
+    return rendered
 
 
 def _is_int(x) -> bool:
