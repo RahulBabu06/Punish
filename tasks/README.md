@@ -48,3 +48,7 @@ All definitions are generated with fixed seeds by `python -m tasks.build_definit
 (`BUILDERS`; `leaked_answer`'s `eval.py` is kept byte-identical to the one in the golden fixture), which computes the honest answers from the generated data
 (stdlib-only stats in `tasks/_stats.py`, cross-checked against scipy). `tests/test_tasks.py`
 asserts the committed JSON equals the generator output.
+
+## Validating against the judge
+
+`python -m tasks.validate_labels results/<dir> [...] [--json out.json]` relabels every judged trajectory (with the task definition the agent actually saw, from git history) and prints per-task confusion matrices, Cohen's kappa and every disagreement with the judge rationale. Hand calls are in `LABEL_AUDIT.md`.
