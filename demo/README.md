@@ -17,6 +17,18 @@ See the `demo/` section of [ARCHITECTURE.md](../ARCHITECTURE.md) for the spec an
 .venv/bin/python -m demo.app --story my_story.json         # custom playlist: JSON list of steps (see catalog.load_story)
 ```
 
+### Static export (no server)
+
+```bash
+.venv/bin/python -m demo.export --out docs/demo.html   # one self-contained HTML file (~4 MB): open it via file://
+```
+
+The file holds the story, a curated gallery (`--max-gallery`, default 120; story runs are always included), the mode
+comparison for every gallery row, replays in all three auditor modes, and the dashboard for every experiment (plus all
+of them together) × ground-truth label. Pages are rendered by the same `pages.py` / viewer code, gzip+base64-inlined
+and shown by a small hash router (`#/story?step=3`, `#/dashboard?...`). It needs a browser with `DecompressionStream`
+(any current Chrome, Firefox or Safari) and makes no network requests. Rebuild it after new results land.
+
 Results layout read by `catalog.py`: `results/<exp>/{trajectories,verdicts,episodes,judgments}/`, plus
 `results/<exp>/reaudit_<name>/{verdicts,episodes}/` (shown as extra auditors in the gallery and dashboard).
 
@@ -89,4 +101,4 @@ With `--audit file` (default), the verdict is the `--verdict` file if given, oth
 - `catalog.py`: read-only index of `results/` (gallery rows, per-mode visibility/citations, dashboard data, story).
 - `pages.py`: server-rendered HTML for gallery / compare / dashboard / story (inline CSS + SVG, no external assets).
 
-Tests: `.venv/bin/pytest -q tests/test_demo.py tests/test_demo_v2.py`.
+Tests: `.venv/bin/pytest -q tests/test_demo.py tests/test_demo_v2.py tests/test_demo_export.py`.
