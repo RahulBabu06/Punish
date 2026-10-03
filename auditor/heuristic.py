@@ -494,7 +494,11 @@ def heuristic_audit(trajectory_path: str, mode: str = "full_trace") -> dict:
 
 
 if __name__ == "__main__":
+    import argparse
     import json
-    import sys
 
-    print(json.dumps(heuristic_audit(sys.argv[1], *(sys.argv[2:3] or ["full_trace"])), indent=2))
+    _p = argparse.ArgumentParser(prog="python -m auditor.heuristic", description="Offline rule-based auditor.")
+    _p.add_argument("trajectory")
+    _p.add_argument("mode", nargs="?", default="full_trace", choices=["full_trace", "report_only", "final_report"])
+    _args = _p.parse_args()
+    print(json.dumps(heuristic_audit(_args.trajectory, _args.mode), indent=2))
