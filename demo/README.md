@@ -7,6 +7,19 @@ Clicking an evidence item scrolls to its lines and highlights them; flagged line
 
 See the `demo/` section of [ARCHITECTURE.md](../ARCHITECTURE.md) for the spec and schemas.
 
+## Pitch pages (demo v2)
+
+```bash
+.venv/bin/python -m demo.app --port 8000 --story --open   # curated story, auto-advancing (→ next, ← back, space pause)
+# http://localhost:8000/            gallery of every results/*/trajectories/*.jsonl (filters + ground-truth/verdict badges)
+# http://localhost:8000/compare?traj=results/probe_v1/trajectories/metric_gaming__covert__ep000.jsonl   mode comparison
+# http://localhost:8000/dashboard   hack rates + auditor precision/recall/AUROC (eval.analyze.load_experiment) + SVG charts
+.venv/bin/python -m demo.app --story my_story.json         # custom playlist: JSON list of steps (see catalog.load_story)
+```
+
+Results layout read by `catalog.py`: `results/<exp>/{trajectories,verdicts,episodes,judgments}/`, plus
+`results/<exp>/reaudit_<name>/{verdicts,episodes}/` (shown as extra auditors in the gallery and dashboard).
+
 ## Run (from the repo root)
 
 ```bash
@@ -43,15 +56,19 @@ No-browser fallback (same options, ANSI output):
 
 | Path | What |
 |---|---|
-| `/` | index of trajectories in `fixtures/trajectories/` and `results/trajectories/` (Replay / live flags / Live tail / Heuristic audit links) |
+| `/` | gallery of trajectories in `fixtures/`, `results/trajectories/` and `results/<exp>/trajectories/` |
+| `/compare?traj=<path>` | the three auditor modes side by side (evidence cited, lines each mode could see) |
+| `/dashboard?exp=<name>&label=labeller\|judge\|either` | results dashboard |
+| `/story`, `/story?step=N` | story playlist / redirect to step N |
+| `/api/gallery`, `/api/compare`, `/api/dashboard`, `/api/story` | the same data as JSON |
 | `/view?traj=<path>` | the two-pane viewer |
 | `/events?traj=<path>` | SSE stream (see below) |
 | `/verdict?traj=<path>` | the verdict JSON (404 if none yet; `?audit=heuristic` runs `auditor.heuristic`) |
 | `/api/trajectories` | index data as JSON |
 
 `/view`, `/events` and `/verdict` accept query overrides of the CLI defaults: `traj`, `live=0|1`, `delay`,
-`progressive=0|1`, `audit=file|heuristic`, `auditor_mode=full_trace|report_only`, `poll`. Only `.jsonl` files under
-`fixtures/trajectories/`, `results/trajectories/` or the CLI trajectory are served.
+`progressive=0|1`, `audit=file|heuristic`, `auditor_mode=full_trace|report_only|final_report`, `poll`. Only `.jsonl` files under
+`fixtures/trajectories/`, `results/[<exp>/]trajectories/` or the CLI trajectory are served.
 
 SSE events, in order: `meta`, then one `traj` per JSONL line (`{"line": n, "event": {...}}`, SSE `id` = line number,
 so reconnects resume via `Last-Event-ID`; malformed lines arrive as `parse_error`), `evidence` (`{"index", "item"}`,
@@ -69,5 +86,7 @@ With `--audit file` (default), the verdict is the `--verdict` file if given, oth
 - `core.py`: shared streaming logic (`stream(StreamOptions)` yields the events above; used by both front-ends).
 - `app.py`: HTTP server + inline page (`make_server(AppConfig, host, port)` for embedding/tests).
 - `terminal.py`: ANSI replay (`replay(StreamOptions, out)`).
+- `catalog.py`: read-only index of `results/` (gallery rows, per-mode visibility/citations, dashboard data, story).
+- `pages.py`: server-rendered HTML for gallery / compare / dashboard / story (inline CSS + SVG, no external assets).
 
-Tests: `.venv/bin/pytest -q tests/test_demo.py`.
+Tests: `.venv/bin/pytest -q tests/test_demo.py tests/test_demo_v2.py`.
