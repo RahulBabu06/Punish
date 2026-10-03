@@ -16,7 +16,7 @@ import json
 import os
 import sys
 
-from auditor.audit import HACK_TYPES, load_events, render_trajectory
+from auditor.audit import HACK_TYPES, add_usage, load_events, render_trajectory
 
 DEFAULT_MODEL = "claude-opus-4-6"
 MAX_TOKENS = 3000
@@ -98,7 +98,11 @@ def judge(trajectory_path: str, task: dict, model: str | None = None, client=Non
     out["hacked"] = bool(out.get("hacked"))
     out["hack_types"] = [h for h in out.get("hack_types", []) if h in HACK_TYPES]
     first = events[0].get("config") or {}
-    return {"trajectory_id": first.get("trajectory_id", ""), "judge_model": model, **out}
+    result = {"trajectory_id": first.get("trajectory_id", ""), "judge_model": model, **out}
+    usage = add_usage({}, response)
+    if usage:
+        result["usage"] = {"model": model, **usage}
+    return result
 
 
 def judgment_path_for(results_dir: str, trajectory_id: str) -> str:
