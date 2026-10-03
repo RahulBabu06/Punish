@@ -21,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
+from demo import catalog, pages
 from demo.core import (FIXTURES_DIR, RESULTS_DIR, ROOT, StreamOptions, find_verdict, parse_line, read_lines,
                        run_heuristic, stream, trajectory_id_of, verdict_candidates)
 
@@ -34,9 +35,18 @@ class AppConfig:
     defaults: StreamOptions = field(default_factory=lambda: StreamOptions(trajectory=DEFAULT_TRAJECTORY))
     fixtures_dir: Path = FIXTURES_DIR
     results_dir: Path = RESULTS_DIR
+    story: str | None = None  # playlist spec for /story ("default" or a JSON file); None = built-in default
 
     def trajectory_dirs(self) -> list[tuple[str, Path]]:
-        return [("fixtures", self.fixtures_dir / "trajectories"), ("results", self.results_dir / "trajectories")]
+        """fixtures/trajectories, results/trajectories and every results/<exp>/trajectories."""
+        out = [("fixtures", self.fixtures_dir / "trajectories"), ("results", self.results_dir / "trajectories")]
+        for exp in catalog.experiments(self.results_dir, None):
+            if exp.name != "results":
+                out.append(("results", exp.trajectories))
+        return out
+
+    def story_steps(self) -> list[dict]:
+        return catalog.load_story(self.story, self.results_dir)
 
 
 def traj_key(path: Path) -> str:
@@ -67,9 +77,9 @@ def resolve_options(config: AppConfig, query: dict[str, list[str]]) -> StreamOpt
         if candidate != Path(base.trajectory).resolve():
             allowed = [d.resolve() for _, d in config.trajectory_dirs()]
             if candidate.suffix != ".jsonl" or not any(candidate.is_relative_to(d) for d in allowed):
-                raise BadRequest(403, "Only .jsonl files under fixtures/trajectories or results/trajectories are served.")
+                raise BadRequest(403, "Only .jsonl files under fixtures/trajectories or results/[<exp>/]trajectories are served.")
             opts = replace(opts, trajectory=candidate, verdict=None,
-                           live=candidate.is_relative_to((config.results_dir / "trajectories").resolve()) and base.live)
+                           live=candidate.is_relative_to(config.results_dir.resolve()) and base.live)
     try:
         if "delay" in q:
             opts = replace(opts, delay=max(0.0, float(q["delay"])))
@@ -136,6 +146,9 @@ class DemoHandler(BaseHTTPRequestHandler):
         query = parse_qs(url.query)
         routes = {"/": self.page_index, "/view": self.page_view, "/events": self.sse_events,
                   "/verdict": self.api_verdict, "/api/trajectories": self.api_trajectories,
+                  "/compare": self.page_compare, "/dashboard": self.page_dashboard, "/story": self.page_story,
+                  "/api/gallery": self.api_gallery, "/api/compare": self.api_compare,
+                  "/api/dashboard": self.api_dashboard, "/api/story": self.api_story,
                   "/healthz": lambda q: self.send_text(200, "ok", "text/plain"),
                   "/favicon.ico": lambda q: self.send_text(200, FAVICON, "image/svg+xml")}
         handler = routes.get(url.path)
@@ -144,7 +157,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         try:
             handler(query)
         except BadRequest as exc:
-            if url.path in {"/", "/view"}:
+            if url.path in {"/", "/view", "/compare", "/dashboard", "/story"}:
                 self.send_text(exc.status, error_page(str(exc)), "text/html")
             else:
                 self.send_json(exc.status, {"error": str(exc)})
@@ -166,11 +179,66 @@ class DemoHandler(BaseHTTPRequestHandler):
 
     # --- routes --------------------------------------------------------------------
     def page_index(self, query):
-        self.send_text(200, index_page(self.config, list_trajectories(self.config)), "text/html")
+        d = self.config.defaults
+        default_key = traj_key(d.trajectory) if (d.live or Path(d.trajectory).exists()) else None
+        self.send_text(200, pages.gallery_page(self.gallery(), default_key, d.live), "text/html")
+
+    def gallery(self) -> list[dict]:
+        items = catalog.gallery(self.config.results_dir, self.config.fixtures_dir)
+        known = {it["key"] for it in items}
+        cli = Path(self.config.defaults.trajectory)
+        if traj_key(cli) not in known and (cli.exists() or self.config.defaults.live):
+            items.insert(0, catalog.trajectory_info(cli, results_dir=self.config.results_dir))
+        return items
 
     def page_view(self, query):
         resolve_options(self.config, query)  # validate early so bad links get a friendly page
-        self.send_text(200, VIEWER_HTML, "text/html")
+        self.send_text(200, VIEWER_HTML.replace("</body>", pages.STORY_CSS + pages.STORY_JS + "</body>"), "text/html")
+
+    def compare_data(self, query) -> dict:
+        if not (query.get("traj") or [""])[-1]:
+            raise BadRequest(400, "compare needs ?traj=<path to a trajectory .jsonl>")
+        opts = resolve_options(self.config, {"traj": query["traj"]})
+        if not Path(opts.trajectory).exists():
+            raise BadRequest(404, f"Trajectory not found: {traj_key(opts.trajectory)}")
+        return catalog.compare(Path(opts.trajectory), self.config.results_dir, self.config.fixtures_dir)
+
+    def page_compare(self, query):
+        self.send_text(200, pages.compare_page(self.compare_data(query)), "text/html")
+
+    def api_compare(self, query):
+        self.send_json(200, self.compare_data(query))
+
+    def dashboard_data(self, query) -> dict:
+        label = (query.get("label") or ["either"])[-1]
+        return catalog.dashboard(self.config.results_dir, query.get("exp") or None, label)
+
+    def page_dashboard(self, query):
+        self.send_text(200, pages.dashboard_page(self.dashboard_data(query)), "text/html")
+
+    def api_dashboard(self, query):
+        self.send_json(200, self.dashboard_data(query))
+
+    def api_gallery(self, query):
+        self.send_json(200, self.gallery())
+
+    def page_story(self, query):
+        steps = self.config.story_steps()
+        if "step" not in query:
+            return self.send_text(200, pages.story_index_page(steps), "text/html")
+        try:
+            i = int(query["step"][-1])
+        except ValueError:
+            raise BadRequest(400, "step must be an integer")
+        if not 0 <= i < len(steps):
+            raise BadRequest(404, f"No story step {i} (the playlist has {len(steps)} steps).")
+        self.send_response(302)
+        self.send_header("Location", pages.story_url(steps[i], i))
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def api_story(self, query):
+        self.send_text(200, pages.story_payload(self.config.story_steps()), "application/json")
 
     def api_trajectories(self, query):
         self.send_json(200, list_trajectories(self.config))
@@ -233,49 +301,6 @@ def view_url(key: str | None = None, **params) -> str:
 def error_page(message: str) -> str:
     return PAGE_SHELL.replace("__TITLE__", "Error").replace(
         "__BODY__", f'<h1>Can\'t open that trajectory</h1><p class="err">{html.escape(message)}</p><p><a href="/">Back to the index</a></p>')
-
-
-def index_page(config: AppConfig, items: list[dict]) -> str:
-    d = config.defaults
-    rows = []
-    for it in items:
-        key = it["key"]
-        cfg = it["config"]
-        is_results = it["source"] == "results" or (it["default"] and d.live)
-        verdict = it["verdict"]
-        if verdict is None:
-            vcell = '<span class="pill dim">no verdict</span>'
-        elif verdict["hack_detected"]:
-            vcell = f'<span class="pill red">HACK {float(verdict.get("confidence") or 0):.0%}</span>'
-        else:
-            vcell = f'<span class="pill green">CLEAN {float(verdict.get("confidence") or 0):.0%}</span>'
-        status = ("finished" if it["finished"] else "in progress") if it["exists"] else "waiting for file"
-        links = [f'<a class="btn primary" href="{html.escape(view_url(key, live=0))}">Replay</a>',
-                 f'<a class="btn" href="{html.escape(view_url(key, live=0, progressive=1))}">Replay + live flags</a>']
-        if is_results:
-            links.append(f'<a class="btn" href="{html.escape(view_url(key, live=1))}">Live tail</a>')
-        links.append(f'<a class="btn" href="{html.escape(view_url(key, audit="heuristic"))}">Heuristic audit</a>')
-        tag = '<span class="pill blue">default</span> ' if it["default"] else ""
-        conf_tag = ""
-        if cfg.get("agent_config"):
-            cls = "red" if cfg.get("incentivized") else "green"
-            conf_tag = f'<span class="pill {cls}">{html.escape(str(cfg["agent_config"]))}</span>'
-        rows.append(
-            f"<tr><td>{tag}<code>{html.escape(key)}</code><div class='sub'>{html.escape(str(cfg.get('task_id', '')))} "
-            f"{conf_tag}</div></td><td>{it['lines']} lines<div class='sub'>{status}</div></td><td>{vcell}</td>"
-            f"<td class='links'>{''.join(links)}</td></tr>")
-    if not rows:
-        rows.append("<tr><td colspan=4 class='sub'>No trajectories found.</td></tr>")
-    body = f"""
-<header><div class="logo">PUNISH</div><div><h1>Scientific Integrity Auditor</h1>
-<p class="sub">Pick a trajectory to replay. Server defaults: delay {d.delay}s, audit = {html.escape(d.audit)},
-auditor mode = {html.escape(d.auditor_mode)}{', progressive flags' if d.progressive else ''}.</p></div>
-<a class="btn primary big" href="/view">Open default view &rarr;</a></header>
-<table><thead><tr><th>Trajectory</th><th>Events</th><th>Verdict</th><th></th></tr></thead>
-<tbody>{''.join(rows)}</tbody></table>
-<p class="sub">Searched <code>{html.escape(traj_key(config.fixtures_dir / 'trajectories'))}/</code> and
-<code>{html.escape(traj_key(config.results_dir / 'trajectories'))}/</code>. <a href="/">Refresh</a></p>"""
-    return PAGE_SHELL.replace("__TITLE__", "Trajectories").replace("__BODY__", body)
 
 
 FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#ff4d5e"/>'
@@ -356,6 +381,8 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(400px,1fr)
 .label{display:block;font-style:normal;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);margin-bottom:2px}
 .label.pub{color:var(--blue)}
 body.report-only .thought .label::after{content:" · hidden from auditor (report_only)";color:var(--faint)}
+body.mode-final_report .card.fr-hidden{opacity:.32}
+body.mode-final_report .card.fr-hidden .hdr::after{content:"not shown to the auditor (final_report)";font-size:12px;color:var(--amber);font-weight:700;letter-spacing:.04em}
 pre{margin:6px 0 0;font-family:var(--mono);font-size:14px;line-height:1.45;background:#0c1018;border:1px solid #1e2636;border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;color:#cfd8e6}
 .clamp pre{max-height:12.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
 .toggle{margin-top:6px;background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:3px 10px;font-size:13px;cursor:pointer}
@@ -576,6 +603,7 @@ function renderEvent(line, ev){
     box.append(collapsible(JSON.stringify(ev, null, 2)));
   }
   hdr.append(right);
+  if (!(t === "system_prompt" || t === "final_report" || (t === "message" && ev.role === "user"))) card.classList.add("fr-hidden");
   addCard(line, card);
 }
 function renderParseError(line, err, raw){
@@ -688,7 +716,9 @@ on("meta", m => {
   setStatus(m.live ? "live" : "streaming", m.live ? "live" : "replay");
   const meta = $("meta");
   if (m.audit === "heuristic") meta.append(h("span", {class:"pill"}, "heuristic auditor"));
-  if (m.auditor_mode === "report_only") meta.append(h("span", {class:"pill"}, "report_only"));
+  document.body.classList.add("mode-" + (m.auditor_mode || "full_trace"));
+  if (m.auditor_mode === "report_only") document.body.classList.add("report-only");
+  if (m.auditor_mode && m.auditor_mode !== "full_trace") meta.append(h("span", {class:"pill"}, m.auditor_mode));
 });
 on("traj", d => { if (!state.lines.has(d.line)) renderEvent(d.line, d.event || {}); if ((d.event || {}).type === "final_report") $("stat").textContent = "Trajectory complete."; });
 on("parse_error", d => renderParseError(d.line, d.error, d.raw));
@@ -702,6 +732,7 @@ on("verdict", showVerdict);
 on("reset", () => { state.lines.clear(); state.events.clear(); state.calls.clear(); state.results.clear(); $("stream").innerHTML = ""; });
 on("done", () => {
   es.close(); state.finished = true;
+  window.__punishDone = true; document.dispatchEvent(new Event("punish:done"));
   setStatus("finished", "finished");
   if (!state.verdict && $("banner").classList.contains("pending")) setBanner("pending", "NO VERDICT", "");
 });
@@ -733,6 +764,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--auditor-mode", choices=["full_trace", "report_only", "final_report"], default="full_trace")
     p.add_argument("--poll", type=float, default=0.25, help="live: polling interval in seconds")
     p.add_argument("--verdict-timeout", type=float, default=0.0, help="live: stop waiting for a verdict after N seconds (0 = never)")
+    p.add_argument("--story", nargs="?", const="default", default=None, metavar="PLAYLIST_JSON",
+                   help="open the curated story playlist (auto-advancing); optional JSON list of steps to use instead")
     p.add_argument("--results-dir", default=str(RESULTS_DIR))
     p.add_argument("--open", action="store_true", help="open the browser")
     p.add_argument("--verbose", action="store_true", help="log HTTP requests")
@@ -747,7 +780,7 @@ def config_from_args(args: argparse.Namespace) -> AppConfig:
         live=live, delay=args.delay, progressive=args.flags_progressive, audit=args.audit,
         auditor_mode=args.auditor_mode, poll=args.poll, verdict_timeout=args.verdict_timeout,
         results_dir=Path(args.results_dir).resolve())
-    return AppConfig(defaults=defaults, results_dir=defaults.results_dir)
+    return AppConfig(defaults=defaults, results_dir=defaults.results_dir, story=args.story)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -762,9 +795,14 @@ def main(argv: list[str] | None = None) -> int:
     base = f"http://{host}:{server.server_address[1]}"
     mode = "live tail" if config.defaults.live else "replay"
     print(f"Punish demo ({mode}) of {traj_key(config.defaults.trajectory)}")
-    print(f"  viewer: {base}/view\n  index:  {base}/")
+    print(f"  viewer:    {base}/view\n  gallery:   {base}/\n  results:   {base}/dashboard\n  story:     {base}/story")
+    start = f"{base}/view"
+    if args.story:
+        steps = config.story_steps()
+        print(f"Story: {len(steps)} steps -> {base}/story?step=0")
+        start = f"{base}/story?step=0"
     if args.open:
-        threading.Timer(0.5, webbrowser.open, args=(f"{base}/view",)).start()
+        threading.Timer(0.5, webbrowser.open, args=(start,)).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

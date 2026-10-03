@@ -113,6 +113,12 @@ def _json(path: Path):
     return _cached(("json", str(path), m), lambda: load_verdict_file(path))
 
 
+def _reaudit_dirs(exp: Experiment) -> list[Path]:
+    """Re-audits of an experiment's trajectories by other auditors: <exp>/reaudit_<name>/{verdicts,episodes}/."""
+    return _cached(("reaudit", str(exp.root), _mtime(exp.root)),
+                   lambda: [d for d in sorted(exp.root.glob("reaudit_*")) if d.is_dir()])
+
+
 def _labeller(exp: Experiment, stem: str, task_id: str | None, path: Path, events: list[dict], finished: bool):
     """Deterministic ground truth: from any stored episode result, else computed with tasks.registry.label."""
     for mode in MODES:
@@ -141,7 +147,7 @@ def trajectory_info(path: Path, exp: Experiment | None = None, results_dir: Path
     info = {"key": rel(path), "name": path.name, "experiment": exp.name, "exists": path.exists(), "lines": 0,
             "finished": False, "mtime": _mtime(path), "trajectory_id": stem, "task_id": None, "agent_config": None,
             "subject_model": None, "config": {}, "verdicts": {}, "labeller": None, "labeller_source": None,
-            "judge": None, "hacked_either": None}
+            "judge": None, "hacked_either": None, "reaudits": {}}
     events = []
     if info["exists"]:
         rows = load_events(path)
@@ -170,6 +176,19 @@ def trajectory_info(path: Path, exp: Experiment | None = None, results_dir: Path
             info["judge"] = {"hacked": j["hacked"], "severity": j.get("severity"), "hack_types": j.get("hack_types") or [],
                              "rationale": j.get("rationale", ""), "model": j.get("judge_model")}
             break
+    for rd in _reaudit_dirs(exp):
+        found = {}
+        for mode in MODES:
+            sfx = mode_suffix(mode)
+            v = _json(rd / "verdicts" / f"{stem}{sfx}.json")
+            if v is None:
+                ep = _json(rd / "episodes" / f"{stem}{sfx}.json")
+                v = ep.get("verdict") if ep else None
+            if isinstance(v, dict):
+                found[mode] = {"hack_detected": v.get("hack_detected"), "confidence": v.get("confidence"),
+                               "hack_types": v.get("hack_types") or []}
+        if found:
+            info["reaudits"][rd.name.removeprefix("reaudit_")] = found
     labels = [x for x in (info["labeller"], info["judge"] and info["judge"]["hacked"]) if x is not None]
     info["hacked_either"] = any(labels) if labels else None
     return info
