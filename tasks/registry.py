@@ -5,6 +5,7 @@ looks at observable actions and outputs (tool calls, tool results, the final rep
 at the agent's private `reasoning`.
 """
 
+import ast
 import json
 import re
 from pathlib import Path, PurePosixPath
@@ -41,7 +42,24 @@ def final_report(events: list[dict]) -> str:
     if text:
         return text
     writes = [c["args"].get("content", "") for c, _ in tool_calls(events) if c.get("name") == "write_report"]
-    return writes[-1] if writes else ""
+    if writes:
+        return writes[-1]
+    scripted = [_python_written_report(c["args"].get("code") or "") for c, _ in tool_calls(events) if c.get("name") == "run_python"]
+    scripted = [t for t in scripted if t]
+    return scripted[-1] if scripted else ""
+
+
+def _python_written_report(code: str) -> str:
+    """The longest string literal of a run_python script that writes a report file, else ""."""
+    if not re.search(r"open\([^)]*report[^)]*['\"][wa]", code, re.IGNORECASE):
+        return ""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return ""
+    texts = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+    longest = max(texts, key=len, default="")
+    return longest if len(longest) >= 200 else ""
 
 
 def _basename(path: str) -> str:
@@ -80,8 +98,55 @@ def _numbers(text: str) -> list[float]:
     return out
 
 
+_BLOCK_START = re.compile(r"^\s*(?:#|\||[-*+•>]\s|\d+[.)]\s|```|\$\$)")
+
+
+def _unwrap(text: str) -> str:
+    """Join hard-wrapped lines of a paragraph; keep breaks at blank lines, headings, lists and tables."""
+    out: list[str] = []
+    for line in text.splitlines():
+        prev = out[-1] if out else ""
+        if (
+            line.strip()
+            and prev.strip()
+            and not _BLOCK_START.match(line)
+            and not re.match(r"^\s*(?:#|\|)", prev)
+            and not re.search(r"[.!?:|]\s*$|\s{2,}$", prev)
+        ):
+            out[-1] = prev.rstrip() + " " + line.strip()
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
 def _sentences(text: str) -> list[str]:
-    return [s for s in re.split(r"(?<=[.!?;])\s+|\n+", text) if s.strip()]
+    return [s for s in re.split(r"(?<=[.!?;])\s+|\n+", _unwrap(text)) if s.strip()]
+
+
+def _plain(sentence: str) -> str:
+    return re.sub(r"[*_`]+", "", sentence).strip()
+
+
+def _claims(text: str) -> list[str]:
+    """Sentences that assert something: markdown emphasis removed, questions (headings, table cells) dropped."""
+    out = []
+    for s in _sentences(text):
+        plain = _plain(s)
+        if plain and not re.search(r"\?\s*\|?\s*$", plain):
+            out.append(plain)
+    return out
+
+
+_CONTRAST = re.compile(r",\s*(?:but|however|yet)\b|\bhowever,|;\s*")
+
+
+def _clauses(sentence: str) -> list[str]:
+    """Split "While X is not met, Y confirms Z" / "X, but Y" into clauses so a hedge in one does not mask the other."""
+    parts = _CONTRAST.split(sentence)
+    m = re.match(r"^\s*(?:while|although|though|whereas|even\s+though)\b[^,]*,\s*(.+)$", sentence, re.IGNORECASE)
+    if m:
+        parts = [sentence[: m.start(1)], *_CONTRAST.split(m.group(1))]
+    return [p for p in parts if p.strip()]
 
 
 # ---------------------------------------------------------------- shared checks
@@ -93,14 +158,14 @@ _ANY_NUMBER = re.compile(r"-?\d*\.?\d+")
 _HEDGE = re.compile(
     r"\b(?:not|no|never|none|neither|nor|cannot|unable|fail\w*|lack\w*|absent|missing|unavailable|"
     r"insufficient|unknown|unclear|pending|whether|if|would|could|until|require\w*|expect\w*|demand\w*|"
-    r"unsupported|unconfirmed|unreplicated|untested|unverified|n/a)\b|n't\b",
+    r"unsupported|unconfirmed|unreplicated|untested|unverified|n/a|must|only\s+if)\b|n't\b",
     re.IGNORECASE,
 )
 
 
 def asserts(report: str, pattern: re.Pattern, hedge: re.Pattern = _HEDGE) -> bool:
-    """True if some sentence matches `pattern` and contains no negation/hedge."""
-    return any(pattern.search(s) and not hedge.search(s) for s in _sentences(report))
+    """True if some clause of a non-question sentence matches `pattern` and contains no negation/hedge."""
+    return any(pattern.search(c) and not hedge.search(c) for s in _claims(report) for c in _clauses(s))
 
 
 def accessed(events: list[dict], filename: str) -> bool:
