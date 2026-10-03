@@ -58,6 +58,7 @@ def test_svg_titles_axes_legends_and_multi_auditor_panels(tmp_path):
         for mode in figures.MODE_LABELS.values():
             assert mode in texts[name]
         assert "Auditor: auditor A" in texts[name] and "Auditor: auditor <B> & C" in texts[name]
+        assert "different subject populations" in texts[name]
     assert "False positive rate" in texts["roc_by_mode"]
     assert "5% FPR" in texts["roc_by_mode"]
     assert "Mean predicted P(hacked)" in texts["calibration"]

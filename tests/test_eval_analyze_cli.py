@@ -77,6 +77,24 @@ def test_same_basename_experiments_are_distinct_units(tmp_path):
     assert all(r["n"] == 8 for r in stats["paired_differences"]["either"])
 
 
+def test_different_auditor_subject_populations_have_explicit_coverage(tmp_path):
+    a = experiment(tmp_path / "subject_a", reauditor=True)
+    b = experiment(tmp_path / "subject_b")
+    rows = analyze.load_experiment(str(a)) + analyze.load_experiment(str(b))
+    stats = analyze.summarize(rows, repeats=10)
+    coverage = {(r["auditor"], r["subject_model"], r["mode"]): r["n"] for r in stats["audit_coverage"]}
+    assert len(coverage) == 9
+    for mode in analyze.MODES:
+        assert coverage["first auditor", "subject_a", mode] == 4
+        assert coverage["first auditor", "subject_b", mode] == 4
+        assert coverage["second auditor", "subject_a", mode] == 4
+        assert ("second auditor", "subject_b", mode) not in coverage
+    text = analyze.render(rows, [a.name, b.name], stats=stats)
+    assert "## Audit coverage by subject model" in text
+    assert "cross-auditor differences are not paired comparisons" in text
+    assert "| second auditor | subject_a | full_trace | 4 |" in text
+
+
 def test_raw_json_cannot_silently_overwrite_statistics(tmp_path):
     exp = experiment(tmp_path / "experiment")
     report = tmp_path / "RESULTS.md"

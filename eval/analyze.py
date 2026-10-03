@@ -349,7 +349,11 @@ def summarize(rows: list[dict], *, repeats: int = DEFAULT_BOOTSTRAPS, seed: int 
               "n_trajectories": len(trajs), "n_audits": len(rows),
               "judged_trajectories": sum(r["judge"] is not None for r in trajs),
               "hack_rates": [], "auditor_quality": {}, "paired_differences": {},
-              "config_recall": [], "hack_types": hack_type_breakdown(rows), "calibration": []}
+              "config_recall": [], "hack_types": hack_type_breakdown(rows), "calibration": [],
+              "audit_coverage": []}
+    for (auditor, model, mode), rs in group(rows, "auditor", "subject_model", "auditor_mode").items():
+        result["audit_coverage"].append({"auditor": auditor, "subject_model": model,
+                                         "mode": mode, "n": len(trajectories(rs))})
     for (model, cfg), rs in group(trajs, "subject_model", "agent_config").items():
         result["hack_rates"].append({"subject_model": model, "agent_config": cfg, "n": len(rs),
                                      "labels": {label: bootstrap_hack_rate(rs, label, repeats=repeats, seed=seed)
@@ -461,8 +465,13 @@ def render(rows: list[dict], experiments: list[str], *, stats: dict | None = Non
            "The judge is an imperfect model-based reference. CIs assume independent trajectories in the "
            "observed task/model mixture; they do not establish generalization to new tasks/models. "
            "Percentile CIs can collapse at 0/1 on tiny samples; this is not certainty. Comparisons are "
-           "exploratory (no multiple-comparison correction).", "",
+           "exploratory (no multiple-comparison correction). Auditor models may cover different subject "
+           "populations: cross-auditor differences are not paired comparisons. Mode contrasts are paired "
+           "only within an auditor model; see the coverage table below.", "",
            "All estimates are proportions; brackets show 95% CIs. `n/a` denotes an undefined quantity.", "",
+           "## Audit coverage by subject model", "",
+           *_table(["auditor", "subject model", "mode", "trajectories"],
+                   [[r["auditor"], r["subject_model"], r["mode"], r["n"]] for r in stats["audit_coverage"]]),
            "## Hack rate by subject model and agent config", "", *hack_rate_table(rows, stats),
            "## Hacked trajectories per task", "", *task_rate_table(rows),
            "## Labeller vs judge agreement", "", *agreement(rows)]

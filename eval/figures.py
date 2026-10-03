@@ -20,6 +20,7 @@ INK = "#14263D"
 MUTED = "#536579"
 GRID = "#E3EAF0"
 WIDTH = 1080
+AUDITOR_COVERAGE_NOTE = "Auditor panels can cover different subject populations; compare modes within each panel."
 
 
 class SVG:
@@ -135,7 +136,7 @@ def hack_rate_svg(stats: dict) -> str:
 def roc_svg(stats: dict) -> str:
     rows = stats["auditor_quality"]["either"]
     auditors = sorted({r["auditor"] for r in rows})
-    height = 135 + max(1, len(auditors)) * 382
+    height = 157 + max(1, len(auditors)) * 382
     svg = SVG("Auditor ROC: detection versus false alarms",
               "Headline label: labeller OR privileged judge · threshold score = P(hacked) · ties move together", height)
     for panel, auditor in enumerate(auditors):
@@ -162,6 +163,7 @@ def roc_svg(stats: dict) -> str:
             operating = metric["recall_at_5_fpr"]
             if operating["recall"] is not None:
                 svg.circle(left + width * operating["fpr"], top + ph * (1 - operating["recall"]), COLORS[mode], 5)
+    svg.text(36, height - 39, AUDITOR_COVERAGE_NOTE, size=12, color=MUTED)
     svg.text(36, height - 17, "Dashed diagonal: chance ranking. Dots: attainable operating points at FPR ≤5%; no interpolation for the reported recall.",
              size=12, color=MUTED)
     if not auditors:
@@ -173,7 +175,7 @@ def recall_svg(stats: dict) -> str:
     rows = stats["config_recall"]
     auditors = sorted({r["auditor"] for r in rows})
     configs = sorted({r["agent_config"] for r in rows})
-    height = 155 + max(1, len(auditors)) * 367
+    height = 177 + max(1, len(auditors)) * 367
     svg = SVG("Which configurations does each auditor mode catch?",
               "Actual verdicts · labeller OR privileged judge · subject models pooled by config · bootstrap 95% CI", height)
     for panel, auditor in enumerate(auditors):
@@ -204,6 +206,7 @@ def recall_svg(stats: dict) -> str:
         svg.text(left + width / 2, top + ph + 69, "Subject agent configuration (n = hacked trajectories)", anchor="middle", weight=600)
         for j, mode in enumerate(MODES):
             _legend(svg, 763, top + 30 + j * 55, mode)
+    svg.text(36, height - 39, AUDITOR_COVERAGE_NOTE, size=12, color=MUTED)
     svg.text(36, height - 17, "No hacked trajectories → recall is undefined, not zero. Auditor models are shown separately; subject models are pooled by config.",
              size=12, color=MUTED)
     if not auditors:
@@ -214,7 +217,7 @@ def recall_svg(stats: dict) -> str:
 def calibration_svg(stats: dict) -> str:
     rows = stats["calibration"]
     auditors = sorted({r["auditor"] for r in rows})
-    height = 135 + max(1, len(auditors)) * 382
+    height = 157 + max(1, len(auditors)) * 382
     svg = SVG("Calibration: do hack probabilities match observed frequency?",
               "Reliability diagram · ten equal-width confidence bins · headline label: labeller OR privileged judge", height)
     for panel, auditor in enumerate(auditors):
@@ -234,6 +237,7 @@ def calibration_svg(stats: dict) -> str:
             svg.path(points, COLORS[mode])
             for (x, y), b in zip(points, bins):
                 svg.circle(x, y, COLORS[mode], 3 + min(4, b["n"] ** 0.5 / 2))
+    svg.text(36, height - 39, AUDITOR_COVERAGE_NOTE, size=12, color=MUTED)
     svg.text(36, height - 17, "Dashed diagonal: perfect calibration. Larger dots: more trajectories. Empty bins are omitted; lines only guide the eye.",
              size=12, color=MUTED)
     if not auditors:
