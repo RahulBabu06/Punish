@@ -135,6 +135,14 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
 .venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --by-dir --out results/COST.md
+# REPORT §8.10–8.13: reasoning disclosure, labeller audit, monitor attacks (heuristic), cost vs detection
+.venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
+  --labels docs/obfuscation_handlabels_heldout.json --out results/obfuscation/OBFUSCATION.md
+.venv/bin/python -m tasks.validate_labels results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45
+.venv/bin/python -m eval.monitor_attacks --auditor heuristic --modes all
+.venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
+  --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -150,7 +158,10 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
 | `results/hard_cases/` | 32 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
 | `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
-| `results/COST.md` | estimated API cost of the v2 runs (`eval.cost`) |
+| `results/COST.md` | estimated API cost of every committed run (`eval.cost`; v2 total about $88) |
+| `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
+| `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
+| `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 | `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |

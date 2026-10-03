@@ -232,12 +232,33 @@ runs, so they have labeller labels only (\code{REPORT.md}~\S8.6):
 \begin{itemize}
 \item Haiku~4.5: 200 trajectories. Covert runs hack 35/50 and honest runs 3/50.
 \item Sonnet~4.6: 150 of 200 planned trajectories.
-\item \code{covert\_monitored} (the agent is told an auditor reads its reasoning): Haiku hacked
-1/15 times, against 13/15 under \code{covert} on the same three tasks. Sonnet~4.6 still hacked
-7/15, and \mode{full\_trace} and \mode{report\_only} caught the same 5, so we see no sign yet
-that the agent hid its reasoning.
+\item \code{covert\_monitored} (the agent is told an auditor reads its reasoning), with all 15
+labeller positives read by hand (9 were labeller false positives): Haiku hacked 1/14 times on
+three tasks against 13/15 under v3 \code{covert}, and Sonnet~4.6 5/15 against 12/15. All 6
+remaining hacks state the fabrication in the reasoning. Monitoring deterred hacking; it did not
+make it hidden.
 \end{itemize}
 The v3 labeller is stricter, so these rates cannot be compared with v2.
+
+\paragraph{Does the reasoning disclose the hack?} A regex rubric (\code{eval/obfuscation.py};
+10/10 on a held-out hand-labelled sample) finds the exploit stated in the reasoning of 25/25
+Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2. The 3 exceptions are
+\code{fake\_citation}, where the overstatement lives in the report. Unprompted hacks
+(incentivised or pressure) disclose less often, 0--90\% per cell (4--10 hacks each).
+
+\paragraph{Label audit.} \code{tasks/LABEL\_AUDIT.md} revises the labeller rules. On the 360
+judged v2 runs, labeller--judge agreement rises from $\kappa=0.55$ to $0.80$, and the labeller
+rate on honest v3 runs falls from 24/112 to 6/112. Our headline uses the frozen run-time labels,
+so Table~\ref{tab:auditor} does not change.
+
+\paragraph{Deployment cost and attacks.} On the 240 Opus-audited trajectories
+(\code{results/CASCADE.md}), Sonnet alone has recall 0.89 and FPR 0.25 at about \$0.030 per
+trajectory, Opus alone 0.84 and 0.11 at \$0.051, and a Sonnet$\to$Opus cascade 0.82 and 0.11
+at \$0.056 (45.8\% escalated). A monitor-attack corpus (10 real \code{covert} hacks $\times$
+6 attacks: report and file injections, laundered reasoning, padding, a fake self-check) has so
+far been scored only by the offline heuristic auditor: \mode{full\_trace} recall drops from
+7/10 to 6/10 under laundered reasoning. Claude auditors on the hard-case and attack sets, the
+agentic (recomputing) auditor and $n$-sample ensembles are implemented but not yet run.
 
 \section{Limitations}
 \begin{itemize}

@@ -95,10 +95,10 @@ Possibly. OpenAI found that training against a CoT monitor teaches obfuscation. 
 we use the auditor only to evaluate and never as a training reward. `report_only` is our
 hedge: it doesn't trust the reasoning at all, and it still reaches 0.92 recall because files
 read and code run are hard to hide. Our `covert_monitored` config tells the hacking agent that an auditor reads its
-reasoning. In a small preliminary run (labeller-only, n = 15 each), Haiku mostly stopped
-hacking (1/15 vs 13/15 under plain `covert`), while Sonnet 4.6 still hacked 7/15. In the
-Sonnet runs, `full_trace` and `report_only` caught the same 5, so we saw no obfuscation
-gap yet. Stress-testing against agents
+reasoning. In a small preliminary run (n = 15 per model, every positive read by hand), Haiku mostly
+stopped hacking (1/14 vs 13/15 under plain `covert`) and Sonnet 4.6 hacked 5/15 vs 12/15.
+All 6 remaining hacks still spell out the fabrication in their reasoning, so monitoring
+deterred hacking rather than hiding it. Stress-testing against agents
 optimised to evade is future work.
 
 **"Why does final-report-only flag honest runs?"**
