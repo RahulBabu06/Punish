@@ -234,7 +234,7 @@ JS = r"""
 
 
 def slides() -> list[str]:
-    hack_rate = inline_svg("hack_rate_by_model_config", "fhr", "110 108 900 712")
+    hack_rate = inline_svg("hack_rate_by_model_config", "fhr", "110 108 900 722")
     roc_opus = inline_svg("roc_by_mode", "froc1", "24 100 936 362")
     roc_sonnet = inline_svg("roc_by_mode", "froc2", "24 482 936 362")
     return [
