@@ -361,7 +361,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.</p>
 {roc_sonnet}
 </div>
 </div>
-<div class="src">Source: REPORT.md §8.2 (Opus re-audit, 240 runs; per-subject McNemar) · ROC curves: results/RESULTS.md, all subjects (Opus full_trace − report_only Δrecall 0.101 [0.038, 0.171])</div>
+<div class="src">Source: REPORT.md §8.2 · ROC: results/RESULTS.md (Opus full_trace − report_only Δrecall 0.10 [0.04, 0.17])</div>
 </section>""",
         # 7 labeller vs judge
         f"""<section class="slide">
