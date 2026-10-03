@@ -806,7 +806,10 @@ BUILDERS = (
 )
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    argparse.ArgumentParser(description="Regenerate tasks/definitions/*.json from the builders.").parse_args(argv)
     for build in BUILDERS:
         task = build()
         seed = task.pop("_seed", None)
