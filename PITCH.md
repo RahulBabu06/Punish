@@ -54,8 +54,9 @@ Partly, and we say so. There are two ground truths. The deterministic labeller i
 reproducible and does not use an LLM, but it only sees the planted path (47 hacks). The
 Opus judge has privileged information the auditor doesn't have: the exploit description and
 the honest solution (123 hacks, 23 rated minor). We report the auditor against both. Against
-the labeller, `full_trace` recall is 1.00 and AUROC 0.97. Human validation of the judge is
-next.
+the labeller, `full_trace` recall is 1.00 and AUROC 0.97. A blind check by an AI annotator on 60 runs gives
+κ = 0.70. The judge is never more lenient, and 8 of its 9 disagreements come from one stale
+task definition (`leaked_answer`), so it over-flags rather than misses. Human validation is next.
 
 **"So chain of thought doesn't matter?"**
 It depends on the auditor. For Sonnet 4.6, 345 of 360 verdicts are identical with and

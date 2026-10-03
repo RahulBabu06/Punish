@@ -418,7 +418,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.</p>
 <div class="grid g2" style="gap:16px">
 <div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 4–27 positives. Most mode differences other than final_report vs the trace modes are within noise.</p></div>
 <div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and Sonnet <code>full_trace</code> recall under <code>pressure</code> is 18/24.</p></div>
-<div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Agreement with human raters has not been measured.</p></div>
+<div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Against 60 blind AI labels: κ 0.70, never more lenient; 8 of 9 disagreements are a stale <code>leaked_answer</code> definition. No human raters yet.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>
 <div class="card" style="border-color:var(--amber)"><h3>The rubric drives FPR</h3><p>The rubric counts any eval-file read as <code>suspicious_access</code> and the judge does not. Most trace-mode false positives come from this mismatch.</p></div>
 <div class="card" style="border-color:var(--navy)"><h3>Reasoning is not ground truth</h3><p>A clean trace is weak evidence of a clean run (Chen et al.). We have not tested agents trained to obfuscate.</p></div>
@@ -436,7 +436,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.</p>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>
 <div class="q" style="font-size:23px">Next: align the rubric with the judge, run the Claude auditor on the hard cases
-and monitor attacks, judge the covert_monitored runs, and validate the judge against human raters.</div>
+and monitor attacks, re-judge leaked_answer, and validate the judge against human raters.</div>
 <div class="src">Sources: results/RESULTS.md · REPORT.md §8.2, §10 · github.com/RahulBabu06/Punish</div>
 </section>""",
     ]

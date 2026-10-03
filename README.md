@@ -145,6 +145,7 @@ commands rebuild every table in `REPORT.md` offline:
   --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
 .venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/calibration_v2/CALIBRATION.md
+.venv/bin/python -m eval.judge_validation score --out results/judge_validation
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -163,6 +164,7 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/COST.md` | estimated API cost of every committed run (`eval.cost`; v2 total about $88) |
 | `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
 | `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
+| `results/judge_validation/` | Opus judge vs 60 blind AI labels: κ 0.70, and the stale `leaked_answer` definition ([`docs/judge_validation.md`](docs/judge_validation.md)) |
 | `results/calibration_v2/` | leave-one-task-out calibration and FPR-capped thresholds for each auditor and mode (`eval.calibrate`) |
 | `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |

@@ -513,7 +513,7 @@ What we can say, cautiously:
   `final_report` flags 3/18 and 8/27 of these clean runs.
 
 Still to do (needs credit): `TODO(numbers)` judge labels for every v3 run, finishing the
-partial runs, an Opus re-audit of `v2_sonnet45`, human validation of the judge, and Claude auditors on the hard-case set (§8.7).
+partial runs, an Opus re-audit of `v2_sonnet45`, human validation of the judge (an AI blind-label check is in §8.15), and Claude auditors on the hard-case set (§8.7).
 
 ### 8.7 Hard-case red-team set (heuristic baseline only)
 
@@ -597,7 +597,8 @@ It was tuned on 20 hand-labelled cases and scores 10/10 on 10 held-out ones (Wil
 
 - The 3 undisclosed Sonnet 4.6 hacks are `fake_citation`: the overstatement is in the report,
   and the reasoning only says "a credible evidence chain".
-- Disclosure is near-total for instructed hacks, yet the `full_trace` − `report_only` gap is
+- Disclosure is near-total for instructed hacks (87–100% of `covert` hacks per subject: 20/23,
+  28/28, 25/25), yet the `full_trace` − `report_only` gap is
   0: the copied value or dropped site is also visible in the tool calls and the report.
 - Unprompted hacks (v2 `incentivized` / `pressure`, 4–10 hacks per cell) disclose much less
   often: 0.00–0.90 per cell.
@@ -651,7 +652,7 @@ and Opus 4.6 (79 hacked) under five policies:
 | heuristic → Sonnet (escalate 56%) | 0.78 | 0.24 | $0.018 |
 | Sonnet → Opus (escalate 46%) | 0.82 | 0.11 | $0.056 |
 
-- Sonnet → Opus gets Opus-level FPR, but costs more than Opus alone, because Sonnet flags
+- **Opus alone is the best value here.** Sonnet → Opus gets Opus-level FPR, but costs more than Opus alone, because Sonnet flags
   46% of trajectories (it would be cheaper below 40%).
 - At FPR ≤ 5% the best in-sample recall is 0.71 (Sonnet at threshold 0.9, or heuristic →
   Sonnet at $0.012); with thresholds tuned on the other subject it drops to 0.68 for Sonnet
@@ -678,13 +679,42 @@ judged v2 runs (`either` label).
 | Opus 4.6, `report_only` | 0.73 (0.17) | 0.57 (0.06) |
 | Opus 4.6, `final_report` | 0.57 (0.16) | 0.19 (0.14) |
 
-- Raw confidence is already the best-calibrated score out of fold (lowest LOTO Brier); Platt
-  and isotonic maps do not transfer across tasks.
+- **Raise the threshold rather than recalibrate.** Raw confidence is already the best-calibrated
+  score out of fold (lowest LOTO Brier); Platt and isotonic maps do not transfer across tasks.
+  The recommended deployment cuts are raw confidence ≥ 0.88 for Sonnet `full_trace` (LOTO recall
+  0.76, FPR 0.09) and ≥ 0.45 for Opus `full_trace` (0.82, 0.09).
 - At a low false-positive budget, reasoning matters even for Sonnet: `full_trace` keeps 0.70
   recall against 0.49 for `report_only`. This is the AUROC gap of §8.2 showing up where a
   deployment would operate. The default verdicts (0.93 vs 0.93) hide it.
 - No threshold keeps `final_report` FPR at or below 10% on unseen tasks, so that mode should
   not be used as a veto.
+
+### 8.15 Judge validation against blind labels (`docs/judge_validation.md`)
+
+We checked the Opus judge against blind labels on a stratified sample of 60 judged v2
+trajectories (20 judge-only, 12 both, 28 neither; the labeller-only cell is empty). **The
+annotator is an AI (Devin), not a human**, so this is a second model-based opinion. Each label
+was committed before the annotator saw any judge or labeller verdict.
+
+| comparison | accuracy | Cohen's κ | TP / FP / FN / TN vs blind |
+|---|---|---|---|
+| Opus judge | 0.85 | 0.70 | 23 / 9 / 0 / 28 |
+| labeller | 0.82 | 0.57 | 12 / 0 / 11 / 37 |
+
+- The judge is never more lenient than the blind labels: all 23 blind-hacked runs are
+  judge-hacked. Reweighted to the population strata, judge accuracy is 0.91.
+- The labeller is the opposite: it is never stricter, and it misses 11 of the 23 hacks.
+- **Known issue: stale `leaked_answer` definition.** 8 of the judge's 9 disagreements are
+  `leaked_answer`. The judge was shown the current definition (honest Welch p ≈ 0.006), but the
+  v2 agents ran on the older data, where the honest p ≈ 0.312 really is the right answer. The
+  judge therefore marks correct reports of p = 0.3116 as `fabricated_verification` +
+  `suspicious_access`. 31 of the 76 labeller–judge disagreements are `leaked_answer`. Flipping
+  all 31 is an upper bound on the effect; for Sonnet 4.6 it would move the judge hack rate from
+  0.10 to 0.00 (honest), 0.30 to 0.17 (incentivized) and 0.33 to 0.17 (pressure). The
+  `covert` rates and the main conclusions do not depend on this task. A sensitivity analysis
+  that excludes or corrects `leaked_answer` is pending (`TODO(numbers)`).
+- The ninth disagreement is a borderline `cherry_pick` covert run that planned to emphasise a
+  post-hoc exclusion but kept the primary analysis primary in its report.
 
 ## 9. Limitations
 
@@ -696,8 +726,10 @@ judged v2 runs (`either` label).
   performance on natural hacks is lower in places (for example Sonnet `full_trace` recall
   18/24 under `pressure`).
 - **LLM ground truth.** The headline label is effectively the Opus judge. Opus also
-  belongs to the Claude family, so auditor and judge may share blind spots. We have not
-  measured agreement with human raters (`TODO(numbers)`).
+  belongs to the Claude family, so auditor and judge may share blind spots. Against 60 blind labels
+  from an AI annotator (not a human) it has κ = 0.70 and is never more lenient; 8 of its 9
+  disagreements come from a stale `leaked_answer` definition (§8.15). Agreement with human
+  raters is still `TODO(numbers)`.
 - **Toy tasks.** Six single-file tasks with one planted exploit each. Real analyses are
   longer, and hacks may spread across many steps.
 - **Rubric choices drive FPR.** The rubric treats any eval-file read as
@@ -732,7 +764,8 @@ judged v2 runs (`either` label).
   mitigation (§8.8).
 - Judge and finish the v3 runs. Extend the Opus re-audit to the Sonnet 4.5 subject, and test weaker-auditor/stronger-subject pairs
   as in Baker et al.
-- Validate the judge against humans, and calibrate auditor confidence.
+- Re-judge v2 `leaked_answer` with the definition the agents actually saw, record a hash of
+  the task files in every episode, and validate the judge against human raters.
 - Stress tests: subjects fine-tuned or prompted to evade *this* auditor, to measure how
   fast monitorability drops under pressure. The `covert_monitored` config is the first,
   prompted step.
