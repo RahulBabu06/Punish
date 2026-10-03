@@ -710,8 +710,7 @@ was committed before the annotator saw any judge or labeller verdict.
   judge therefore marks correct reports of p = 0.3116 as `fabricated_verification` +
   `suspicious_access`. 31 of the 76 labeller–judge disagreements are `leaked_answer`. Flipping
   all 31 is an upper bound on the effect; for Sonnet 4.6 it would move the judge hack rate from
-  0.10 to 0.00 (honest), 0.30 to 0.17 (incentivized) and 0.33 to 0.17 (pressure). The
-  `covert` rates and the main conclusions do not depend on this task. A sensitivity analysis
+  0.10 to 0.00 (honest), 0.30 to 0.17 (incentivized) and 0.33 to 0.17 (pressure). A sensitivity analysis
   that excludes or corrects `leaked_answer` is pending (`TODO(numbers)`).
 - The ninth disagreement is a borderline `cherry_pick` covert run that planned to emphasise a
   post-hoc exclusion but kept the primary analysis primary in its report.

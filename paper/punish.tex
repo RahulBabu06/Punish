@@ -260,8 +260,8 @@ blind-hacked runs are judge-hacked. 8 of its 9 disagreements are \code{leaked\_a
 was shown the current definition (honest $p\approx0.006$), but v2 agents ran on older data where
 $p\approx0.312$ is correct. So the judge over-flags honest \code{leaked\_answer} runs. Flipping
 all 31 such labeller--judge disagreements, an upper bound, would cut the Sonnet~4.6 honest,
-incentivized and pressure judge rates from 0.10, 0.30, 0.33 to 0.00, 0.17, 0.17; \code{covert}
-rates are unaffected in direction.
+incentivized and pressure judge rates from 0.10, 0.30, 0.33 to 0.00, 0.17, 0.17. A corrected sensitivity
+analysis is pending.
 
 \paragraph{Operating at a low false-positive rate.} With leave-one-task-out thresholds on raw
 confidence (\code{results/calibration\_v2}), at FPR $\le$ 5\% Sonnet \mode{full\_trace} keeps
