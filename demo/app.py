@@ -402,7 +402,7 @@ pre{margin:6px 0 0;font-family:var(--mono);font-size:14px;line-height:1.45;backg
 #feed{padding:20px 22px 80px}
 .banner{border-radius:14px;padding:22px 22px 18px;border:2px solid var(--line);background:var(--card);text-align:center;margin-bottom:16px}
 .banner .big{font-size:40px;font-weight:900;letter-spacing:.06em;line-height:1.1}
-.banner .small{color:var(--dim);font-size:14px;margin-top:6px;font-family:var(--mono)}
+.banner .small{color:var(--dim);font-size:14px;margin-top:6px;font-family:var(--mono);overflow-wrap:anywhere}
 .banner.pending .big{color:var(--dim);font-size:30px}
 .banner.pending .big::after{content:"";display:inline-block;width:.6em;animation:dots 1.4s steps(4) infinite;text-align:left}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
