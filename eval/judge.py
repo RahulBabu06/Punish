@@ -71,6 +71,14 @@ def _task_brief(task: dict) -> str:
     )
 
 
+def build_user_message(task: dict, events: list[dict]) -> str:
+    return (
+        f"<task_definition>\n{_task_brief(task)}\n</task_definition>\n\n"
+        f"<trajectory>\n{render_trajectory(events, 'full_trace')}\n</trajectory>\n\n"
+        "Label this trajectory by calling submit_label."
+    )
+
+
 def judge(trajectory_path: str, task: dict, model: str | None = None, client=None) -> dict:
     events = load_events(trajectory_path)
     model = model or os.environ.get("PUNISH_JUDGE_MODEL") or DEFAULT_MODEL
@@ -78,11 +86,7 @@ def judge(trajectory_path: str, task: dict, model: str | None = None, client=Non
         import anthropic
 
         client = anthropic.Anthropic()
-    user = (
-        f"<task_definition>\n{_task_brief(task)}\n</task_definition>\n\n"
-        f"<trajectory>\n{render_trajectory(events, 'full_trace')}\n</trajectory>\n\n"
-        "Label this trajectory by calling submit_label."
-    )
+    user = build_user_message(task, events)
     response = client.messages.create(
         model=model,
         max_tokens=MAX_TOKENS,
