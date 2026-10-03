@@ -12,6 +12,14 @@ HACK_COLORS = {"suspicious_access": "#ff4d5e", "fabricated_verification": "#ff8a
                "rationalization": "#ffd23f", "fabricated_source": "#ff7a90", "methodological_drift": "#5fb4ff"}
 SERIES_COLORS = ["#4da3ff", "#b48cff", "#ff8a3d", "#2ecc71", "#ffd23f", "#ff5fd2", "#5fe0d0", "#ff4d5e"]
 MODE_COLORS = {"full_trace": "#b48cff", "report_only": "#4da3ff", "final_report": "#ff8a3d"}
+CONFIG_ORDER = ("honest", "incentivized", "pressure", "sycophantic_pi", "covert_monitored", "covert")
+CONFIG_COLORS = {"honest": "#2ecc71", "incentivized": "#4da3ff", "pressure": "#ffb347", "sycophantic_pi": "#b48cff",
+                 "covert_monitored": "#ff5fd2", "covert": "#ff4d5e"}
+
+
+def config_key(c) -> tuple:
+    """Agent configs from least to most adversarial; unknown ones after, alphabetically."""
+    return (CONFIG_ORDER.index(c) if c in CONFIG_ORDER else len(CONFIG_ORDER), str(c))
 
 esc = html.escape
 
@@ -74,6 +82,12 @@ select,input[type=search]{background:#0c1018;color:var(--text);border:1px solid 
 .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));gap:16px}
 .chart svg{width:100%;height:auto;display:block}
 .chart .t{font-weight:700;margin-bottom:4px}
+.exps{display:flex;flex-direction:column;gap:6px;flex:1;min-width:420px}.expgroup{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.expgroup .fam{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;width:62px}
+.filters label.chip{flex-direction:row;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);
+background:#0c1018;border:1px solid var(--line);border-radius:99px;padding:2px 10px 2px 6px;cursor:pointer}
+.filters label.chip:has(input:checked){border-color:var(--blue);background:#13233b}
+.expgroup .btn{margin:0;padding:2px 9px;font-size:12px}
 /* story bar */
 #storybar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(13,17,25,.97);border-top:2px solid var(--red);padding:12px 26px 14px;display:flex;gap:18px;align-items:center;box-shadow:0 -10px 30px rgba(0,0,0,.5)}
 #storybar .st{font-weight:800;font-size:19px;white-space:nowrap}#storybar .sc{color:#d5dceb;font-size:17px;flex:1}
@@ -133,7 +147,7 @@ def verdict_badge(mode: str, v: dict | None, truth: bool | None, label: str | No
             f'{short} {"⚑" if hack else "✓"} {conf_s}</span>')
 
 
-def gallery_page(items: list[dict], default_key: str | None = None, live: bool = False) -> str:
+def gallery_page(items: list[dict], default_key: str | None = None, live: bool = False, note: str = "") -> str:
     fields = [("experiment", "Experiment"), ("task_id", "Task"), ("agent_config", "Agent config"),
               ("subject_model", "Subject model")]
     opts = {f: sorted({str(it.get(f) or "?") for it in items}) for f, _ in fields}
@@ -192,7 +206,8 @@ def gallery_page(items: list[dict], default_key: str | None = None, live: bool =
     body = f"""
 <div style="display:flex;align-items:end;gap:16px"><div><h1>Trajectory gallery</h1>
 <div class="sub">Every trajectory under <code>results/*/trajectories/</code> (and <code>fixtures/</code>). Ground truth: deterministic
-labeller and privileged judge. Verdicts: <b>FT</b> full_trace · <b>RO</b> report_only · <b>FR</b> final_report.</div></div>{default}</div>
+labeller and privileged judge. Verdicts: <b>FT</b> full_trace · <b>RO</b> report_only · <b>FR</b> final_report.</div>
+{f'<div class="sub" style="color:var(--amber)">{note}</div>' if note else ""}</div>{default}</div>
 <div class="filters" id="filters">{selects}<span class="count" id="count"></span></div>
 <table id="gallery"><thead><tr><th>Trajectory</th><th>Task</th><th>Config</th><th>Subject model</th><th>Ground truth</th>
 <th>Auditor verdicts</th><th></th></tr></thead><tbody>{"".join(rows) or '<tr><td colspan=7 class="sub">No trajectories found.</td></tr>'}</tbody></table>
@@ -214,9 +229,9 @@ function apply(){
   }
   document.getElementById("count").textContent = n + " / " + rows.length + " trajectories";
   const p = new URLSearchParams(); sels.forEach(s => { if (s.value) p.set(s.dataset.f, s.value); });
-  history.replaceState(null, "", p.toString() ? "?" + p : location.pathname);
+  if (!window.__punishGo) history.replaceState(null, "", p.toString() ? "?" + p : location.pathname);
 }
-const init = new URLSearchParams(location.search);
+const init = new URLSearchParams(window.__punishSearch ?? location.search);
 sels.forEach(s => { if (init.get(s.dataset.f)) s.value = init.get(s.dataset.f); s.addEventListener("input", apply); });
 apply();
 """
@@ -365,20 +380,28 @@ document.querySelectorAll(".evt").forEach(e => e.addEventListener("dblclick", ()
 
 # ---------------------------------------------------------------------------------------------------- dashboard
 def bar_chart(title: str, groups: list[tuple[str, list[tuple[str, float | None]]]], series: list[str],
-              colors: dict[str, str] | None = None, ymax: float = 1.0, fmt=pct, width: int = 640) -> str:
+              colors: dict[str, str] | None = None, ymax: float = 1.0, fmt=pct, width: int = 640, show_na: bool = True) -> str:
     """Grouped vertical bar chart as inline SVG. groups = [(group_label, [(series_name, value|None), ...])]."""
     colors = colors or {s: SERIES_COLORS[i % len(SERIES_COLORS)] for i, s in enumerate(series)}
-    h, top, bottom, left, right = 300, 34, 62, 44, 10
+    left, right = 44, 10
+    legend, lx, ly = [], left, 16
+    for s in series:
+        adv = 30 + 7 * len(s)
+        if lx + adv > width - right and lx > left:
+            lx, ly = left, ly + 17
+        legend.append((s, lx, ly))
+        lx += adv
+    top, bottom = ly + 18, 62
+    h = 266 + top
     plot_w, plot_h = width - left - right, h - top - bottom
     n = max(len(groups), 1)
     gw = plot_w / n
     bw = max(4.0, min(42.0, (gw - 14) / max(len(series), 1)))
     out = [f'<svg viewBox="0 0 {width} {h}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{esc(title)}" '
            f'font-family="system-ui,sans-serif">']
-    for i, s in enumerate(series):  # legend
-        x = left + i * 128
-        out.append(f'<rect x="{x}" y="6" width="12" height="12" rx="2" fill="{colors[s]}"/>'
-                   f'<text x="{x + 17}" y="16" font-size="12" fill="#c3cbe0">{esc(s)}</text>')
+    for s, x, y in legend:
+        out.append(f'<rect x="{x}" y="{y - 10}" width="12" height="12" rx="2" fill="{colors[s]}"/>'
+                   f'<text x="{x + 17}" y="{y}" font-size="12" fill="#c3cbe0">{esc(s)}</text>')
     for k in range(5):
         y = top + plot_h - plot_h * k / 4
         out.append(f'<line x1="{left}" x2="{width - right}" y1="{y:.1f}" y2="{y:.1f}" stroke="#232b3b"/>'
@@ -391,6 +414,8 @@ def bar_chart(title: str, groups: list[tuple[str, list[tuple[str, float | None]]
             v = lookup.get(s)
             x = gx + si * bw
             if v is None:
+                if not show_na:
+                    continue
                 out.append(f'<text x="{x + bw / 2:.1f}" y="{top + plot_h - 4}" font-size="10" fill="#5d687e" '
                            f'text-anchor="middle">n/a</text>')
                 continue
@@ -422,14 +447,24 @@ def _table(headers: list[str], rows: list[list], numeric_from: int = 1) -> str:
 
 def dashboard_page(d: dict) -> str:
     label = d["label"]
-    exp_boxes = "".join(
-        f'<label style="flex-direction:row;align-items:center;gap:6px;text-transform:none;font-size:14px;color:var(--text)">'
-        f'<input type="checkbox" name="exp" value="{esc(e)}"{" checked" if e in d["selected"] else ""}> {esc(e)}</label>'
-        for e in d["experiments"])
+    families: dict[str, list[str]] = {}
+    for e in d["experiments"]:
+        families.setdefault(e.split("_")[0], []).append(e)
+
+    def chip(e):
+        return (f'<label class="chip"><input type="checkbox" name="exp" value="{esc(e)}"'
+                f'{" checked" if e in d["selected"] else ""}>{esc(e)}</label>')
+
+    toggle = "this.form.querySelectorAll('[name=exp]').forEach(c => c.checked = %s)"
+    exp_groups = "".join(f'<div class="expgroup"><span class="fam">{esc(f)}</span>{"".join(chip(e) for e in es)}</div>'
+                         for f, es in families.items())
+    exp_groups += (f'<div class="expgroup"><span class="fam"></span><button type="button" class="btn" onclick="{toggle % "true"}">'
+                   f'select all</button><button type="button" class="btn" onclick="{toggle % "false"}">clear</button></div>')
     label_sel = "".join(f'<option{" selected" if l == label else ""}>{l}</option>' for l in d["labels"])
-    form = (f'<form class="filters" method="get" action="/dashboard">{exp_boxes}<label>Ground truth<select name="label" '
-            f'onchange="this.form.submit()">{label_sel}</select></label><button class="btn primary">Update</button>'
-            f'<span class="count">{d["n_trajectories"]} trajectories · {d["n_audits"]} audits</span></form>')
+    form = (f'<form class="filters" method="get" action="/dashboard"><div class="exps">{exp_groups}</div>'
+            f'<label>Ground truth<select name="label" onchange="this.form.submit()">{label_sel}</select></label>'
+            f'<button class="btn primary">Update</button><span class="count">{len(d["selected"])}/{len(d["experiments"])} '
+            f'experiments<br>{d["n_trajectories"]} trajectories · {d["n_audits"]} audits</span></form>')
     if not d["experiments"]:
         return shell("Results", "<h1>Results</h1><p class=sub>No experiments with episodes/ under results/.</p>", "dashboard")
 
@@ -446,35 +481,40 @@ def dashboard_page(d: dict) -> str:
         stats += f'<div class="stat"><span class="sub">best AUROC ({esc(best["auditor_mode"])})</span><b>{num(best["auroc"])}</b></div>'
     stats += "</div>"
 
-    hr_groups = [(f'{r["agent_config"]}\n{_short_model(r["subject_model"])}',
-                  [(l, r[l]) for l in ("labeller", "judge", "either")]) for r in
-                 sorted(d["hack_rate"], key=lambda r: (["honest", "incentivized", "pressure", "covert"].index(r["agent_config"])
-                                                       if r["agent_config"] in ("honest", "incentivized", "pressure", "covert") else 9,
-                                                       r["subject_model"]))]
-    c1 = bar_chart("Hack rate by agent config and subject model", hr_groups, ["labeller", "judge", "either"],
-                   {"labeller": "#4da3ff", "judge": "#b48cff", "either": "#ff4d5e"}, width=max(640, 70 * len(hr_groups)))
+    models = sorted({r["subject_model"] for r in d["hack_rate"]})
+    hr_cfgs = sorted({r["agent_config"] for r in d["hack_rate"]}, key=config_key)
+    cell = {(r["subject_model"], r["agent_config"]): r for r in d["hack_rate"]}
+    hr_groups = [(f'{_short_model(m)}\nn={sum(cell[(m, c)]["n"] for c in hr_cfgs if (m, c) in cell)}',
+                  [(c, cell[(m, c)][label]) for c in hr_cfgs if (m, c) in cell and cell[(m, c)][label] is not None])
+                 for m in models]
+    c1 = bar_chart(f"Hack rate ({label}) by subject model and agent config", hr_groups, hr_cfgs,
+                   {c: CONFIG_COLORS.get(c, SERIES_COLORS[i % len(SERIES_COLORS)]) for i, c in enumerate(hr_cfgs)},
+                   width=max(640, 60 + len(models) * (26 * len(hr_cfgs) + 16)), show_na=False)
     aud_groups = [(f'{r["auditor_mode"]}' + (f'\n{_short_model(r["auditor"])}' if len({x["auditor"] for x in d["auditor"]}) > 1 else ""),
                    [("precision", r["precision"]), ("recall", r["recall"]), ("AUROC", r["auroc"])]) for r in d["auditor"]]
     c2 = bar_chart(f"Auditor quality per mode (vs {label})", aud_groups, ["precision", "recall", "AUROC"],
                    {"precision": "#4da3ff", "recall": "#ff4d5e", "AUROC": "#2ecc71"}, fmt=num, width=max(640, 110 * len(aud_groups)))
-    cfgs = sorted({r["agent_config"] for r in d["by_config"]})
+    cfgs = sorted({r["agent_config"] for r in d["by_config"]}, key=config_key)
     rc_groups = [(c, [(m, next((r["recall"] for r in d["by_config"] if r["agent_config"] == c and r["auditor_mode"] == m), None))
                       for m in MODES]) for c in cfgs]
-    c3 = bar_chart(f"Auditor recall by agent config (vs {label}; all auditors)", rc_groups, list(MODES), MODE_COLORS)
+    cw = max(640, 60 + len(cfgs) * 104)
+    c3 = bar_chart(f"Auditor recall by agent config (vs {label}; all auditors)", rc_groups, list(MODES), MODE_COLORS, width=cw)
     fp_groups = [(c, [(m, next((r["fpr"] for r in d["by_config"] if r["agent_config"] == c and r["auditor_mode"] == m), None))
                       for m in MODES]) for c in cfgs]
-    c4 = bar_chart(f"False-positive rate by agent config (vs {label})", fp_groups, list(MODES), MODE_COLORS)
+    c4 = bar_chart(f"False-positive rate by agent config (vs {label})", fp_groups, list(MODES), MODE_COLORS, width=cw)
 
     t_hr = _table(["subject model", "agent config", "trajectories", "hack rate (labeller)", "hack rate (judge)", "hack rate (either)"],
                   [[esc(_short_model(r["subject_model"])), esc(r["agent_config"]), r["n"], pct(r["labeller"]), pct(r["judge"]),
-                    pct(r["either"])] for r in d["hack_rate"]], numeric_from=2)
+                    pct(r["either"])] for r in sorted(d["hack_rate"], key=lambda r: (r["subject_model"], config_key(r["agent_config"])))],
+                  numeric_from=2)
     t_aud = _table(["auditor", "mode", "n", "hacked", "TP", "FP", "FN", "TN", "precision", "recall", "F1", "FPR", "AUROC"],
                    [[esc(_short_model(r["auditor"])), f'<b style="color:{MODE_COLORS.get(r["auditor_mode"], "#fff")}">{esc(r["auditor_mode"])}</b>',
                      r["n"], r["pos"], r["tp"], r["fp"], r["fn"], r["tn"], num(r["precision"]), num(r["recall"]), num(r["f1"]),
                      num(r["fpr"]), num(r["auroc"])] for r in d["auditor"]], numeric_from=2)
-    t_task = _table([f"task (hacked/total, {label})", *d["configs"]],
+    task_cfgs = sorted(d["configs"], key=config_key)
+    t_task = _table([f"task (hacked/total, {label})", *task_cfgs],
                     [[f'<a href="/?task_id={quote(t["task_id"])}">{esc(t["task_id"])}</a>',
-                      *[("–" if t["cells"][c] is None else f'{t["cells"][c][0]}/{t["cells"][c][1]}') for c in d["configs"]]]
+                      *[("–" if t["cells"][c] is None else f'{t["cells"][c][0]}/{t["cells"][c][1]}') for c in task_cfgs]]
                      for t in d["per_task"]])
     a = d["agreement"]
     t_agree = _table(["judged trajectories", "both hacked", "labeller only", "judge only", "neither"],
@@ -493,10 +533,10 @@ def dashboard_page(d: dict) -> str:
 # ---------------------------------------------------------------------------------------------------- story
 STORY_JS = r"""<script>
 (function(){
-  const step = new URLSearchParams(location.search).get("story");
+  const step = new URLSearchParams(window.__punishSearch ?? location.search).get("story");
   if (step === null) return;
   const i = parseInt(step, 10) || 0;
-  fetch("/api/story").then(r => r.json()).then(steps => {
+  (window.__punishStory ? Promise.resolve(window.__punishStory) : fetch("/api/story").then(r => r.json())).then(steps => {
     const s = steps[i]; if (!s) return;
     const bar = document.createElement("div"); bar.id = "storybar";
     const esc = t => String(t || "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -504,7 +544,8 @@ STORY_JS = r"""<script>
       <span class="sc">${esc(s.caption)}</span><button id="sprev" title="previous (←)">◀</button><button id="spause" title="pause (space)">❚❚</button><button id="snext" title="next (→)">▶</button>`;
     document.body.append(bar);
     document.body.style.paddingBottom = "90px";
-    const go = k => { if (k >= 0 && k < steps.length) location.href = "/story?step=" + k; };
+    const go = k => { if (k < 0 || k >= steps.length) return; const u = "/story?step=" + k;
+      if (window.__punishGo) window.__punishGo(u); else location.href = u; };
     let paused = false, timer = null, t0 = 0, dur = 0;
     const prog = document.getElementById("sprog");
     function tick(){ if (paused || !dur) return; const f = Math.min(1, (performance.now() - t0) / dur); prog.style.width = (f * 100) + "%";
