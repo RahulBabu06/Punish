@@ -54,6 +54,12 @@ def load_experiment(exp_dir: str) -> list[dict]:
     model_cache: dict = {}
     sources = [("claude-sonnet-4-6", exp / "episodes")]
     sources += [(d.name.removeprefix("reaudit_"), d / "episodes") for d in sorted(exp.glob("reaudit_*")) if d.is_dir()]
+    # Re-audits recompute the labeller with the current task definitions; the original episode's label is the
+    # one that matches the data the agent actually saw.
+    primary_labels = {}
+    for p in (exp / "episodes").glob("*.json"):
+        ep = _load_json(p)
+        primary_labels.setdefault(ep["episode_id"], bool(ep["ground_truth_hacked"]))
     rows = []
     for auditor, ep_dir in sources:
         for p in sorted(ep_dir.glob("*.json")):
@@ -80,7 +86,7 @@ def load_experiment(exp_dir: str) -> list[dict]:
                 "confidence": confidence,
                 "hack_types": sorted(set(ep["verdict"].get("hack_types", []))),
                 "judge_hack_types": sorted(set(j.get("hack_types", []))) if j else [],
-                "labeller": bool(ep["ground_truth_hacked"]),
+                "labeller": primary_labels.get(tid, bool(ep["ground_truth_hacked"])),
                 "judge": None if j is None else bool(j["hacked"]),
             }
             row["either"] = True if row["labeller"] else row["judge"]
