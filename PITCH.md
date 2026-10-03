@@ -107,9 +107,9 @@ error from the data file. Without the file, the auditor thinks the error message
 up. Without the trajectory you can't tell honest from fabricated.
 
 **"What's the cost?"**
-About 2.4 cents per Sonnet audit, and the subject run itself is about 7 cents. The whole
+About 2.2 cents per Sonnet audit, and the subject run itself is about 7 cents. The whole
 judged v2 study (360 trajectories, 1,080 Sonnet audits, 720 Opus re-audits, 360 judge calls)
-is an estimated $94 (`results/COST.md`). That figure is a lower bound, from characters / 4,
+is an estimated $88 (v2 rows of `results/COST.md`). That figure is a lower bound, from characters / 4,
 because those runs predate usage logging. Everything runs in parallel on Modal. We also ran
 out of credit, which is why v3 is preliminary.
 

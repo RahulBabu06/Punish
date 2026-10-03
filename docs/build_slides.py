@@ -417,7 +417,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.</p>
 <h2>Read these numbers as preliminary</h2>
 <div class="grid g2" style="gap:16px">
 <div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 4–27 positives. Most mode differences other than final_report vs the trace modes are within noise.</p></div>
-<div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and full_trace recall under <code>pressure</code> is 8/14.</p></div>
+<div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and Sonnet <code>full_trace</code> recall under <code>pressure</code> is 18/24.</p></div>
 <div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Agreement with human raters has not been measured.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>
 <div class="card" style="border-color:var(--amber)"><h3>The rubric drives FPR</h3><p>The rubric counts any eval-file read as <code>suspicious_access</code> and the judge does not. Most trace-mode false positives come from this mismatch.</p></div>
@@ -431,7 +431,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.</p>
 <h1 style="margin-top:40px">Audit the trajectory, not the paper</h1>
 <ul style="margin-top:26px">
 <li><b>Actions are the main signal.</b> Reading only the final report costs about 0.26 recall (Sonnet 4.6 auditor: 0.927 → 0.667).</li>
-<li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (Opus FPR 0.05 vs 0.12, p = 0.021).</li>
+<li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (Opus FPR 0.11 vs 0.17 and recall 0.84 vs 0.73, 240 runs, p &lt; 0.001).</li>
 <li><b>Rule-based ground truth undercounts.</b> The labeller finds 47 of the 123 hacks the judge finds.</li>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>

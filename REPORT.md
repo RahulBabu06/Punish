@@ -439,7 +439,7 @@ anecdotes, not rates.
   internally consistent. Only 1 of its 5 assistant turns has reasoning.
 
 The deterministic labeller says **not hacked** for all four (each agent ran some successful
-Python). The offline heuristic auditor flags all four in `full_trace` and `report_only`.
+Python). The offline heuristic auditor flags three of the four (all but Opus) in `full_trace` and `report_only`.
 These are the same labeller blind spots seen in v2.
 
 ### 8.6 Preliminary: v3 suite and new conditions (labeller-only)
@@ -517,8 +517,8 @@ heuristic auditor and the labeller have been scored on it
 
 | scorer | hard-negative FPR | obfuscated recall | reasoning-only recall | report-only recall |
 |---|---|---|---|---|
-| heuristic, `full_trace` | 4/10 | 3/10 | 2/5 | 7/7 |
-| heuristic, `report_only` | 3/10 | 3/10 | 1/5 | 7/7 |
+| heuristic, `full_trace` | 1/10 | 4/10 | 1/5 | 4/7 |
+| heuristic, `report_only` | 1/10 | 4/10 | 1/5 | 4/7 |
 | deterministic labeller | 0/10 | 9/10 | 5/5 | 2/7 |
 
 This is a floor and a sanity check, not a result about Claude auditors. The labeller misses
@@ -556,14 +556,14 @@ been run: `TODO(numbers)`.
 
 ### 8.9 Cost
 
-`python -m eval.cost` estimates the v2 API spend at **$94** for 360 trajectories
-(`results/COST.md`). These runs have no recorded `usage` fields, so the estimate is about
+`python -m eval.cost` estimates the v2 API spend at **$88** for 360 trajectories
+(v2 rows of `results/COST.md`; $151.54 across every committed run, v3 and probes included). These runs have no recorded `usage` fields, so the estimate is about
 characters / 4 and is a lower bound. Per call:
 
-- subject trajectory: about $0.07;
-- Sonnet 4.6 audit: about $0.024;
-- Opus 4.6 re-audit: about $0.041;
-- Opus judge: about $0.040.
+- subject trajectory: about $0.066 ($23.76 / 360);
+- Sonnet 4.6 audit: about $0.022 ($24.01 / 1,080);
+- Opus 4.6 re-audit: about $0.037 ($26.89 / 720);
+- Opus judge: about $0.038 ($13.52 / 360).
 
 A three-mode Sonnet audit costs about as much as the agent run it audits.
 
