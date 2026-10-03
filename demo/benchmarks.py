@@ -186,6 +186,65 @@ def cost(results_dir: Path) -> dict | None:
     return {"dirs": dirs, "roles": roles, "notes": notes, "sources": [_rel(results_dir / "COST.md")]}
 
 
+def _figures(md: Path, results_dir: Path) -> list[str]:
+    """SVG figures for a write-up: those next to it in results/<dir>/, or results/figures/<stem>_*.svg for top-level ones."""
+    if md.parent.resolve() == results_dir.resolve():
+        found = sorted((results_dir / "figures").glob(f"{md.stem.lower()}*.svg"))
+    elif md.parent.parent.resolve() == results_dir.resolve():
+        found = sorted(md.parent.glob("*.svg"))
+    else:
+        found = []
+    return [_rel(p) for p in found]
+
+
+def inline_svg(path: Path) -> str:
+    text = _text(path) or ""
+    text = re.sub(r"<\?xml[^>]*>|<!DOCTYPE[^>]*>", "", text)
+    text = re.sub(r"<script.*?</script>", "", text, flags=re.S | re.I)
+    text = re.sub(r"\son\w+=\"[^\"]*\"", "", text)
+    return text if text.lstrip().startswith("<svg") else ""
+
+
+def _num(cell: str) -> float | None:
+    m = re.search(r"-?\d+(?:\.\d+)?", cell or "")
+    if not m:
+        return None
+    return float(m.group(0)) / (100 if "%" in cell[: m.end() + 1] else 1)
+
+
+def cascade_chart(doc: dict) -> str:
+    t = next((t for t in doc["tables"] if {"policy", "recall", "FPR"} <= set(t["headers"])), None)
+    if not t:
+        return ""
+    h = t["headers"]
+    usd = "USD / trajectory" if "USD / trajectory" in h else None
+    groups = []
+    for r in t["rows"]:
+        row = dict(zip(h, r))
+        label = re.sub(r"^\(\w\)\s*", "", row["policy"]).replace(" only", "").replace(" -> ", "→")
+        cost_ = re.search(r"\$[\d.]+", row.get(usd, "")) if usd else None
+        groups.append((label + (f"\n{cost_.group(0)}/traj" if cost_ else ""),
+                       [("recall", _num(row["recall"])), ("FPR", _num(row["FPR"]))]))
+    return bar_chart("Default operating points: recall vs false-positive rate, and cost per trajectory", groups,
+                     ["recall", "FPR"], colors={"recall": "#2ecc71", "FPR": "#ff4d5e"}, width=640)
+
+
+def calibration_chart(doc: dict) -> str:
+    t = next((t for t in doc["tables"] if "ECE raw" in t["headers"]), None)
+    if not t:
+        return ""
+    h = t["headers"]
+    series = [s for s in ("ECE raw", "ECE platt", "ECE iso") if s in h]
+    groups = [(f'{_short_model(dict(zip(h, r))["auditor"])}\n{dict(zip(h, r)).get("mode", "")}',
+               [(s, _num(dict(zip(h, r))[s])) for s in series]) for r in t["rows"]]
+    top = max([v for _, vals in groups for _, v in vals if v] + [0.1])
+    return bar_chart("Expected calibration error by auditor and mode (lower is better, leave-one-task-out)", groups,
+                     series, ymax=round(top * 1.2, 2), fmt=lambda v: f"{v:.2f}", width=760)
+
+
+DOC_CHARTS = {"CASCADE.md": cascade_chart, "CALIBRATION.md": calibration_chart}
+
+
 def generic_docs(results_dir: Path) -> list[dict]:
     """Result write-ups we have no bespoke view for: new results/<dir>/*.md, new top-level results/*.md, EXTRA_DOCS."""
     paths: list[Path] = []
@@ -201,9 +260,11 @@ def generic_docs(results_dir: Path) -> list[dict]:
         tables = md_tables(text)
         if not tables:
             continue
-        out.append({"id": "doc-" + re.sub(r"[^a-z0-9]+", "-", _rel(p).lower()).strip("-"),
+        figs = _figures(p, results_dir)
+        out.append({"id": "doc-" + re.sub(r"[^a-z0-9]+", "-", _rel(p).lower()).strip("-"), "name": p.name,
                     "title": md_title(text, p.stem.replace("_", " ")), "intro": md_intro(text, 2),
-                    "tables": tables[:3], "more_tables": max(0, len(tables) - 3), "sources": [_rel(p)]})
+                    "tables": tables[:3], "more_tables": max(0, len(tables) - 3), "figures": figs,
+                    "sources": [_rel(p)] + figs})
     return out
 
 
@@ -440,6 +501,11 @@ def render_cost(sec: dict) -> str:
 
 def render_doc(doc: dict) -> str:
     body = "".join(f'<p class="sub">{md_inline(p)}</p>' for p in doc["intro"][1:])
+    chart = DOC_CHARTS.get(doc.get("name", ""), lambda d: "")(doc)
+    figs = "".join(f'<div class="fig">{s}</div>' for s in (inline_svg(ROOT / f) for f in doc.get("figures", [])) if s)
+    if chart or figs:
+        body += f'<div class="figs">{chart}{figs}</div>'
+
     for t in doc["tables"]:
         rows = [[md_inline(c) for c in r] for r in t["rows"][:MAX_GENERIC_ROWS]]
         more = len(t["rows"]) - len(rows)
@@ -461,6 +527,9 @@ BENCH_CSS = """
 @media(max-width:1100px){.bench .two{grid-template-columns:1fr}}
 .bench table{font-size:13px}.bench details summary{cursor:pointer;color:var(--dim);margin:14px 0 8px}
 .bench .neg{color:#ff8a8a}.bench .dim{color:var(--faint)}.bench .mm{color:var(--faint);font-size:11px;margin:0 2px 0 4px}
+.bench .figs{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin:12px 0}
+.bench .figs>.chart{flex:0 1 760px}.bench .fig{flex:1 1 560px;max-width:980px;background:#fff;border-radius:12px;padding:6px}
+.bench .fig svg{width:100%;height:auto;display:block}
 a.mx{text-decoration:none;white-space:nowrap}a.mx:hover .vb{filter:brightness(1.3)}
 .jump{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.jump a{cursor:pointer}
 """
