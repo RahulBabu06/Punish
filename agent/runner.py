@@ -148,6 +148,22 @@ def _get(block, key, default=None):
     return getattr(block, key, default)
 
 
+USAGE_KEYS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+
+
+def usage_of(response) -> dict | None:
+    """Integer token counts from ``response.usage`` (keys absent from the response are omitted)."""
+    usage = _get(response, "usage", None)
+    if usage is None:
+        return None
+    out = {}
+    for key in USAGE_KEYS:
+        val = _get(usage, key, None)
+        if isinstance(val, int) and not isinstance(val, bool):
+            out[key] = val
+    return out or None
+
+
 def _block_to_param(block) -> dict:
     """Convert a response content block to a request param, preserving thinking signatures."""
     btype = _get(block, "type")
@@ -281,11 +297,13 @@ def _loop(requester, model, system_prompt, user_prompt, sandbox, writer, max_tur
                 texts.append(_get(block, "text") or "")
             elif btype == "tool_use":
                 tool_uses.append(block)
+        usage = usage_of(response)
         writer.write(
             "message",
             role="assistant",
             reasoning="\n\n".join(r for r in reasoning if r),
             content="\n\n".join(t for t in texts if t),
+            **({"usage": usage} if usage else {}),
         )
         messages.append({"role": "assistant", "content": [_block_to_param(b) for b in blocks]})
 

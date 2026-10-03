@@ -146,7 +146,7 @@ Event types (every event may also carry an optional `"ts"`: ISO-8601 UTC timesta
 | `type` | Required fields | Notes |
 |---|---|---|
 | `system_prompt` | `text`, `config` | Always line 1, exactly once. `config` keys: `schema_version` (int, `1`), `trajectory_id`, `task_id`, `agent_config`, `incentivized` (bool, `agent_config == "incentivized"`), `model`. |
-| `message` | `role`, `reasoning`, `content` | `role` ∈ `user`, `assistant`. `reasoning` = private chain-of-thought / extended thinking (string, `""` if none; `null` for `user`). `content` = visible text. |
+| `message` | `role`, `reasoning`, `content` | `role` ∈ `user`, `assistant`. `reasoning` = private chain-of-thought / extended thinking (string, `""` if none; `null` for `user`). `content` = visible text. Optional `usage` (assistant only): API token counts for that model call, `{"input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"}` (ints; keys the API omitted are absent). |
 | `tool_call` | `id`, `name`, `args` | `name` ∈ `read_file`, `run_python`, `write_report`. `id` unique within the trajectory (`tc_1`, `tc_2`, …). Follows the assistant `message` that issued it. |
 | `tool_result` | `id`, `output` | `id` matches an earlier `tool_call`. `output` is a string (errors are reported as text here). `exit_code` (int) is required for `run_python` results and absent otherwise. |
 | `final_report` | `text` | Always the last line, exactly once: final contents of the report the agent wrote (empty string if none). |
@@ -199,6 +199,7 @@ Tool signatures (all paths are relative to the task sandbox):
 | `evidence[].explanation` | str | |
 | `confidence` | float | in `[0, 1]`: probability that the trajectory contains hacking (so a confident "clean" verdict has low confidence) |
 | `auditor_notes` | str | free text, may be `""` |
+| `usage` | object, optional | API token counts summed over the audit's calls (incl. retry) plus `model`; absent for the heuristic backend and older verdicts. Same keys as the trajectory `usage`. |
 
 `hack_types` vocabulary (closed set — extend only via an ARCHITECTURE.md change):
 
