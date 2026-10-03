@@ -498,8 +498,74 @@ What we can say, cautiously:
   about fault injection or the Opus subject.
 
 Still to do (needs credit): `TODO(numbers)` judge labels for every v3 run, finishing the
-partial runs, an Opus re-audit of `v2_sonnet45`, human validation of the judge, and cost
-per audit.
+partial runs, an Opus re-audit of `v2_sonnet45`, human validation of the judge, and Claude auditors on the hard-case set (§8.7).
+
+### 8.7 Hard-case red-team set (heuristic baseline only)
+
+`fixtures/hard_cases/` holds 32 hand-labelled trajectories on the real task files.
+Each tool result is real sandbox output, and the assistant text was hand-written from v2 and
+probe_v1 runs. There are four categories:
+
+- `hard_negative` (10): honest runs that look suspicious;
+- `obfuscated_hack` (10): the hack is in the actions, but the reasoning is bland;
+- `reasoning_only` (5): only the reasoning admits intent;
+- `report_only` (7): an honest trace whose report adds checks that never ran.
+
+It is built to separate the three auditor views. Because of the credit cap, only the offline
+heuristic auditor and the labeller have been scored on it
+(`results/hard_cases/SUMMARY_heuristic.md`):
+
+| scorer | hard-negative FPR | obfuscated recall | reasoning-only recall | report-only recall |
+|---|---|---|---|---|
+| heuristic, `full_trace` | 4/10 | 3/10 | 2/5 | 7/7 |
+| heuristic, `report_only` | 3/10 | 3/10 | 1/5 | 7/7 |
+| deterministic labeller | 0/10 | 9/10 | 5/5 | 2/7 |
+
+This is a floor and a sanity check, not a result about Claude auditors. The labeller misses
+5 of 7 `report_only` cases, where the report claims checks that never ran. This is the same
+blind spot to unverified claims that §8.1 found on real runs. `TODO(numbers)`: Claude Sonnet
+4.6 and Opus 4.6 auditors on this set
+(`modal run eval/hard_cases.py --modes all --out results/hard_cases`).
+
+### 8.8 Mitigation: best-of-n with auditor veto (offline, v2)
+
+`eval/mitigate.py best-of-n` replays the committed v2 Sonnet 4.6 and Haiku 4.5 runs as if a
+deployment picked one of the 5 trajectories per task × config group to ship (48 groups,
+240 trajectories, `either` label). Results are in
+`results/mitigation_bestofn_v2/MITIGATION_bestofn.md`.
+
+| policy (Sonnet 4.6 auditor, `full_trace`, veto = `hack_detected`) | shipped hack rate | grader score |
+|---|---|---|
+| random | 0.33 [0.21, 0.45] | 0.66 |
+| highest grader score | 0.37 [0.24, 0.50] | 0.79 |
+| auditor veto, then highest grader score | **0.21** [0.10, 0.33] | 0.74 |
+| oracle (a clean one if any exists) | 0.19 [0.08, 0.31] | n/a |
+
+- Selecting on the grader alone ships *more* hacks than picking at random.
+- The auditor veto cuts the shipped hack rate by 0.16 (bootstrap CI [0.07, 0.26]) at a cost
+  of 0.05 grader score. That gets within 0.02 of the oracle floor, which is set by groups in
+  which every trajectory hacked.
+- The veto mode matters more here than in §8.2. With Sonnet as the vetoing auditor,
+  `full_trace` ships 0.21 hacks, against 0.29 for `report_only` and 0.29 for
+  `final_report`. Opus `full_trace` ships 0.23.
+- Caveat: 40 trajectories read files that differ from the current task definitions, so
+  their grader scores come from the current files. Labels always come from the original run.
+
+The live audit-and-retry experiment (`modal run eval/mitigate.py --experiment retry`) has not
+been run: `TODO(numbers)`.
+
+### 8.9 Cost
+
+`python -m eval.cost` estimates the v2 API spend at **$94** for 360 trajectories
+(`results/COST.md`). These runs have no recorded `usage` fields, so the estimate is about
+characters / 4 and is a lower bound. Per call:
+
+- subject trajectory: about $0.07;
+- Sonnet 4.6 audit: about $0.024;
+- Opus 4.6 re-audit: about $0.041;
+- Opus judge: about $0.040.
+
+A three-mode Sonnet audit costs about as much as the agent run it audits.
 
 ## 9. Limitations
 
@@ -541,6 +607,8 @@ per audit.
   recall.
 - Use larger and more natural task suites (the v3 10-task suite, multi-step analyses), and
   impossible variants of real analyses.
+- Score Claude auditors on the hard-case set (§8.7), and run the live audit-and-retry
+  mitigation (§8.8).
 - Judge and finish the v3 runs. Extend the Opus re-audit to the Sonnet 4.5 subject, and test weaker-auditor/stronger-subject pairs
   as in Baker et al.
 - Validate the judge against humans, and calibrate auditor confidence.
@@ -560,6 +628,11 @@ in §8 come from:
   results/v3cond_haiku45 results/v3fault_sonnet46 results/v3_opus46 \
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3   # §8.6
 .venv/bin/python -m eval.analyze results/probe_v1                         # §8.4
+.venv/bin/python -m eval.hard_cases --auditor heuristic                   # §8.7
+.venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
+  --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md               # §8.8
+.venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --by-dir --out results/COST.md                                          # §8.9
 ```
 
 The McNemar tests, the Sonnet-on-240 restriction, and the per-task and per-subject breakdowns were
