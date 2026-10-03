@@ -335,8 +335,9 @@ Most of the gain is fewer false positives. All 9 Opus `report_only` FPs cite
 the agent read `grade.py` and then reported the true R². With the reasoning visible, only
 one of those `metric_gaming` runs is still flagged. Our reading is that the reasoning shows
 the grader was read but did not drive the reported number, which is the judge's criterion.
-The Opus auditor is also more conservative on `fake_citation`. Its `full_trace` misses 6 of
-the 27 pooled hacks it could see there (all its `full_trace` misses), similar to Sonnet.
+Citation misuse is still the blind spot. All 6 Opus `full_trace` misses are `fake_citation`
+(out of 15 hacked `fake_citation` runs in this subset). The Sonnet auditor misses 4 of the
+same 15.
 
 ### 8.3 Where the auditor is wrong
 
