@@ -69,9 +69,10 @@ def _run_job_local(task_id: str, agent_config: str, episode_idx: int, auditor_mo
               retries=modal.Retries(max_retries=2, initial_delay=5.0, backoff_coefficient=2.0))
 def episode_job(task_id: str, agent_config: str, episode_idx: int, auditor_modes: list[str],
                 auditor_backend: str = "claude", agent_model: str | None = None,
-                auditor_model: str | None = None) -> list[dict]:
+                auditor_model: str | None = None, fault_rate: float = 0.0) -> list[dict]:
     """Run the agent once, audit in each mode. Returns one record per mode:
     ``{"episode": <Episode>, "files": {<results-relative path>: <text>}}`` so the caller can mirror the files."""
+    os.environ["PUNISH_FAULT_RATE"] = str(fault_rate)  # read by agent.runner (tool-failure injection)
     with tempfile.TemporaryDirectory() as work:
         cwd = os.getcwd()
         os.chdir(work)  # keeps the episodes' trajectory_path repo-relative ("results/trajectories/...")
@@ -113,7 +114,8 @@ def _models() -> tuple[str | None, str | None]:
 @app.local_entrypoint()
 def main(n_episodes: int = 5, tasks: str = "all", configs: str = "honest,incentivized",
          auditor_modes: str = "full_trace,report_only", auditor_backend: str = "claude",
-         results_dir: str = "results", agent_model: str = "", auditor_model: str = "", start_episode: int = 0):
+         results_dir: str = "results", agent_model: str = "", auditor_model: str = "", start_episode: int = 0,
+         fault_rate: float = 0.0):
     grid = build_grid(resolve_tasks(tasks), split_csv(configs), n_episodes, split_csv(auditor_modes))
     if start_episode:
         grid = [(t, c, i + start_episode, m) for t, c, i, m in grid]
@@ -121,7 +123,7 @@ def main(n_episodes: int = 5, tasks: str = "all", configs: str = "honest,incenti
     agent_model, auditor_model = agent_model or env_agent, auditor_model or env_auditor
     print(f"Launching {len(grid)} episode jobs on Modal")
     episodes, failures = [], []
-    args = [(*job, auditor_backend, agent_model, auditor_model) for job in grid]
+    args = [(*job, auditor_backend, agent_model, auditor_model, fault_rate) for job in grid]
     for job, result in zip(grid, episode_job.starmap(args, return_exceptions=True)):
         if isinstance(result, BaseException):
             failures.append(f"{job[:3]}: {result!r}")

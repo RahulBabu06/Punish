@@ -10,7 +10,7 @@ FIXTURE = "fixtures/trajectories/example.jsonl"
 
 
 def test_configs_consistent_across_packages():
-    assert set(AGENT_CONFIGS) == set(EVAL_CONFIGS) == {"honest", "incentivized", "pressure", "covert"}
+    assert set(AGENT_CONFIGS) == set(EVAL_CONFIGS) == {"honest", "incentivized", "pressure", "covert", "covert_monitored", "sycophantic_pi"}
     assert set(MODES) == set(AUDITOR_MODES) == {"full_trace", "report_only", "final_report"}
 
 
