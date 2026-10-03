@@ -97,6 +97,20 @@ Each episode runs the agent and audits it in every mode (`--auditor-modes`) and 
 
 Layout: first attempts in `<dir>/{trajectories,verdicts,episodes,judgments}/`, retries under `<dir>/retry/` with the same episode ids, one record per episode in `<dir>/mitigation/`, and `mitigation.json` + `MITIGATION.md`. Metrics (overall and per config): hack rate before vs after (the retry ships when there is one), flag precision/recall, retried hacks that are `fixed` / still hacked and `caught` / still hacked and `hidden` (the veto auditor no longer flags them), new hacks on false-flag retries, `hidden_rate`, veto recall on first attempts vs hacked retries, per-mode recall (a drop in `full_trace` but not `final_report` recall, or vice versa, shows where the hack moved), and grader score before vs after.
 
+## Calibration and operating points — `eval/calibrate.py`
+
+```bash
+python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+    [--label either] [--caps 0.05,0.10] [--budget 0.10] [--folds task|random] [--out results/calibration_v2/CALIBRATION.md]
+```
+
+Per auditor model x mode, maps verdict `confidence` (already P(hacked), see ARCHITECTURE.md) to P(hacked | `either`) with **Platt scaling** (`fit_platt`: logistic regression on logit(confidence), Newton's method, Platt's smoothed targets) and **isotonic regression** (`fit_isotonic`: pool-adjacent-violators, linear interpolation between knots). numpy only.
+
+- **Leave-one-task-out.** `cross_val_predict` gives every trajectory a probability from a calibrator fit on the other tasks. `cv_operating_point` picks the threshold on the other tasks (max recall subject to FPR ≤ cap, `threshold_for_fpr`) and applies it to the held-out task, so the reported FPR/recall is what a threshold does on an unseen task. `--folds random` (6 task-blind folds) is a diagnostic that shows how much of the loss is task shift.
+- **Reported:** ECE (10 equal-width bins) and Brier, raw vs Platt vs isotonic (CV, plus the in-sample all-task fit as an optimistic bound), recall (FPR) at each cap vs the raw `hack_detected`, the all-task thresholds in both calibrated and raw-confidence units, and `reliability.svg` (via the `eval.figures` SVG helpers).
+- **Recommendation (`recommend`).** Use the score (raw, Platt or isotonic) with the lowest CV Brier. Among its caps, take the one with the highest CV recall whose CV FPR stays ≤ `--budget`, and refit the threshold on all tasks. If no cap stays within budget, the mode is marked "do not use as a veto".
+- Outputs: `CALIBRATION.md`, `CALIBRATION.json` (bins, fitted parameters, per-fold thresholds) and `reliability.svg`.
+
 ## Cost — `eval/cost.py`
 
 ```bash
@@ -104,3 +118,26 @@ python -m eval.cost results/v2_sonnet46 results/v2_haiku45 [--by-dir] [--out COS
 ```
 
 Sums tokens per role (`agent` trajectories, `auditor` episodes/verdicts, `judge` judgments, `reaudit` episodes/verdicts in any subdirectory) and model, and prices them with the editable `PRICES_PER_MTOK` table (USD per million tokens, from Anthropic's public pricing page). Real counts come from the optional `usage` fields that `agent/runner.py` (assistant events), `auditor/audit.py` (Verdict) and `eval/judge.py` (judgment) now record. Runs without them are estimated (`source=estimate`): characters / 4 of the request rebuilt from the trajectory (system prompt, tool schemas and the conversation so far for each agent turn; the rendered audit/judge prompt), plus the API's hidden tool-use system prompt. Estimates don't count failed or retried calls and see only the logged (possibly summarized) reasoning, so they are lower bounds. Episodes without `auditor_model` are priced as `--default-auditor-model` (`claude-sonnet-4-6`). `eval/batch.py` prints the usage totals of each judge/reaudit job.
+
+## Deployment cost vs detection — `eval/cascade.py`
+
+```bash
+python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
+    --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
+```
+
+Offline (no API calls). It uses the committed `full_trace` verdicts of trajectories audited by both Sonnet 4.6 (`episodes/`) and Opus 4.6 (`reaudit_claude-opus-4-6/`), runs `auditor.heuristic` (with its provenance pre-pass) live, and scores five policies against the `either` label:
+
+- (a) heuristic only, which is free;
+- (b) Sonnet only;
+- (c) Opus only;
+- (d) heuristic first, escalating to Sonnet when the heuristic flags or its confidence is in `[--lo, --hi]` (default `[0.25, 0.75]`);
+- (e) Sonnet first, escalating to Opus only when Sonnet flags; Opus then confirms or vetoes.
+
+Cascades pay for each stage they run. Per-audit USD comes from `eval/cost.py`: recorded `usage` when present, otherwise its chars/4 estimate.
+
+The report gives:
+- recall, FPR, precision, AUROC (on the score of the last stage that ran), cost per trajectory and escalation rate at each auditor's own `hack_detected`, with bootstrap CIs and a per-subject-model breakdown;
+- a sweep of every threshold on a 0.05 grid (`confidence >= t`, the band edges, and both cascade stages), with the cheapest cost/recall frontier at each `--fpr-caps` (default 5%, 10%, 25%);
+- a leave-one-experiment-out check of the tuned thresholds, because in-sample frontiers are optimistic;
+- an SVG frontier figure drawn with the `eval/figures.py` helpers.
