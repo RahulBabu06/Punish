@@ -85,6 +85,21 @@ def _write(path: str, obj: dict) -> None:
     Path(path).write_text(json.dumps(obj, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _print_usage(job: str, usages: list[dict]) -> None:
+    """Print the summed API token usage (the optional ``usage`` field) of a batch job's outputs."""
+    totals: dict[str, dict[str, int]] = {}
+    for u in usages:
+        if not isinstance(u, dict):
+            continue
+        t = totals.setdefault(str(u.get("model", "?")), {"calls": 0})
+        t["calls"] += 1
+        for k, v in u.items():
+            if k != "model" and isinstance(v, int):
+                t[k] = t.get(k, 0) + v
+    for model, t in sorted(totals.items()):
+        print(f"{job} usage {model}: " + ", ".join(f"{k}={v}" for k, v in t.items()))
+
+
 def _save_judgments(results_dir: str, paths: list[Path], results) -> int:
     from eval.judge import judgment_path_for
 
@@ -95,6 +110,7 @@ def _save_judgments(results_dir: str, paths: list[Path], results) -> int:
             print(f"FAILED judge {p.name}: {r!r}")
             continue
         _write(judgment_path_for(results_dir, r["trajectory_id"] or p.stem), r)
+    _print_usage("judge", [r.get("usage") for r in results if isinstance(r, dict)])
     return failed
 
 
@@ -110,6 +126,7 @@ def _save_reaudits(out_dir: str, paths: list[Path], results) -> int:
         for ep in r:
             _write(verdict_path_for(ep["episode_id"], ep["auditor_mode"], "claude", out_dir), ep["verdict"])
             _write(episode_path_for(ep["episode_id"], ep["auditor_mode"], "claude", out_dir), ep)
+    _print_usage("reaudit", [ep["verdict"].get("usage") for r in results if isinstance(r, list) for ep in r])
     return failed
 
 

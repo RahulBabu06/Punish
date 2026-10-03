@@ -372,6 +372,23 @@ def _get(obj, key, default=None):
     return getattr(obj, key, default)
 
 
+USAGE_KEYS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+
+
+def add_usage(total: dict, response) -> dict:
+    """Add ``response.usage`` integer token counts into ``total`` (in place) and return it."""
+    usage = _get(response, "usage", None)
+    for key in USAGE_KEYS:
+        val = _get(usage, key, None) if usage is not None else None
+        if isinstance(val, int) and not isinstance(val, bool):
+            total[key] = total.get(key, 0) + val
+    return total
+
+
+def _with_usage(verdict: dict, usage: dict, model: str) -> dict:
+    return {**verdict, "usage": {"model": model, **usage}} if usage else verdict
+
+
 def _find_tool_use(response):
     for block in _get(response, "content", None) or []:
         if _get(block, "type") == "tool_use" and _get(block, "name") == SUBMIT_VERDICT_TOOL["name"]:
@@ -414,6 +431,7 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
     messages = [{"role": "user", "content": prompts.build_user_message(render_trajectory(events, mode), mode, n_lines)}]
     verdict: dict = {}
     problems: list[str] = []
+    usage: dict = {}
     for attempt in range(2):
         response = client.messages.create(
             model=model,
@@ -423,6 +441,7 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
             tool_choice={"type": "tool", "name": SUBMIT_VERDICT_TOOL["name"]},
             messages=messages,
         )
+        add_usage(usage, response)
         block = _find_tool_use(response)
         if block is None:
             verdict = {}
@@ -431,7 +450,7 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
             verdict = _complete(_get(block, "input"), trajectory_id, mode)
             problems = validate_verdict(verdict, n_lines)
         if not problems:
-            return verdict
+            return _with_usage(verdict, usage, model)
         if attempt == 0:
             retry_text = prompts.build_retry_message(problems, n_lines)
             messages.append({"role": "assistant", "content": _assistant_turn(response)})
@@ -444,7 +463,7 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
                 )
             else:
                 messages.append({"role": "user", "content": retry_text})
-    return repair_verdict(verdict, n_lines, trajectory_id, mode)
+    return _with_usage(repair_verdict(verdict, n_lines, trajectory_id, mode), usage, model)
 
 
 def default_out_path(trajectory_id: str) -> Path:
