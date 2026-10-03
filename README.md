@@ -143,6 +143,8 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.monitor_attacks --auditor heuristic --modes all
 .venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
   --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
+.venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/calibration_v2/CALIBRATION.md
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -161,6 +163,7 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/COST.md` | estimated API cost of every committed run (`eval.cost`; v2 total about $88) |
 | `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
 | `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
+| `results/calibration_v2/` | leave-one-task-out calibration and FPR-capped thresholds for each auditor and mode (`eval.calibrate`) |
 | `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |

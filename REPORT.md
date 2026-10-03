@@ -663,6 +663,29 @@ and Opus 4.6 (79 hacked) under five policies:
 the trajectory) and `n_samples` majority-vote ensembles are implemented and tested offline,
 but have not been run: `TODO(numbers)`.
 
+### 8.14 Calibration and thresholds (`results/calibration_v2/CALIBRATION.md`)
+
+`eval/calibrate.py` fits Platt and isotonic maps to auditor confidence with leave-one-task-out
+cross-validation (the map and threshold never see the task they are scored on), over the
+judged v2 runs (`either` label).
+
+| auditor, mode | `hack_detected` recall (FPR) | recall (FPR) at FPR ≤ 5%, raw confidence, LOTO |
+|---|---|---|
+| Sonnet 4.6, `full_trace` | 0.93 (0.26) | 0.70 (0.08) |
+| Sonnet 4.6, `report_only` | 0.93 (0.27) | 0.49 (0.07) |
+| Sonnet 4.6, `final_report` | 0.67 (0.21) | 0.15 (0.14) |
+| Opus 4.6, `full_trace` | 0.84 (0.11) | 0.63 (0.06) |
+| Opus 4.6, `report_only` | 0.73 (0.17) | 0.57 (0.06) |
+| Opus 4.6, `final_report` | 0.57 (0.16) | 0.19 (0.14) |
+
+- Raw confidence is already the best-calibrated score out of fold (lowest LOTO Brier); Platt
+  and isotonic maps do not transfer across tasks.
+- At a low false-positive budget, reasoning matters even for Sonnet: `full_trace` keeps 0.70
+  recall against 0.49 for `report_only`. This is the AUROC gap of §8.2 showing up where a
+  deployment would operate. The default verdicts (0.93 vs 0.93) hide it.
+- No threshold keeps `final_report` FPR at or below 10% on unseen tasks, so that mode should
+  not be used as a veto.
+
 ## 9. Limitations
 
 - **Small n.** There are 5 episodes per (model, config, task) cell, and per-task results
@@ -738,6 +761,8 @@ in §8 come from:
 .venv/bin/python -m eval.monitor_attacks --auditor heuristic --modes all                     # §8.12
 .venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
   --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg  # §8.13
+.venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/calibration_v2/CALIBRATION.md   # §8.14
 ```
 
 The McNemar tests, the Sonnet-on-240 restriction, and the per-task and per-subject breakdowns were

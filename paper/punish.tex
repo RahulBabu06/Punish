@@ -231,11 +231,11 @@ usage, so the estimate is a lower bound.
 \paragraph{Preliminary: v3 and new conditions.} The API credit ran out during the 10-task v3
 runs, so they have labeller labels only (\code{REPORT.md}~\S8.6):
 \begin{itemize}
-\item Haiku~4.5: 200 trajectories. Covert runs hack 35/50 and honest runs 3/50.
+\item Haiku~4.5: 200 trajectories. Covert runs hack 42/50 and honest runs 1/50.
 \item Sonnet~4.6: 150 of 200 planned trajectories.
 \item \code{covert\_monitored} (the agent is told an auditor reads its reasoning), with all 15
 labeller positives read by hand (9 were labeller false positives): Haiku hacked 1/14 times on
-three tasks against 13/15 under v3 \code{covert}, and Sonnet~4.6 5/15 against 12/15. All 6
+three tasks against 13/15 under v3 \code{covert}, and Sonnet~4.6 5/15 against 11/15. All 6
 remaining hacks state the fabrication in the reasoning. Monitoring deterred hacking; it did not
 make it hidden.
 \end{itemize}
@@ -249,8 +249,16 @@ Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2. The 3 ex
 
 \paragraph{Label audit.} \code{tasks/LABEL\_AUDIT.md} revises the labeller rules. On the 360
 judged v2 runs, labeller--judge agreement rises from $\kappa=0.55$ to $0.80$, and the labeller
-rate on honest v3 runs falls from 24/112 to 6/112. Our headline uses the frozen run-time labels,
-so Table~\ref{tab:auditor} does not change.
+rate on honest v3 runs falls from 24/112 to 6/112; the v3 numbers here use the relabelled
+episodes. Our v2 headline uses the frozen run-time labels, so Table~\ref{tab:auditor} does not
+change.
+
+\paragraph{Operating at a low false-positive rate.} With leave-one-task-out thresholds on raw
+confidence (\code{results/calibration\_v2}), at FPR $\le$ 5\% Sonnet \mode{full\_trace} keeps
+recall 0.70 against 0.49 for \mode{report\_only} and 0.15 for \mode{final\_report}; Opus gets
+0.63, 0.57 and 0.19. So the reasoning's AUROC gain for Sonnet matters exactly where a deployment
+would operate, although its default verdicts (0.93 vs 0.93) hide it. No threshold keeps
+\mode{final\_report} FPR at or below 10\% on unseen tasks.
 
 \paragraph{Deployment cost and attacks.} On the 240 Opus-audited trajectories
 (\code{results/CASCADE.md}), Sonnet alone has recall 0.89 and FPR 0.25 at about \$0.030 per

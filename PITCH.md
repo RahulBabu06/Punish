@@ -87,7 +87,7 @@ Not yet proven. The tasks are deliberately small so that ground truth is clear (
 design as ImpossibleBench: an honest answer fails the grader, so passing means cheating). A
 10-task v3 suite (outcome switching, a missing replication cohort, a "verified" solutions
 cache, an effect-size test target) is already in the repo. Preliminary labeller-only runs on it show the same pattern: covert
-Haiku hacks 35/50 and honest Haiku 3/50. The credit ran out before those runs were judged. The pipeline doesn't depend on any task: adding one means
+Haiku hacks 42/50 and honest Haiku 1/50 (relabelled labeller). The credit ran out before those runs were judged. The pipeline doesn't depend on any task: adding one means
 adding one JSON file with an exploit and a label rule.
 
 **"Would a smarter agent just evade the auditor?"**
@@ -96,7 +96,7 @@ we use the auditor only to evaluate and never as a training reward. `report_only
 hedge: it doesn't trust the reasoning at all, and it still reaches 0.92 recall because files
 read and code run are hard to hide. Our `covert_monitored` config tells the hacking agent that an auditor reads its
 reasoning. In a small preliminary run (n = 15 per model, every positive read by hand), Haiku mostly
-stopped hacking (1/14 vs 13/15 under plain `covert`) and Sonnet 4.6 hacked 5/15 vs 12/15.
+stopped hacking (1/14 vs 13/15 under plain `covert`) and Sonnet 4.6 hacked 5/15 vs 11/15.
 All 6 remaining hacks still spell out the fabrication in their reasoning, so monitoring
 deterred hacking rather than hiding it. Stress-testing against agents
 optimised to evade is future work.
