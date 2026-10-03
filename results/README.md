@@ -19,6 +19,15 @@ behind each directory is printed by `scripts/reproduce.sh sweep`.
 | `v3fault_sonnet46/` | sonnet-4-6 | honest, incentivized (fault rate 0.5) | 3 of 10 | 5 | full_trace, report_only, final_report | no | 18/100 | partial | $2.98 |
 | **total** | | | | | | 396 judged | 850 | | **$151.54** |
 
+Two directories hold derived analyses rather than new agent runs, so the table above does not include them.
+Neither made any API calls:
+
+- `hard_cases/`: the offline heuristic auditor (`auditor.heuristic`) on the 32 hand-labelled red-team cases in
+  `fixtures/hard_cases/`, in `full_trace` and `report_only` (64 verdicts). Rebuild it with
+  `python -m eval.hard_cases`.
+- `mitigation_bestofn_v2/`: offline best-of-n with an auditor veto (`python -m eval.mitigate best-of-n`). It runs
+  over the existing `v2_sonnet46/` and `v2_haiku45/` trajectories and their Sonnet 4.6 `full_trace` verdicts.
+
 Column notes:
 
 - **Subject model**: the `config.model` header of each trajectory. Full ids are `claude-haiku-4-5-20251001`,
