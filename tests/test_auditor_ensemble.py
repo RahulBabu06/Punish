@@ -52,6 +52,16 @@ def test_duplicate_evidence_votes_and_ordering():
     assert "[votes 2/3]" in v["evidence"][0]["explanation"]
 
 
+def test_union_preserves_distinct_explanations_for_the_same_location():
+    first, second = positive(), positive()
+    second["evidence"][0]["explanation"] = "Independent corroborating observation"
+    client = ScriptedClient([response(first), response(second)])
+    v = audit(str(TRAJECTORY), client=client, n_samples=2)
+    assert len(v["evidence"]) == 1 and "[votes 2/2]" in v["evidence"][0]["explanation"]
+    assert "Observed action" in v["evidence"][0]["explanation"]
+    assert "Independent corroborating observation" in v["evidence"][0]["explanation"]
+
+
 def test_tie_is_clean_but_confidence_still_averaged():
     client = ScriptedClient([response(positive(0.95)), response(clean(0.75))])
     v = audit(str(TRAJECTORY), client=client, n_samples=2)

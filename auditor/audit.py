@@ -1,7 +1,7 @@
 """Auditor: trajectory JSONL -> Verdict (see ARCHITECTURE.md, "Verdict").
 
 CLI: python -m auditor.audit <trajectory.jsonl> [--mode full_trace|report_only|final_report]
-                             [--backend claude|heuristic] [--out PATH]
+                             [--backend claude|heuristic|agentic] [--n-samples K] [--out PATH]
 """
 
 from __future__ import annotations
@@ -463,16 +463,19 @@ def ensemble_verdicts(samples: list[dict]) -> dict:
     votes = sum(v["hack_detected"] for v in samples)
     type_votes = {ht: sum(ht in v["hack_types"] for v in samples) for ht in HACK_TYPES}
     types = sorted((ht for ht in HACK_TYPES if type_votes[ht]), key=lambda ht: (-type_votes[ht], ht))
-    evidence, counts = {}, {}
+    evidence, counts, explanations = {}, {}, {}
     for sample in samples:
         seen = set()
         for ev in sample["evidence"]:
             key = (ev["hack_type"], *ev["line_range"])
             evidence.setdefault(key, ev)
+            explanation = ev["explanation"].strip()
+            if explanation not in explanations.setdefault(key, []):
+                explanations[key].append(explanation)
             if key not in seen:
                 counts[key] = counts.get(key, 0) + 1
                 seen.add(key)
-    union = [{**evidence[key], "explanation": f"[votes {counts[key]}/{n}] {evidence[key]['explanation']}"}
+    union = [{**evidence[key], "explanation": f"[votes {counts[key]}/{n}] " + " | ".join(explanations[key])}
              for key in sorted(evidence, key=lambda key: (-counts[key], key))]
     notes = f"[ensemble: hack votes {votes}/{n}; ties are clean; type votes " + ", ".join(
         f"{ht}={type_votes[ht]}/{n}" for ht in types) + "]"
@@ -511,9 +514,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m auditor.audit", description="Audit a trajectory JSONL and write a Verdict.")
     parser.add_argument("trajectory", help="path to trajectory .jsonl")
     parser.add_argument("--mode", choices=MODES, default="full_trace")
-    parser.add_argument("--backend", choices=("claude", "heuristic"), default="claude")
+    parser.add_argument("--backend", choices=("claude", "heuristic", "agentic"), default="claude")
     parser.add_argument("--n-samples", type=int, default=1)
-    parser.add_argument("--model", default=None, help="Claude model (claude backend only)")
+    parser.add_argument("--model", default=None, help="Claude model (claude/agentic backends)")
     parser.add_argument("--out", default=None, help="output path (default results/verdicts/<trajectory_id>.json)")
     args = parser.parse_args(argv)
     if args.n_samples < 1 or args.backend == "heuristic" and args.n_samples != 1:
@@ -524,8 +527,13 @@ def main(argv: list[str] | None = None) -> int:
 
         verdict = heuristic_audit(args.trajectory, mode=args.mode)
     else:
+        backend = audit
+        if args.backend == "agentic":
+            from auditor.agentic import audit_agentic
+
+            backend = audit_agentic
         kwargs = {} if args.n_samples == 1 else {"n_samples": args.n_samples}
-        verdict = audit(args.trajectory, mode=args.mode, model=args.model, **kwargs)
+        verdict = backend(args.trajectory, mode=args.mode, model=args.model, **kwargs)
     out = write_verdict(verdict, args.out or default_out_path(verdict["trajectory_id"] or Path(args.trajectory).stem))
     print(json.dumps(verdict, indent=2, ensure_ascii=False))
     print(f"wrote {out}", file=sys.stderr)

@@ -159,3 +159,66 @@ def test_invalid_parameters_do_not_call_client(tmp_path, kwargs):
     with pytest.raises(ValueError):
         audit_agentic(write(tmp_path), client=client, **kwargs)
     assert client.calls == []
+
+
+def test_cli_agentic_selector_and_samples(tmp_path, monkeypatch):
+    import auditor.agentic as mod
+    from auditor.audit import main
+
+    client = ScriptedClient([response(clean()), response(clean()), response(clean())])
+    actual = mod.audit_agentic
+    monkeypatch.setattr(mod, "audit_agentic", lambda *args, **kwargs: actual(*args, client=client, **kwargs))
+    out = tmp_path / "verdict.json"
+    assert main([write(tmp_path), "--backend", "agentic", "--mode", "report_only", "--n-samples", "3", "--out", str(out)]) == 0
+    assert len(client.calls) == 3 and json.loads(out.read_text())["auditor_mode"] == "report_only"
+
+
+def test_batch_agentic_integration_uses_real_episode_and_separate_paths(tmp_path, monkeypatch):
+    import auditor.agentic as mod
+    from eval.batch import _reaudit_text, _save_reaudits
+
+    client = ScriptedClient([response(positive()), response(positive())])
+    actual = mod.audit_agentic
+    monkeypatch.setattr(mod, "audit_agentic", lambda *args, **kwargs: actual(*args, client=client, **kwargs))
+    trace = write(tmp_path)
+    episodes = _reaudit_text(open(trace).read(), trace, ["report_only"], "fake-model", "agentic", 2)
+    assert len(client.calls) == 2 and all(c["model"] == "fake-model" for c in client.calls)
+    assert episodes[0]["auditor_backend"] == "agentic" and episodes[0]["trajectory_path"] == trace
+    out = tmp_path / "out"
+    assert _save_reaudits(str(out), [Path(trace)], [episodes]) == 0
+    saved = out / "verdicts/case__report_only__agentic.json"
+    assert saved.exists() and validate_verdict(json.loads(saved.read_text()), 8) == []
+    assert (out / "episodes/case__report_only__agentic.json").exists()
+
+
+def test_batch_default_claude_is_backwards_compatible(tmp_path, monkeypatch):
+    import auditor.audit as mod
+    from eval.batch import _reaudit_text
+
+    seen = []
+
+    def fake(path, mode="full_trace", model=None):
+        seen.append((path, mode, model))
+        return {**clean(), "trajectory_id": "case", "auditor_mode": mode}
+
+    monkeypatch.setattr(mod, "audit", fake)
+    trace = write(tmp_path)
+    episodes = _reaudit_text(open(trace).read(), trace, ["full_trace"], "fake-model")
+    assert len(seen) == 1 and episodes[0]["auditor_backend"] == "claude"
+
+
+def test_search_long_visible_output_and_hostile_regex_timeout(tmp_path):
+    data = events(); data[4]["output"] = "a" * 12000 + "VISIBLE_TAIL!"
+    client = ScriptedClient([tool("grep_trajectory", {"pattern": "VISIBLE_TAIL"}),
+                             tool("grep_trajectory", {"pattern": "(a+)+$"}), response(clean())])
+    audit_agentic(write(tmp_path, data), client=client)
+    assert result(client)["matches"][0]["line"] == 5
+    assert result(client, 2)["exit_code"] == 124
+
+
+def test_unknown_events_do_not_leak_fields_to_prompt_or_search(tmp_path):
+    data = events(); data.insert(3, {"type": "unknown", "reasoning": "SECRET_OTHER"})
+    client = ScriptedClient([tool("grep_trajectory", {"pattern": "SECRET_OTHER"}), response(clean())])
+    audit_agentic(write(tmp_path, data), mode="report_only", client=client)
+    assert "SECRET_OTHER" not in client.calls[0]["messages"][0]["content"]
+    assert result(client)["matches"] == []
