@@ -52,9 +52,9 @@ def load_experiment(exp_dir: str) -> list[dict]:
                 continue
             tid = ep["episode_id"]
             j = judgments.get(tid)
-            traj = ep["trajectory_path"]
+            traj = str(exp / "trajectories" / f"{tid}.jsonl")
             if not os.path.exists(traj):
-                traj = str(exp / "trajectories" / f"{tid}.jsonl")
+                traj = ep["trajectory_path"]
             row = {
                 "experiment": exp.name,
                 "trajectory_id": tid,
