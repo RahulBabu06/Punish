@@ -130,6 +130,11 @@ commands rebuild every table in `REPORT.md` offline:
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3
 # REPORT §8.4
 .venv/bin/python -m eval.analyze results/probe_v1
+# REPORT §8.7–8.9: hard-case set (heuristic), best-of-n veto replay, API cost estimate
+.venv/bin/python -m eval.hard_cases --auditor heuristic
+.venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
+  --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
+.venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --by-dir --out results/COST.md
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -143,6 +148,9 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/v3cond_{sonnet46,haiku45}/` | `covert_monitored` and `sycophantic_pi`, 27 and 28 trajectories (partial, labeller only) |
 | `results/v3fault_sonnet46/` | 50% tool-failure injection, 18 trajectories (partial, labeller only) |
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
+| `results/hard_cases/` | 32 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
+| `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
+| `results/COST.md` | estimated API cost of the v2 runs (`eval.cost`) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 | `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |

@@ -107,9 +107,18 @@ error from the data file. Without the file, the auditor thinks the error message
 up. Without the trajectory you can't tell honest from fabricated.
 
 **"What's the cost?"**
-One auditor call per trajectory per mode (Sonnet 4.6), plus one Opus judge call for
-evaluation only. The whole v2 grid runs in parallel on Modal (`modal run eval/sweep.py`).
-`TODO(numbers)`: wall-clock and $ per audit from the coordinator's runs.
+About 2.4 cents per Sonnet audit, and the subject run itself is about 7 cents. The whole
+judged v2 study (360 trajectories, 1,080 Sonnet audits, 720 Opus re-audits, 360 judge calls)
+is an estimated $94 (`results/COST.md`). That figure is a lower bound, from characters / 4,
+because those runs predate usage logging. Everything runs in parallel on Modal. We also ran
+out of credit, which is why v3 is preliminary.
+
+**"What would you actually do with it?"**
+Use it as a veto. Replaying v2 offline, if you ship the trajectory with the best grader
+score, 37% of what you ship is a hack, which is worse than picking at random (33%). Veto
+anything the `full_trace` auditor flags, then take the best score, and that drops to 21%,
+close to the 19% floor where every candidate hacked. It costs 0.05 of grader score
+(`REPORT.md` §8.8).
 
 **"How does this differ from SHADE-Arena / ImpossibleBench / CoT Red-Handed?"**
 Same agent-plus-monitor idea, applied to scientific analysis. Our hacks (p-hacking, metric
