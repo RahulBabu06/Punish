@@ -1,0 +1,177 @@
+"""Post-hoc batch jobs over an existing results directory, on Modal (parallel) or locally.
+
+  modal run eval/batch.py --results-dir results/v2_sonnet46 --job judge
+  modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit --auditor-model claude-opus-4-6 \
+      --auditor-modes full_trace,report_only,final_report --out-dir results/v2_sonnet46/opus_auditor
+  python -m eval.batch --local --results-dir ... --job judge
+
+judge   -> <results-dir>/judgments/<trajectory_id>.json (privileged ground truth, eval/judge.py)
+reaudit -> <out-dir>/{verdicts,episodes}/... with another auditor model (Episode trajectory_path
+           still points at <results-dir>/trajectories/...)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import tempfile
+import traceback
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+import modal  # noqa: E402
+
+app = modal.App("punish-batch")
+image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .pip_install("anthropic")
+    .add_local_python_source("tasks", "agent", "auditor", "eval", ignore=["**/__pycache__/**", "**/*.pyc"])
+)
+
+
+def _judge_text(trajectory_text: str, model: str | None) -> dict:
+    from eval.judge import judge
+    from tasks.registry import load_task
+
+    with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False, encoding="utf-8") as f:
+        f.write(trajectory_text)
+        path = f.name
+    try:
+        first = json.loads(trajectory_text.splitlines()[0])
+        return judge(path, load_task(first["config"]["task_id"]), model=model)
+    finally:
+        os.unlink(path)
+
+
+def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], model: str | None) -> list[dict]:
+    from eval.run_episode import audit_existing
+
+    out = []
+    with tempfile.TemporaryDirectory() as work:
+        path = os.path.join(work, os.path.basename(trajectory_path))
+        Path(path).write_text(trajectory_text, encoding="utf-8")
+        for mode in modes:
+            ep = audit_existing(path, mode, "claude", results_dir=os.path.join(work, "out"), auditor_model=model)
+            ep["trajectory_path"] = trajectory_path
+            ep["auditor_model"] = model
+            out.append(ep)
+    return out
+
+
+@app.function(image=image, secrets=[modal.Secret.from_name("anthropic")], timeout=900,
+              retries=modal.Retries(max_retries=2, initial_delay=5.0))
+def judge_job(trajectory_text: str, model: str | None = None) -> dict:
+    return _judge_text(trajectory_text, model)
+
+
+@app.function(image=image, secrets=[modal.Secret.from_name("anthropic")], timeout=1800,
+              retries=modal.Retries(max_retries=2, initial_delay=5.0))
+def reaudit_job(trajectory_text: str, trajectory_path: str, modes: list[str], model: str | None = None) -> list[dict]:
+    return _reaudit_text(trajectory_text, trajectory_path, modes, model)
+
+
+def _trajectories(results_dir: str) -> list[Path]:
+    return sorted(Path(results_dir, "trajectories").glob("*.jsonl"))
+
+
+def _write(path: str, obj: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    Path(path).write_text(json.dumps(obj, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _save_judgments(results_dir: str, paths: list[Path], results) -> int:
+    from eval.judge import judgment_path_for
+
+    failed = 0
+    for p, r in zip(paths, results):
+        if isinstance(r, BaseException):
+            failed += 1
+            print(f"FAILED judge {p.name}: {r!r}")
+            continue
+        _write(judgment_path_for(results_dir, r["trajectory_id"] or p.stem), r)
+    return failed
+
+
+def _save_reaudits(out_dir: str, paths: list[Path], results) -> int:
+    from eval.run_episode import episode_path_for, verdict_path_for
+
+    failed = 0
+    for p, r in zip(paths, results):
+        if isinstance(r, BaseException):
+            failed += 1
+            print(f"FAILED reaudit {p.name}: {r!r}")
+            continue
+        for ep in r:
+            _write(verdict_path_for(ep["episode_id"], ep["auditor_mode"], "claude", out_dir), ep["verdict"])
+            _write(episode_path_for(ep["episode_id"], ep["auditor_mode"], "claude", out_dir), ep)
+    return failed
+
+
+def _pending(results_dir: str, paths: list[Path], job: str, skip_existing: bool) -> list[Path]:
+    if job != "judge" or not skip_existing:
+        return paths
+    return [p for p in paths if not Path(results_dir, "judgments", f"{p.stem}.json").exists()]
+
+
+@app.local_entrypoint()
+def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_model: str = "",
+         auditor_modes: str = "full_trace,report_only,final_report", out_dir: str = "", skip_existing: bool = True):
+    paths = _pending(results_dir, _trajectories(results_dir), job, skip_existing)
+    print(f"{job}: {len(paths)} trajectories from {results_dir}")
+    texts = [p.read_text(encoding="utf-8") for p in paths]
+    if job == "judge":
+        res = judge_job.starmap([(t, judge_model or None) for t in texts], return_exceptions=True)
+        failed = _save_judgments(results_dir, paths, list(res))
+    elif job == "reaudit":
+        modes = [m for m in auditor_modes.split(",") if m]
+        res = reaudit_job.starmap([(t, str(p), modes, auditor_model or None) for t, p in zip(texts, paths)],
+                                  return_exceptions=True)
+        failed = _save_reaudits(out_dir or os.path.join(results_dir, "reaudit"), paths, list(res))
+    else:
+        raise SystemExit(f"unknown job {job!r}")
+    print(f"done: {len(paths) - failed} ok, {failed} failed")
+
+
+def _cli(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description="Run batch jobs locally (use `modal run eval/batch.py` for Modal).")
+    p.add_argument("--local", action="store_true")
+    p.add_argument("--results-dir", required=True)
+    p.add_argument("--job", choices=["judge", "reaudit"], default="judge")
+    p.add_argument("--judge-model", default=None)
+    p.add_argument("--auditor-model", default=None)
+    p.add_argument("--auditor-modes", default="full_trace,report_only,final_report")
+    p.add_argument("--out-dir", default="")
+    p.add_argument("--workers", type=int, default=8)
+    args = p.parse_args(argv)
+    if not args.local:
+        p.error("pass --local, or use `modal run eval/batch.py ...`")
+    paths = _pending(args.results_dir, _trajectories(args.results_dir), args.job, True)
+    texts = [p.read_text(encoding="utf-8") for p in paths]
+
+    def safe(fn, *a):
+        try:
+            return fn(*a)
+        except Exception as exc:  # noqa: BLE001
+            traceback.print_exc()
+            return exc
+
+    with ThreadPoolExecutor(args.workers) as pool:
+        if args.job == "judge":
+            res = list(pool.map(lambda t: safe(_judge_text, t, args.judge_model), texts))
+            _save_judgments(args.results_dir, paths, res)
+        else:
+            modes = args.auditor_modes.split(",")
+            res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), modes, args.auditor_model),
+                                zip(texts, paths)))
+            _save_reaudits(args.out_dir or os.path.join(args.results_dir, "reaudit"), paths, res)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_cli())
