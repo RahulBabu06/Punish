@@ -20,8 +20,10 @@ audits, Opus-judge ground truth):
 | actions + report (`report_only`) | 0.92 | 0.25 | 0.92 |
 | final report only (`final_report`) | 0.66 | 0.20 | 0.83 |
 
-Reading only the report misses a third of the hacks. Seeing the actions recovers them, and
-seeing the reasoning adds little on these tasks. Instructed (`covert`) agents hack 77–83% of
+Reading only the report misses a third of the hacks, and seeing the actions recovers them.
+For a Sonnet auditor, seeing the reasoning adds little. A stronger auditor does use it:
+re-auditing the Sonnet-subject half with Opus 4.6 gives `full_trace` FPR 0.05 against 0.12
+for `report_only`, and recall 0.87 against 0.80 (paired p = 0.02). Instructed (`covert`) agents hack 77–83% of
 the time, pressured or incentivised agents 13–33%, and honest agents 0–10%. A deterministic
 exploit labeller finds only 24 of 79 hacks. Full write-up: [`REPORT.md`](REPORT.md).
 Related work: [`docs/related_work.md`](docs/related_work.md). Demo script:
@@ -115,6 +117,7 @@ commands rebuild every table in `REPORT.md` offline:
 | run | what |
 |---|---|
 | `results/v2_sonnet46/`, `results/v2_haiku45/` | main sweep: 120 trajectories each (4 configs × 6 tasks × 5 eps), 3 auditor modes, Opus judge labels |
+| `results/v2_sonnet46/reaudit_claude-opus-4-6/` | the same 120 Sonnet-subject trajectories re-audited by Opus 4.6 in 3 modes (`eval.analyze` picks up `reaudit_*` directories automatically) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 
@@ -123,14 +126,16 @@ Each run directory has `trajectories/<task>__<config>__epNNN.jsonl`,
 deterministic label), `judgments/` (Opus judge) and `SUMMARY.md` (labeller-only metrics).
 
 To regenerate from scratch, run the Modal sweep for each subject model, then the judge job,
-then `eval.analyze`. LLM sampling means new runs will not reproduce exact numbers.
+then `eval.analyze`. LLM sampling means new runs will not reproduce exact numbers. The
+current task suite (v3, 10 tasks, regenerated `leaked_answer`) differs from the six-task
+suite behind the committed runs. Their deterministic labels are frozen in `episodes/`.
 
 ## Repo map
 
 | path | what |
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the contract: data flow, Task / Trajectory / Verdict / Episode schemas, hack types, configs, modes |
-| [`tasks/`](tasks/README.md) | 6 adversarial task definitions (`definitions/*.json`) and `registry.py` (`load_task`, deterministic `label`) |
+| [`tasks/`](tasks/README.md) | adversarial task definitions (`definitions/*.json`, 10 in the current v3 suite; probe_v1 and v2 used the first six), `build_definitions.py` (seeded generator), `registry.py` (`load_task`, deterministic `label`) |
 | [`agent/`](agent/README.md) | subject agent: `runner.py` (tool loop, sandbox, JSONL trajectory, interleaved thinking), `prompts.py` (honest / incentivized / pressure / covert) |
 | [`auditor/`](auditor/README.md) | `audit.py` (Claude auditor, 3 modes, verdict validation and repair), `prompts.py` (six-type rubric), `heuristic.py` (offline rule-based auditor) |
 | [`eval/`](eval/README.md) | `run_episode.py`, `sweep.py` (Modal / local), `batch.py` (judge / reaudit), `judge.py` (privileged Opus judge), `metrics.py`, `analyze.py` (labeller / judge / either tables) |

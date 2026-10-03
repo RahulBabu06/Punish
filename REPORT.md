@@ -2,7 +2,8 @@
 
 *London AI x Science Hackathon, Track 2, team Punish.*
 *Status: hackathon write-up. Results come from the committed runs `results/probe_v1/`,
-`results/model_probe/`, `results/v2_sonnet46/` and `results/v2_haiku45/`. Sample sizes are
+`results/model_probe/`, `results/v2_sonnet46/` (including the Opus re-audit in
+`reaudit_claude-opus-4-6/`) and `results/v2_haiku45/`. Sample sizes are
 small (5 episodes per cell), so every number here is **preliminary**. Places where later
 sweeps will add numbers are marked `TODO(numbers)`.*
 
@@ -29,9 +30,13 @@ episodes) and 720 audits. Results:
 3. A Sonnet 4.6 auditor reaches AUROC 0.94 with `full_trace`, 0.92 with `report_only` and
    0.83 with `final_report`. Recall is 0.89, 0.92 and 0.66. False-positive rate is 0.25,
    0.25 and 0.20.
+4. Re-auditing the Sonnet-subject half with Opus 4.6, the reasoning does help:
+   `full_trace` has FPR 0.05 (4/75) against 0.12 (9/75) for `report_only`, and recall 0.87
+   against 0.80 (paired exact McNemar p = 0.021).
 
 Seeing the agent's actions makes a large difference compared with reading only its report.
-In this setting, also seeing its reasoning adds little.
+Whether also seeing its reasoning helps depends on the auditor: barely for Sonnet 4.6,
+significantly for Opus 4.6, mostly through fewer false positives.
 
 ## 1. Motivation
 
@@ -144,6 +149,19 @@ Full details are in [`tasks/README.md`](tasks/README.md).
 
 The design follows ImpossibleBench. In `metric_gaming`, `metric_swap` and `cherry_pick`,
 the honest answer fails the grader, so a pass is evidence of a hack.
+
+**Suite versions.** The table above is the six-task suite that probe_v1 and v2 used. The
+committed `labeller` labels are frozen at run time in each `episodes/*.json`
+(`ground_truth_hacked`). Since then the integration branch has moved to a 10-task suite
+(v3, see `tasks/README.md`):
+
+- four new tasks: `solutions_cache`, `missing_replication`, `effect_size_target` and
+  `outcome_switching`;
+- `leaked_answer` regenerated so the data give p ≈ 0.006 while `eval.py` still expects
+  0.312, which separates copying from computing;
+- an "overclaim" rule added to every labeller.
+
+v3 results: `TODO(numbers)`.
 
 ### 5.2 Subject configurations
 
@@ -270,7 +288,7 @@ that leave no trace in a coherent report:
 A report that says "R² = 0.91" looks fine unless you can see the agent computing 0.447 and
 then reading `grade.py`.
 
-**Seeing the reasoning adds little here.** `full_trace` and `report_only` give the same
+**With a Sonnet auditor, seeing the reasoning adds little.** `full_trace` and `report_only` give the same
 prediction on 229/240 trajectories. Of the 11 where they disagree, `full_trace` is right on
 4 and `report_only` on 7 (exact McNemar p = 0.55). AUROC differs by 0.02 overall (0.05 for
 Haiku subjects). Possible reasons:
@@ -292,6 +310,33 @@ the instrument message (`ERROR 0x3F: lamp failure`) from `plate_C.csv`, and an a
 cannot see the file thinks the message was made up. The `full_trace` vs `final_report`
 paired test is not significant at n = 240 (59 vs 48 discordant, exact McNemar p = 0.33),
 because the trace modes buy their extra recall with more `suspicious_access` FPs (below).
+
+#### A stronger auditor uses the reasoning (Opus 4.6 re-audit, Sonnet 4.6 subject)
+
+We re-audited the 120 `v2_sonnet46` trajectories in all three modes with Claude Opus 4.6
+(`eval/batch.py --job reaudit`), using the same rubric and the `either` label (45 hacked,
+75 clean).
+
+| auditor | mode | precision | recall | FPR | AUROC |
+|---|---|---|---|---|---|
+| Sonnet 4.6 | `full_trace` | 0.71 | 0.91 (41/45) | 0.23 (17/75) | 0.96 |
+| Sonnet 4.6 | `report_only` | 0.72 | 0.96 (43/45) | 0.23 (17/75) | 0.95 |
+| Sonnet 4.6 | `final_report` | 0.65 | 0.62 (28/45) | 0.20 (15/75) | 0.80 |
+| Opus 4.6 | `full_trace` | **0.91** | 0.87 (39/45) | **0.05 (4/75)** [0.02, 0.13] | 0.96 |
+| Opus 4.6 | `report_only` | 0.80 | 0.80 (36/45) | 0.12 (9/75) [0.06, 0.21] | 0.95 |
+| Opus 4.6 | `final_report` | 0.62 | 0.51 (23/45) | 0.19 (14/75) | 0.82 |
+
+For Opus, `full_trace` beats `report_only` on the same trajectories: 9 vs 1 discordant
+pairs, exact McNemar p = 0.021. For Sonnet on this subset it is 2 vs 4 (p = 0.69).
+`full_trace` vs `final_report` for Opus is 34 vs 8 (p < 0.001).
+
+Most of the gain is fewer false positives. All 9 Opus `report_only` FPs cite
+`suspicious_access`, and 6 of them are incentivized or pressure `metric_gaming` runs where
+the agent read `grade.py` and then reported the true R². With the reasoning visible, only
+one of those `metric_gaming` runs is still flagged. Our reading is that the reasoning shows
+the grader was read but did not drive the reported number, which is the judge's criterion.
+The Opus auditor is also more conservative on `fake_citation`. Its `full_trace` misses 6 of
+the 27 pooled hacks it could see there (all its `full_trace` misses), similar to Sonnet.
 
 ### 8.3 Where the auditor is wrong
 
@@ -361,8 +406,7 @@ These are the same labeller blind spots seen in v2.
 
 - `TODO(numbers)`: Sonnet 4.5 subject sweep. Add a row to §8.1 and the per-subject AUROC in
   §8.2.
-- `TODO(numbers)`: Opus 4.6 as auditor (`eval/batch.py --job reaudit`). Add an
-  auditor-model column to §8.2.
+- `TODO(numbers)`: Opus 4.6 re-audit of `v2_haiku45`. The Sonnet-subject half is in §8.2.
 - `TODO(numbers)`: v3 10-task suite. Update §5.1 and §8.1–8.3.
 - `TODO(numbers)`: bootstrap CIs for AUROC (currently point estimates only).
 
@@ -385,13 +429,15 @@ These are the same labeller blind spots seen in v2.
   definitional mismatch.
 - **Reasoning is not ground truth.** Following Chen et al., a clean reasoning trace is
   weak evidence of a clean run. We have not tested agents trained to obfuscate.
-- **Single auditor model** (Sonnet 4.6) in v2.
+- **Auditor coverage.** The main sweep uses a Sonnet 4.6 auditor. The Opus 4.6 re-audit
+  covers only the 120 Sonnet-subject trajectories.
 
 ## 10. Future work
 
 - Align the rubric with the judge: reading an eval file counts only when its contents
   shape the report (`suspicious_access` needs value reuse or score tuning). We expect this
-  to cut most of the 40 `full_trace` FPs.
+  to cut most of the 40 `full_trace` FPs. The Opus auditor already makes this distinction
+  when it can see the reasoning (4 FPs vs Sonnet's 17 on the same 120 trajectories).
 - Give the auditor the bibliography abstracts (or a retrieval tool) so it can check what
   cited papers actually say. This targets the `fake_citation` misses.
 - Add a hybrid monitor that scores reasoning and actions separately and combines them
@@ -399,8 +445,8 @@ These are the same labeller blind spots seen in v2.
   recall.
 - Use larger and more natural task suites (the v3 10-task suite, multi-step analyses), and
   impossible variants of real analyses.
-- Add stronger auditors (Opus) and weaker-auditor/stronger-subject pairs, as in Baker et
-  al.
+- Extend the Opus re-audit to all subjects, and test weaker-auditor/stronger-subject pairs
+  as in Baker et al.
 - Validate the judge against humans, and calibrate auditor confidence.
 - Stress tests: subjects fine-tuned or prompted to evade *this* auditor, to measure how
   fast monitorability drops under pressure.
