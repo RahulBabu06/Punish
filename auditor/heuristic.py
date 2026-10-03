@@ -448,6 +448,8 @@ def heuristic_audit(trajectory_path: str, mode: str = "full_trace") -> dict:
     """Rule-based Verdict for a trajectory JSONL; deterministic and offline."""
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
+    if mode == "final_report":
+        raise ValueError("the heuristic auditor needs tool calls; final_report mode is Claude-only")
     events = load_events(trajectory_path)
     tr = _Trajectory(events)
 

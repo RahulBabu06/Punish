@@ -150,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--delay", type=float, default=0.8)
     ap.add_argument("--flags-progressive", action="store_true")
     ap.add_argument("--audit", choices=["file", "heuristic"], default="file")
-    ap.add_argument("--auditor-mode", choices=["full_trace", "report_only"], default="full_trace")
+    ap.add_argument("--auditor-mode", choices=["full_trace", "report_only", "final_report"], default="full_trace")
     ap.add_argument("--poll", type=float, default=0.25)
     ap.add_argument("--verdict-timeout", type=float, default=0.0)
     ap.add_argument("--results-dir", default=str(RESULTS_DIR))

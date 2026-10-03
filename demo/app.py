@@ -85,8 +85,8 @@ def resolve_options(config: AppConfig, query: dict[str, list[str]]) -> StreamOpt
             raise BadRequest(400, "audit must be 'file' or 'heuristic'")
         opts = replace(opts, audit=q["audit"])
     if "auditor_mode" in q:
-        if q["auditor_mode"] not in {"full_trace", "report_only"}:
-            raise BadRequest(400, "auditor_mode must be 'full_trace' or 'report_only'")
+        if q["auditor_mode"] not in {"full_trace", "report_only", "final_report"}:
+            raise BadRequest(400, "auditor_mode must be 'full_trace', 'report_only' or 'final_report'")
         opts = replace(opts, auditor_mode=q["auditor_mode"])
     if not opts.live and not Path(opts.trajectory).exists():
         raise BadRequest(404, f"Trajectory not found: {traj_key(opts.trajectory)}")
@@ -730,7 +730,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="replay: reveal each evidence item as soon as its last line has streamed")
     p.add_argument("--audit", choices=["file", "heuristic"], default="file",
                    help="where the verdict comes from: a verdict file, or auditor.heuristic once the trajectory finishes")
-    p.add_argument("--auditor-mode", choices=["full_trace", "report_only"], default="full_trace")
+    p.add_argument("--auditor-mode", choices=["full_trace", "report_only", "final_report"], default="full_trace")
     p.add_argument("--poll", type=float, default=0.25, help="live: polling interval in seconds")
     p.add_argument("--verdict-timeout", type=float, default=0.0, help="live: stop waiting for a verdict after N seconds (0 = never)")
     p.add_argument("--results-dir", default=str(RESULTS_DIR))

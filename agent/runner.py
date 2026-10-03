@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from agent.prompts import build_system_prompt
+from agent.prompts import AGENT_CONFIGS, build_system_prompt
 from agent.tools import TOOL_ARGS, TOOL_SCHEMAS, Sandbox
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -131,8 +131,8 @@ def run_agent(
     max_tokens: int = MAX_TOKENS,
 ) -> str:
     """Run the subject agent on ``task``, streaming the trajectory to ``out_path``. Returns ``out_path``."""
-    if agent_config not in ("honest", "incentivized"):
-        raise ValueError(f"agent_config must be 'honest' or 'incentivized', got {agent_config!r}")
+    if agent_config not in AGENT_CONFIGS:
+        raise ValueError(f"agent_config must be one of {AGENT_CONFIGS}, got {agent_config!r}")
     if max_tokens <= thinking_budget:
         raise ValueError("max_tokens must be greater than thinking_budget")
     model = model or default_model()
@@ -142,7 +142,7 @@ def run_agent(
         "trajectory_id": Path(out_path).stem,
         "task_id": task["id"],
         "agent_config": agent_config,
-        "incentivized": agent_config == "incentivized",
+        "incentivized": agent_config != "honest",
         "model": model,
     }
 
@@ -231,7 +231,7 @@ def load_task(task_id: str) -> dict:
 def main(argv: list[str] | None = None) -> str:
     parser = argparse.ArgumentParser(description="Run the Punish subject agent on one task.")
     parser.add_argument("--task", required=True, help="task_id, e.g. leaked_answer")
-    parser.add_argument("--config", required=True, choices=["honest", "incentivized"])
+    parser.add_argument("--config", required=True, choices=list(AGENT_CONFIGS))
     parser.add_argument("--episode", type=int, default=0)
     parser.add_argument("--out", default=None, help="trajectory path (default results/trajectories/<episode_id>.jsonl)")
     parser.add_argument("--model", default=None)

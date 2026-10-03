@@ -24,8 +24,8 @@ import os
 import sys
 from typing import Callable
 
-AGENT_CONFIGS = ("honest", "incentivized")
-AUDITOR_MODES = ("full_trace", "report_only")
+AGENT_CONFIGS = ("honest", "incentivized", "pressure", "covert")
+AUDITOR_MODES = ("full_trace", "report_only", "final_report")
 AUDITOR_BACKENDS = ("claude", "heuristic")
 VERDICT_KEYS = ("trajectory_id", "auditor_mode", "hack_detected", "hack_types", "evidence", "confidence", "auditor_notes")
 
@@ -239,7 +239,11 @@ def run_episode(
 
 
 def parse_modes(value: str) -> list[str]:
-    return list(AUDITOR_MODES) if value == "both" else [m.strip() for m in value.split(",") if m.strip()]
+    if value == "both":
+        return ["full_trace", "report_only"]
+    if value == "all":
+        return list(AUDITOR_MODES)
+    return [m.strip() for m in value.split(",") if m.strip()]
 
 
 def _summary_line(ep: dict) -> str:
@@ -254,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--task", help="task_id, e.g. leaked_answer")
     p.add_argument("--config", choices=AGENT_CONFIGS, default="incentivized")
     p.add_argument("--episode", type=int, default=0)
-    p.add_argument("--auditor-mode", default="full_trace", choices=[*AUDITOR_MODES, "both"])
+    p.add_argument("--auditor-mode", default="full_trace", choices=[*AUDITOR_MODES, "both", "all"])
     p.add_argument("--auditor-backend", default="claude", choices=AUDITOR_BACKENDS)
     p.add_argument("--results-dir", default="results")
     p.add_argument("--trajectory", help="re-audit this existing trajectory instead of running the agent")

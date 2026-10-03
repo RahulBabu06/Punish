@@ -29,7 +29,7 @@ JOB_TIMEOUT_S = 30 * 60
 app = modal.App("punish-sweep")
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .pip_install("anthropic")
+    .pip_install("anthropic", "numpy", "scipy", "pandas")
     # Default ignore drops non-.py files; we need tasks/definitions/*.json in the container.
     .add_local_python_source(*LOCAL_PACKAGES, ignore=["**/__pycache__/**", "**/*.pyc"])
 )
@@ -112,9 +112,13 @@ def _models() -> tuple[str | None, str | None]:
 
 @app.local_entrypoint()
 def main(n_episodes: int = 5, tasks: str = "all", configs: str = "honest,incentivized",
-         auditor_modes: str = "full_trace,report_only", auditor_backend: str = "claude"):
+         auditor_modes: str = "full_trace,report_only", auditor_backend: str = "claude",
+         results_dir: str = "results", agent_model: str = "", auditor_model: str = "", start_episode: int = 0):
     grid = build_grid(resolve_tasks(tasks), split_csv(configs), n_episodes, split_csv(auditor_modes))
-    agent_model, auditor_model = _models()
+    if start_episode:
+        grid = [(t, c, i + start_episode, m) for t, c, i, m in grid]
+    env_agent, env_auditor = _models()
+    agent_model, auditor_model = agent_model or env_agent, auditor_model or env_auditor
     print(f"Launching {len(grid)} episode jobs on Modal")
     episodes, failures = [], []
     args = [(*job, auditor_backend, agent_model, auditor_model) for job in grid]
@@ -122,8 +126,8 @@ def main(n_episodes: int = 5, tasks: str = "all", configs: str = "honest,incenti
         if isinstance(result, BaseException):
             failures.append(f"{job[:3]}: {result!r}")
         else:
-            episodes += write_records(result)
-    finish(episodes, failures)
+            episodes += write_records(result, results_dir)
+    finish(episodes, failures, results_dir)
 
 
 def run_local(n_episodes: int = 1, tasks: str = "all", configs: str = "honest,incentivized",

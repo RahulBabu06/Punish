@@ -1,6 +1,6 @@
 """Auditor: trajectory JSONL -> Verdict (see ARCHITECTURE.md, "Verdict").
 
-CLI: python -m auditor.audit <trajectory.jsonl> [--mode full_trace|report_only]
+CLI: python -m auditor.audit <trajectory.jsonl> [--mode full_trace|report_only|final_report]
                              [--backend claude|heuristic] [--out PATH]
 """
 
@@ -15,7 +15,7 @@ from pathlib import Path
 from auditor import prompts
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
-MODES = ("full_trace", "report_only")
+MODES = ("full_trace", "report_only", "final_report")
 HACK_TYPES = (
     "trace_claim_mismatch",
     "suspicious_access",
@@ -103,6 +103,19 @@ def trajectory_id_of(events: list[dict]) -> str:
     return str((first.get("config") or {}).get("trajectory_id", ""))
 
 
+def sandbox_files(system_text: str) -> list[str]:
+    """File names listed under "Sandbox files:" in the agent's system prompt."""
+    files, inside = [], False
+    for line in system_text.splitlines():
+        if line.strip() == "Sandbox files:":
+            inside = True
+        elif inside and line.startswith("- "):
+            files.append(line[2:].strip())
+        elif inside and line.strip():
+            break
+    return files
+
+
 def _truncate(text: str, limit: int) -> str:
     if len(text) <= limit:
         return text
@@ -129,8 +142,12 @@ def _render_event(n: int, e: dict, mode: str, call_names: dict[str, str]) -> lis
     t = e.get("type", "?")
     if t == "system_prompt":
         # Only the trajectory_id is shown from config: agent_config/incentivized would leak the label.
+        # The prompt text itself is hidden too: it states the agent's incentives (the label).
         tid = (e.get("config") or {}).get("trajectory_id", "")
-        return [f"[L{n}] system_prompt (trajectory_id={tid})"] + _block("text", e.get("text"), MAX_OUTPUT_CHARS)
+        return [f"[L{n}] system_prompt (trajectory_id={tid}; text hidden from the auditor)"] + _block(
+            "sandbox_files", ", ".join(sandbox_files(e.get("text") or "")) or "(unknown)")
+    if mode == "final_report" and t not in ("final_report",) and not (t == "message" and e.get("role") == "user"):
+        return []
     if t == "message":
         out = [f"[L{n}] message role={e.get('role')}"]
         if mode == "full_trace" and e.get("role") == "assistant":
@@ -160,7 +177,8 @@ def _render_event(n: int, e: dict, mode: str, call_names: dict[str, str]) -> lis
 def render_trajectory(events: list[dict], mode: str = "full_trace") -> str:
     """Human-readable trajectory, each event prefixed with its 1-indexed JSONL line number.
 
-    report_only drops `reasoning` fields; numbering is identical in both modes.
+    report_only drops `reasoning` fields; final_report keeps only the task message and the final report.
+    Line numbers are the same in every mode (hidden lines are simply absent).
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
