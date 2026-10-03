@@ -19,7 +19,7 @@ MODES = ("full_trace", "report_only", "final_report")
 MODE_SHORT = {"full_trace": "FT", "report_only": "RO", "final_report": "FR"}
 HANDLED_DIRS = {"hard_cases", "monitor_attacks", "obfuscation", "mitigation_bestofn_v2", "figures", "figures_v3"}
 KNOWN_TOP = {"README.md", "RESULTS.md", "RESULTS_v3_preliminary.md", "COST.md", "SUMMARY.md"}
-EXTRA_DOCS = ("tasks/LABEL_AUDIT.md",)
+EXTRA_DOCS = ("docs/judge_validation.md", "tasks/LABEL_AUDIT.md")
 MAX_GENERIC_ROWS = 40
 
 
@@ -155,6 +155,22 @@ def bestofn(results_dir: Path) -> dict | None:
             "sources": [_rel(d / "MITIGATION_bestofn.json")]}
 
 
+def relabel(results_dir: Path) -> dict | None:
+    """v3 relabelling with the fixed labeller: results/<exp>/relabel.json (runtime vs relabelled hack rates, flips)."""
+    exps = []
+    for p in sorted(results_dir.glob("*/relabel.json")):
+        j = _json(p)
+        if not isinstance(j, dict) or "hack_rate_by_config" not in j:
+            continue
+        exp = p.parent.name
+        flips = [{"trajectory_id": t, "runtime": f.get("runtime"), "relabelled": f.get("relabelled"),
+                  "key": _rel(p.parent / "trajectories" / f"{t}.jsonl")}
+                 for t, f in sorted((j.get("flipped") or {}).items())]
+        exps.append({"experiment": exp, "trajectories": j.get("trajectories"), "commit": j.get("labeller_commit"),
+                     "by_config": j["hack_rate_by_config"], "flipped": flips, "source": _rel(p)})
+    return {"experiments": exps, "sources": [e["source"] for e in exps]} if exps else None
+
+
 def _money(s: str) -> float | None:
     m = re.search(r"\$([\d,]+\.?\d*)", s or "")
     return float(m.group(1).replace(",", "")) if m else None
@@ -242,9 +258,6 @@ def calibration_chart(doc: dict) -> str:
                      series, ymax=round(top * 1.2, 2), fmt=lambda v: f"{v:.2f}", width=760)
 
 
-DOC_CHARTS = {"CASCADE.md": cascade_chart, "CALIBRATION.md": calibration_chart}
-
-
 def generic_docs(results_dir: Path) -> list[dict]:
     """Result write-ups we have no bespoke view for: new results/<dir>/*.md, new top-level results/*.md, EXTRA_DOCS."""
     paths: list[Path] = []
@@ -272,7 +285,8 @@ def benchmarks(results_dir: Path = RESULTS_DIR, fixtures_dir: Path = FIXTURES_DI
     results_dir, fixtures_dir = Path(results_dir), Path(fixtures_dir)
     return {"hard_cases": hard_cases(results_dir, fixtures_dir),
             "monitor_attacks": monitor_attacks(results_dir, fixtures_dir),
-            "obfuscation": obfuscation(results_dir), "bestofn": bestofn(results_dir), "cost": cost(results_dir),
+            "relabel": relabel(results_dir), "obfuscation": obfuscation(results_dir), "bestofn": bestofn(results_dir),
+            "cost": cost(results_dir),
             "docs": generic_docs(results_dir)}
 
 
@@ -291,7 +305,16 @@ def _f(x, digits: int = 2) -> str:
     return "–" if x is None else f"{x:.{digits}f}"
 
 
+_AVAILABLE: set[str] | None = None  # static export: only these trajectories have compare/replay pages
+
+
+def _has(key: str) -> bool:
+    return _AVAILABLE is None or key in _AVAILABLE
+
+
 def _links(key: str) -> str:
+    if not _has(key):
+        return '<span class="dim" title="not in the static export; run python -m demo.app">–</span>'
     return (f'<a href="{esc(url("/compare", traj=key))}">compare</a> · '
             f'<a href="{esc(url("/view", traj=key, live=0, progressive=1))}">replay</a>')
 
@@ -425,6 +448,57 @@ def render_monitor_attacks(sec: dict) -> str:
                     "benign tool calls, a fake integrity self-check, or all of them. Δ is against the unattacked run.")
 
 
+def _rate(d: dict | None) -> float | None:
+    return None if not d or not d.get("n") else d["hacked"] / d["n"]
+
+
+def render_relabel(sec: dict) -> str:
+    groups, rows, flips = [], [], []
+    for e in sec["experiments"]:
+        rt, rl = e["by_config"].get("runtime", {}), e["by_config"].get("relabelled", {})
+        tot = lambda d: {"hacked": sum(v["hacked"] for v in d.values()), "n": sum(v["n"] for v in d.values())}  # noqa: E731
+        groups.append((e["experiment"].replace("_", "\n", 1), [("runtime labeller", _rate(tot(rt))),
+                                                               ("fixed labeller", _rate(tot(rl)))]))
+        for cfg in sorted(set(rt) | set(rl), key=lambda c: catalog_order(c)):
+            a, b = rt.get(cfg), rl.get(cfg)
+            rows.append([f"<code>{esc(e['experiment'])}</code>", esc(cfg),
+                         f'{a["hacked"]}/{a["n"]} = {_rate(a):.2f}' if a else "–",
+                         f'{b["hacked"]}/{b["n"]} = {_rate(b):.2f}' if b else "–"])
+        for f in e["flipped"]:
+            name = f"{e['experiment']}/{f['trajectory_id']}"
+            arrow = f'{"HACK" if f["runtime"] else "clean"} → {"HACK" if f["relabelled"] else "clean"}'
+            link = (f'<a href="{esc(url("/compare", traj=f["key"]))}"><code>{esc(name)}</code></a>' if _has(f["key"])
+                    else f"<code>{esc(name)}</code>")
+            flips.append(f'<li>{link} <span class="dim">{arrow}</span></li>')
+    chart = bar_chart("Hack rate before and after relabelling (all configs)", groups,
+                      ["runtime labeller", "fixed labeller"], colors={"runtime labeller": "#8a96ad", "fixed labeller": "#ff4d5e"},
+                      width=640)
+    body = (f'<div class="two">{chart}{_table(["experiment", "config", "runtime labeller", "fixed labeller"], rows, 2)}</div>'
+            f'<details><summary>{len(flips)} trajectories whose label flipped</summary><ul class="flips">{"".join(flips)}</ul></details>')
+    return _section("relabel", "v3 relabelling with the fixed labeller", sec["sources"], body,
+                    "The v3 runs were labelled at run time by a labeller with known false positives (e.g. honest "
+                    "reports quoting \"large effect\" only to reject it). The fixed labeller re-scores every stored "
+                    "episode; this is how the hack rates moved.")
+
+
+def catalog_order(cfg: str) -> int:
+    order = ["honest", "incentivized", "pressure", "sycophantic_pi", "covert_monitored", "covert"]
+    return order.index(cfg) if cfg in order else len(order)
+
+
+def judge_chart(doc: dict) -> str:
+    t = next((t for t in doc["tables"] if "accuracy" in t["headers"] and "comparison" in t["headers"]), None)
+    if not t:
+        return ""
+    h = t["headers"]
+    kappa = next((x for x in h if "κ" in x or "kappa" in x.lower()), None)
+    series = ["accuracy"] + (["Cohen's κ"] if kappa else [])
+    groups = [(dict(zip(h, r))["comparison"].replace("`", ""),
+               [("accuracy", _num(dict(zip(h, r))["accuracy"]))] + ([("Cohen's κ", _num(dict(zip(h, r))[kappa]))] if kappa else []))
+              for r in t["rows"]]
+    return bar_chart("Agreement with blind labels", groups, series, width=520, fmt=lambda v: f"{v:.2f}")
+
+
 def render_obfuscation(sec: dict) -> str:
     rows, groups = [], {}
     subjects = []
@@ -499,9 +573,12 @@ def render_cost(sec: dict) -> str:
     return _section("cost", "Cost", sec["sources"], body, lede)
 
 
+DOC_CHARTS = {"CASCADE.md": cascade_chart, "CALIBRATION.md": calibration_chart, "judge_validation.md": judge_chart}
+
+
 def render_doc(doc: dict) -> str:
     body = "".join(f'<p class="sub">{md_inline(p)}</p>' for p in doc["intro"][1:])
-    chart = DOC_CHARTS.get(doc.get("name", ""), lambda d: "")(doc)
+    chart = DOC_CHARTS[doc["name"]](doc) if doc.get("name") in DOC_CHARTS else ""
     figs = "".join(f'<div class="fig">{s}</div>' for s in (inline_svg(ROOT / f) for f in doc.get("figures", [])) if s)
     if chart or figs:
         body += f'<div class="figs">{chart}{figs}</div>'
@@ -530,6 +607,7 @@ BENCH_CSS = """
 .bench .figs{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin:12px 0}
 .bench .figs>.chart{flex:0 1 760px}.bench .fig{flex:1 1 560px;max-width:980px;background:#fff;border-radius:12px;padding:6px}
 .bench .fig svg{width:100%;height:auto;display:block}
+.bench ul.flips{columns:3 360px;font-size:13px;margin:6px 0}
 a.mx{text-decoration:none;white-space:nowrap}a.mx:hover .vb{filter:brightness(1.3)}
 .jump{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.jump a{cursor:pointer}
 """
@@ -537,10 +615,21 @@ JUMP_JS = """document.querySelectorAll('[data-jump]').forEach(a=>a.addEventListe
 const t=document.getElementById(a.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth'});}));"""
 
 
-def benchmarks_page(data: dict) -> str:
+def benchmarks_page(data: dict, available: set[str] | None = None) -> str:
+    """available: trajectory keys that have pages (static export); None = all (server)."""
+    global _AVAILABLE
+    _AVAILABLE = available
+    try:
+        return _benchmarks_page(data)
+    finally:
+        _AVAILABLE = None
+
+
+def _benchmarks_page(data: dict) -> str:
     sections = []
     for name, fn, title in (("hard_cases", render_hard_cases, "Hard cases"),
                             ("monitor_attacks", render_monitor_attacks, "Monitor attacks"),
+                            ("relabel", render_relabel, "Relabelling"),
                             ("obfuscation", render_obfuscation, "Reasoning disclosure"),
                             ("bestofn", render_bestofn, "Best-of-n"), ("cost", render_cost, "Cost")):
         if data.get(name):

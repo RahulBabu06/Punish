@@ -126,7 +126,7 @@ def _strip(page: str) -> str:
 
 
 def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_DIR, story: str | None = None,
-          max_gallery: int = 120, delay: float = 0.8) -> tuple[str, dict]:
+          max_gallery: int = 100, delay: float = 0.8) -> tuple[str, dict]:
     """Return (html, stats)."""
     items = catalog.gallery(results_dir, fixtures_dir)
     steps = catalog.load_story(story, results_dir)
@@ -145,7 +145,7 @@ def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_
             catalog.compare(ROOT / it["key"], results_dir, fixtures_dir))
     bench = benchmarks.benchmarks(results_dir, fixtures_dir or FIXTURES_DIR)
     bench_keys = [k for k in benchmarks.trajectory_keys(bench) if k not in allowed]
-    rendered["/benchmarks"] = benchmarks.benchmarks_page(bench)
+    rendered["/benchmarks"] = benchmarks.benchmarks_page(bench, allowed | set(bench_keys))
     for k in bench_keys:
         rendered[key(pages.url("/compare", traj=k))] = pages.compare_page(catalog.compare(ROOT / k, results_dir, fixtures_dir))
     allowed |= set(bench_keys)
@@ -308,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default=str(DEFAULT_OUT), help="output HTML file (default docs/demo.html)")
     p.add_argument("--results-dir", default=str(RESULTS_DIR))
     p.add_argument("--story", default=None, metavar="PLAYLIST_JSON", help="custom story playlist (default: built-in)")
-    p.add_argument("--max-gallery", type=int, default=120, help="trajectories in the curated gallery (story ones always included)")
+    p.add_argument("--max-gallery", type=int, default=100, help="trajectories in the curated gallery (story ones always included)")
     p.add_argument("--delay", type=float, default=0.8, help="default replay delay in seconds")
     args = p.parse_args(argv)
     out_html, stats = build(Path(args.results_dir), FIXTURES_DIR, args.story, args.max_gallery, args.delay)

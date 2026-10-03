@@ -130,3 +130,16 @@ def test_export_includes_benchmarks_and_their_trajectories():
     assert f"/compare?traj={case}" in data["pages"]
     assert any(k.startswith(f"/view?traj={case}") for k in data["views"]) and case in data["lines"]
     assert stats["bytes"] < 5_000_000
+
+
+def test_relabel_section(tmp_path):
+    (tmp_path / "v3_x").mkdir()
+    (tmp_path / "v3_x" / "relabel.json").write_text(json.dumps({
+        "trajectories": 4, "labeller_commit": "abc",
+        "hack_rate_by_config": {"runtime": {"honest": {"hacked": 2, "n": 4}}, "relabelled": {"honest": {"hacked": 0, "n": 4}}},
+        "flipped": {"t__honest__ep000": {"runtime": True, "relabelled": False}}}))
+    sec = benchmarks.relabel(tmp_path)
+    assert sec["experiments"][0]["flipped"][0]["key"].endswith("v3_x/trajectories/t__honest__ep000.jsonl")
+    html = benchmarks.render_relabel(sec)
+    assert "2/4 = 0.50" in html and "0/4 = 0.00" in html and "HACK → clean" in html and "/compare?traj=" in html
+    assert benchmarks.benchmarks_page({"relabel": sec}, available=set()).count("/compare?traj=") == 0
