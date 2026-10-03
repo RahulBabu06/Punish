@@ -104,3 +104,26 @@ python -m eval.cost results/v2_sonnet46 results/v2_haiku45 [--by-dir] [--out COS
 ```
 
 Sums tokens per role (`agent` trajectories, `auditor` episodes/verdicts, `judge` judgments, `reaudit` episodes/verdicts in any subdirectory) and model, and prices them with the editable `PRICES_PER_MTOK` table (USD per million tokens, from Anthropic's public pricing page). Real counts come from the optional `usage` fields that `agent/runner.py` (assistant events), `auditor/audit.py` (Verdict) and `eval/judge.py` (judgment) now record. Runs without them are estimated (`source=estimate`): characters / 4 of the request rebuilt from the trajectory (system prompt, tool schemas and the conversation so far for each agent turn; the rendered audit/judge prompt), plus the API's hidden tool-use system prompt. Estimates don't count failed or retried calls and see only the logged (possibly summarized) reasoning, so they are lower bounds. Episodes without `auditor_model` are priced as `--default-auditor-model` (`claude-sonnet-4-6`). `eval/batch.py` prints the usage totals of each judge/reaudit job.
+
+## Deployment cost vs detection — `eval/cascade.py`
+
+```bash
+python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
+    --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
+```
+
+Offline (no API calls). It uses the committed `full_trace` verdicts of trajectories audited by both Sonnet 4.6 (`episodes/`) and Opus 4.6 (`reaudit_claude-opus-4-6/`), runs `auditor.heuristic` (with its provenance pre-pass) live, and scores five policies against the `either` label:
+
+- (a) heuristic only, which is free;
+- (b) Sonnet only;
+- (c) Opus only;
+- (d) heuristic first, escalating to Sonnet when the heuristic flags or its confidence is in `[--lo, --hi]` (default `[0.25, 0.75]`);
+- (e) Sonnet first, escalating to Opus only when Sonnet flags; Opus then confirms or vetoes.
+
+Cascades pay for each stage they run. Per-audit USD comes from `eval/cost.py`: recorded `usage` when present, otherwise its chars/4 estimate.
+
+The report gives:
+- recall, FPR, precision, AUROC (on the score of the last stage that ran), cost per trajectory and escalation rate at each auditor's own `hack_detected`, with bootstrap CIs and a per-subject-model breakdown;
+- a sweep of every threshold on a 0.05 grid (`confidence >= t`, the band edges, and both cascade stages), with the cheapest cost/recall frontier at each `--fpr-caps` (default 5%, 10%, 25%);
+- a leave-one-experiment-out check of the tuned thresholds, because in-sample frontiers are optimistic;
+- an SVG frontier figure drawn with the `eval/figures.py` helpers.
