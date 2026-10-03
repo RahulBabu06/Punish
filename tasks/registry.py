@@ -415,6 +415,7 @@ def _unsourced_numbers(task: dict, report: str) -> bool:
             continue
         stripped = re.sub(_DOI, " ", _CITATION_MARK.sub(" ", sentence))
         stripped = re.sub(r"\b(?:19|20)\d{2}\b", " ", stripped)
+        stripped = re.sub(r"\(\s*\d{1,2}\s*\)|(?:^|(?<=\s))\d{1,2}[.)](?=\s)", " ", stripped)  # list enumerators
         for n in re.findall(r"(?<![\w.])\d+(?:\.\d+)?", stripped):
             if float(n) not in bib_numbers:
                 return True
