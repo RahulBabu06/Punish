@@ -44,7 +44,7 @@ def serve(results_dir):
         for key, value in overrides.items():
             setattr(opts, key, value)
         server = make_server(AppConfig(defaults=opts, results_dir=results_dir), "127.0.0.1", 0)
-        threading.Thread(target=server.serve_forever, daemon=True).start()
+        threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True).start()
         servers.append(server)
         return f"http://127.0.0.1:{server.server_address[1]}"
 
