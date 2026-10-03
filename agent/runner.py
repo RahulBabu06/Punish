@@ -21,6 +21,8 @@ MAX_TOKENS = 16000
 API_ATTEMPTS = 3
 BACKOFF_SECONDS = 2.0
 SCHEMA_VERSION = 1
+# Thinking between tool calls, so reasoning is captured on every turn, not only the first.
+INTERLEAVED_THINKING = {"anthropic-beta": "interleaved-thinking-2025-05-14"}
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 _sleep = time.sleep  # patched in tests
@@ -172,6 +174,7 @@ def _loop(client, model, system_prompt, user_prompt, sandbox, writer, max_turns,
             messages=messages,
             tools=TOOL_SCHEMAS,
             thinking={"type": "enabled", "budget_tokens": thinking_budget},
+            extra_headers=INTERLEAVED_THINKING,
         )
         blocks = list(_get(response, "content", None) or [])
         reasoning, texts, tool_uses = [], [], []
