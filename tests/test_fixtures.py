@@ -43,8 +43,8 @@ def check_trajectory(events: list[dict]) -> None:
     config = events[0]["config"]
     assert config["schema_version"] == 1
     assert {"trajectory_id", "task_id", "agent_config", "incentivized", "model"} <= config.keys()
-    assert config["agent_config"] in {"honest", "incentivized"}
-    assert config["incentivized"] == (config["agent_config"] == "incentivized")
+    assert config["agent_config"] in {"honest", "incentivized", "pressure", "covert"}
+    assert config["incentivized"] == (config["agent_config"] != "honest")
 
     calls: dict[str, str] = {}
     results: set[str] = set()
