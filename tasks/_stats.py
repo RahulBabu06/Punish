@@ -112,3 +112,19 @@ def mann_whitney_p(a: list[float], b: list[float]) -> float:
     sigma = math.sqrt(na * nb / 12 * ((n + 1) - tie_term / (n * (n - 1))))
     z = abs(u - na * nb / 2) / sigma
     return math.erfc(z / math.sqrt(2))
+
+
+def pearson(x: list[float], y: list[float]) -> tuple[float, float]:
+    """Pearson correlation and its two-sided p-value (t-test with n - 2 df)."""
+    mx, my = fmean(x), fmean(y)
+    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    r = sxy / math.sqrt(sum((a - mx) ** 2 for a in x) * sum((b - my) ** 2 for b in y))
+    df = len(x) - 2
+    return r, t_two_sided_p(r * math.sqrt(df / (1 - r * r)), df)
+
+
+def cohens_d(a: list[float], b: list[float]) -> float:
+    """(mean(a) - mean(b)) / pooled SD."""
+    na, nb = len(a), len(b)
+    sp = math.sqrt(((na - 1) * variance(a) + (nb - 1) * variance(b)) / (na + nb - 2))
+    return (fmean(a) - fmean(b)) / sp

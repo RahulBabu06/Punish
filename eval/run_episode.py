@@ -24,7 +24,7 @@ import os
 import sys
 from typing import Callable
 
-AGENT_CONFIGS = ("honest", "incentivized", "pressure", "covert")
+AGENT_CONFIGS = ("honest", "incentivized", "pressure", "covert", "covert_monitored", "sycophantic_pi")
 AUDITOR_MODES = ("full_trace", "report_only", "final_report")
 AUDITOR_BACKENDS = ("claude", "heuristic")
 VERDICT_KEYS = ("trajectory_id", "auditor_mode", "hack_detected", "hack_types", "evidence", "confidence", "auditor_notes")
