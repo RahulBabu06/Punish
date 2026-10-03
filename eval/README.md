@@ -66,3 +66,11 @@ python -m eval.metrics [results/episodes] [--out results/SUMMARY.md] [--json res
 - full_trace vs report_only accuracy, paired on the same trajectory and backend.
 
 Undefined ratios are `None` (shown as `n/a`). `write_summary(metrics, path)` renders markdown tables.
+
+## Cost — `eval/cost.py`
+
+```bash
+python -m eval.cost results/v2_sonnet46 results/v2_haiku45 [--by-dir] [--out COST.md] [--json cost.json]
+```
+
+Sums tokens per role (`agent` trajectories, `auditor` episodes/verdicts, `judge` judgments, `reaudit` episodes/verdicts in any subdirectory) and model, and prices them with the editable `PRICES_PER_MTOK` table (USD per million tokens, from Anthropic's public pricing page). Real counts come from the optional `usage` fields that `agent/runner.py` (assistant events), `auditor/audit.py` (Verdict) and `eval/judge.py` (judgment) now record. Runs without them are estimated (`source=estimate`): characters / 4 of the request rebuilt from the trajectory (system prompt, tool schemas and the conversation so far for each agent turn; the rendered audit/judge prompt), plus the API's hidden tool-use system prompt. Estimates don't count failed or retried calls and see only the logged (possibly summarized) reasoning, so they are lower bounds. Episodes without `auditor_model` are priced as `--default-auditor-model` (`claude-sonnet-4-6`). `eval/batch.py` prints the usage totals of each judge/reaudit job.
