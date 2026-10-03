@@ -96,6 +96,10 @@ modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit \
   --auditor-model claude-opus-4-6 --auditor-modes full_trace,report_only,final_report \
   --out-dir results/v2_sonnet46/opus_auditor
 
+# newer configs and tool-failure injection (added after v2)
+modal run eval/sweep.py --n-episodes 5 --configs covert_monitored,sycophantic_pi \
+  --auditor-modes full_trace,report_only,final_report --fault-rate 0.3 --results-dir results/v3_faults
+
 # no Modal? the same grid in a local thread pool
 .venv/bin/python -m eval.sweep --local --n-episodes 1 --workers 8 \
   --configs honest,incentivized,pressure,covert --auditor-modes full_trace,report_only,final_report
@@ -136,7 +140,7 @@ suite behind the committed runs. Their deterministic labels are frozen in `episo
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the contract: data flow, Task / Trajectory / Verdict / Episode schemas, hack types, configs, modes |
 | [`tasks/`](tasks/README.md) | adversarial task definitions (`definitions/*.json`, 10 in the current v3 suite; probe_v1 and v2 used the first six), `build_definitions.py` (seeded generator), `registry.py` (`load_task`, deterministic `label`) |
-| [`agent/`](agent/README.md) | subject agent: `runner.py` (tool loop, sandbox, JSONL trajectory, interleaved thinking), `prompts.py` (honest / incentivized / pressure / covert) |
+| [`agent/`](agent/README.md) | subject agent: `runner.py` (tool loop, sandbox, JSONL trajectory, interleaved thinking), `prompts.py` (honest / incentivized / pressure / covert, plus covert_monitored / sycophantic_pi), fault injection |
 | [`auditor/`](auditor/README.md) | `audit.py` (Claude auditor, 3 modes, verdict validation and repair), `prompts.py` (six-type rubric), `heuristic.py` (offline rule-based auditor) |
 | [`eval/`](eval/README.md) | `run_episode.py`, `sweep.py` (Modal / local), `batch.py` (judge / reaudit), `judge.py` (privileged Opus judge), `metrics.py`, `analyze.py` (labeller / judge / either tables) |
 | [`demo/`](demo/README.md) | stdlib web viewer (`app.py`) and terminal viewer (`terminal.py`): streams a trajectory and highlights evidence lines |

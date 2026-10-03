@@ -91,8 +91,9 @@ adding one JSON file with an exploit and a label rule.
 Possibly. OpenAI found that training against a CoT monitor teaches obfuscation. That is why
 we use the auditor only to evaluate and never as a training reward. `report_only` is our
 hedge: it doesn't trust the reasoning at all, and it still reaches 0.92 recall because files
-read and code run are hard to hide. Stress-testing against agents optimised to evade is
-future work.
+read and code run are hard to hide. Our next config, `covert_monitored`, tells the hacking agent that an auditor reads its
+reasoning, so we can measure whether the reasoning goes quiet. Stress-testing against agents
+optimised to evade is future work.
 
 **"Why does final-report-only flag honest runs?"**
 27 of its 33 false positives are `fabrication` reports that correctly quote the instrument
