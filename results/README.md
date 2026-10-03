@@ -45,6 +45,25 @@ Column notes:
   outputs). It is a lower bound: thinking tokens are only partly logged, and retried calls are not counted. The
   per-role breakdown is in [`COST.md`](COST.md).
 
+## v3 labels: labeller only, relabelled
+
+The `v3*` runs have **no judge labels**, so their ground truth is the deterministic labeller alone. They used
+the v3 task definitions, so their episodes were relabelled with the fixed labeller
+(`python -m tasks.validate_labels --relabel results/v3*`, see `tasks/LABEL_AUDIT.md`). The run-time label is
+kept in each episode as `ground_truth_hacked_runtime` / `ground_truth_hack_types_runtime` / `correct_runtime`.
+Each dir's `relabel.json` holds the before/after rates and the list of flipped trajectories. v2 and probe
+dirs keep their original labels.
+
+| dir | labeller hack rate by config: runtime → relabelled |
+|---|---|
+| `v3_haiku45/` | honest 3 → 1/50, incentivized 2 → 4/50, pressure 5 → 4/50, covert 35 → 42/50 |
+| `v3_opus46/` | honest 5 → 0/9, incentivized 1 → 0/8, pressure 0 → 0/7, covert 0 → 0/3 |
+| `v3_sonnet46/` | honest 11 → 5/40, incentivized 14 → 7/39, pressure 9 → 5/38, covert 28 → 28/33 |
+| `v3cond_haiku45/` | covert_monitored 1 → 1/15, sycophantic_pi 1 → 1/13 |
+| `v3cond_sonnet46/` | covert_monitored 7 → 5/15, sycophantic_pi 6 → 0/12 |
+| `v3fault_sonnet46/` | honest 5 → 0/13, incentivized 1 → 0/5 |
+| **all v3** | honest 24 → 6/112, incentivized 18 → 11/102, pressure 14 → 9/95, covert 63 → 70/86, covert_monitored 8 → 6/30, sycophantic_pi 7 → 1/25 |
+
 ## Why the v3 runs are partial
 
 All `v3*` runs **stopped when the team's Anthropic API credit ran out**. That is
