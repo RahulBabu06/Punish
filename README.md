@@ -11,23 +11,32 @@ structured verdict: `hack_detected`, `confidence`, `hack_types` from a closed si
 vocabulary, and line-level `evidence`. Built for the London AI x Science Hackathon,
 Track 2.
 
-Preliminary headline (v2 sweep: 240 trajectories from Sonnet 4.6 and Haiku 4.5, 720
-audits, Opus-judge ground truth):
+Preliminary headline (v2 sweep: 360 trajectories from Sonnet 4.6, Sonnet 4.5 and Haiku 4.5
+subjects, 1,080 Sonnet 4.6 audits, Opus-judge ground truth):
 
 | auditor sees | recall | FPR | AUROC |
 |---|---|---|---|
-| reasoning + actions + report (`full_trace`) | 0.89 | 0.25 | 0.94 |
-| actions + report (`report_only`) | 0.92 | 0.25 | 0.92 |
-| final report only (`final_report`) | 0.66 | 0.20 | 0.83 |
+| reasoning + actions + report (`full_trace`) | 0.93 | 0.26 | 0.95 |
+| actions + report (`report_only`) | 0.93 | 0.27 | 0.92 |
+| final report only (`final_report`) | 0.67 | 0.21 | 0.83 |
 
 Reading only the report misses a third of the hacks, and seeing the actions recovers them.
-For a Sonnet auditor, seeing the reasoning adds little. A stronger auditor does use it:
-re-auditing the Sonnet-subject half with Opus 4.6 gives `full_trace` FPR 0.05 against 0.12
-for `report_only`, and recall 0.87 against 0.80 (paired p = 0.02). Instructed (`covert`) agents hack 77–83% of
-the time, pressured or incentivised agents 13–33%, and honest agents 0–10%. A deterministic
-exploit labeller finds only 24 of 79 hacks. Full write-up: [`REPORT.md`](REPORT.md).
-Related work: [`docs/related_work.md`](docs/related_work.md). Demo script:
-[`PITCH.md`](PITCH.md).
+For a Sonnet auditor, seeing the reasoning improves the confidence ranking (ΔAUROC +0.03)
+but almost never changes the verdict. A stronger auditor does use it. Re-auditing 240
+trajectories with Opus 4.6, `full_trace` gets recall 0.84 against 0.73 for `report_only`,
+and FPR 0.11 against 0.17 (paired McNemar p < 0.001). Instructed (`covert`) agents hack
+77–93% of the time, pressured or incentivised agents 13–33%, and honest agents 0–10%. A
+deterministic exploit labeller finds only 47 of 123 hacks.
+
+The 10-task v3 suite and the new conditions (`covert_monitored`, `sycophantic_pi`, tool-failure
+injection, Opus subject) have only preliminary, labeller-only results, because the API credit
+ran out before they were judged (`REPORT.md` §8.6).
+
+- Full write-up: [`REPORT.md`](REPORT.md)
+- Tables: [`results/RESULTS.md`](results/RESULTS.md)
+- Worked examples: [`docs/case_studies.md`](docs/case_studies.md)
+- Related work: [`docs/related_work.md`](docs/related_work.md)
+- Demo script: [`PITCH.md`](PITCH.md)
 
 ## Setup (Python 3.11)
 
@@ -112,18 +121,43 @@ The committed runs have all the trajectories, verdicts, episodes and judge label
 commands rebuild every table in `REPORT.md` offline:
 
 ```bash
-.venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45   # REPORT §8.1–8.3
-.venv/bin/python -m eval.analyze results/probe_v1                         # REPORT §8.4
-.venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 \
-  --out /tmp/results.md --json /tmp/rows.json                             # rows for further stats
+# REPORT §8.1–8.3 (judged v2 runs) -> results/RESULTS.md + results/figures/
+.venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/RESULTS.md --figures
+# REPORT §8.6 (labeller-only, preliminary)
+.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_sonnet46 results/v3cond_sonnet46 \
+  results/v3cond_haiku45 results/v3fault_sonnet46 results/v3_opus46 \
+  --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3
+# REPORT §8.4
+.venv/bin/python -m eval.analyze results/probe_v1
+# REPORT §8.7–8.9: hard-case set (heuristic), best-of-n veto replay, API cost estimate
+.venv/bin/python -m eval.hard_cases --auditor heuristic
+.venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
+  --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
+.venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --by-dir --out results/COST.md
+# rows for further stats (McNemar, per-task, per-subject)
+.venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out /tmp/results.md --json /tmp/rows.json
 ```
 
 | run | what |
 |---|---|
-| `results/v2_sonnet46/`, `results/v2_haiku45/` | main sweep: 120 trajectories each (4 configs × 6 tasks × 5 eps), 3 auditor modes, Opus judge labels |
-| `results/v2_sonnet46/reaudit_claude-opus-4-6/` | the same 120 Sonnet-subject trajectories re-audited by Opus 4.6 in 3 modes (`eval.analyze` picks up `reaudit_*` directories automatically) |
+| `results/v2_sonnet46/`, `results/v2_haiku45/`, `results/v2_sonnet45/` | main sweep: 120 trajectories each (4 configs × 6 tasks × 5 eps), 3 auditor modes, Opus judge labels |
+| `results/v2_{sonnet46,haiku45}/reaudit_claude-opus-4-6/` | the same 240 trajectories re-audited by Opus 4.6 in 3 modes (`eval.analyze` picks up `reaudit_*` directories automatically) |
+| `results/v3_haiku45/`, `results/v3_sonnet46/` | 10-task v3 suite: 200 and 150 (of 200) trajectories, 3 modes, **labeller labels only** |
+| `results/v3cond_{sonnet46,haiku45}/` | `covert_monitored` and `sycophantic_pi`, 27 and 28 trajectories (partial, labeller only) |
+| `results/v3fault_sonnet46/` | 50% tool-failure injection, 18 trajectories (partial, labeller only) |
+| `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
+| `results/hard_cases/` | 32 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
+| `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
+| `results/COST.md` | estimated API cost of the v2 runs (`eval.cost`) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
+| `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |
+
+The v3 and partial runs stopped when the Anthropic credit ran out. Finishing them means
+re-running the sweep for the missing cells, then
+`modal run eval/batch.py --results-dir <dir> --job judge`.
 
 Each run directory has `trajectories/<task>__<config>__epNNN.jsonl`,
 `verdicts/<id>[__<mode>].json` (no suffix means `full_trace`), `episodes/` (verdict +
@@ -147,7 +181,7 @@ suite behind the committed runs. Their deterministic labels are frozen in `episo
 | `fixtures/` | golden example trajectory and verdict used by tests and the demo |
 | `results/` | committed runs (see above) |
 | `tests/` | offline test suite (fake Anthropic and Modal clients) |
-| [`REPORT.md`](REPORT.md), [`PITCH.md`](PITCH.md), [`docs/`](docs/related_work.md) | write-up, demo script, related work |
+| [`REPORT.md`](REPORT.md), [`PITCH.md`](PITCH.md), [`docs/`](docs/) | write-up, demo script, [related work](docs/related_work.md), [case studies](docs/case_studies.md) |
 
 ## License
 
