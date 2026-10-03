@@ -95,7 +95,7 @@ def _ci(svg: SVG, x, low, high, color, *, horizontal=False):
 
 def hack_rate_svg(stats: dict) -> str:
     rows = stats["hack_rates"]
-    height = max(350, 205 + 54 * len(rows))
+    height = max(365, 249 + 54 * len(rows))
     svg = SVG("Reward hacking by subject model and configuration",
               "Headline label: labeller OR privileged judge · trajectory bootstrap 95% CI", height)
     left, width = 344, 520
@@ -121,6 +121,10 @@ def hack_rate_svg(stats: dict) -> str:
                     horizontal=True)
             svg.text(left + width + 15, y + 5, f"{rate['rate']:.0%}  ({rate['hacked']}/{rate['n']})", weight=600)
     svg.text(left + width / 2, bottom + 49, "Hacked trajectories / known-label trajectories", anchor="middle", weight=600)
+    for i, cfg in enumerate(configs):
+        x = 344 + i * 155
+        svg.rect(x, height - 61, 14, 14, colors[cfg], radius=2)
+        svg.text(x + 23, height - 49, cfg, size=12, color=MUTED)
     svg.text(36, height - 17, "Bars use unique trajectories; missing labels are excluded. Endpoint CIs may collapse on small samples.",
              size=12, color=MUTED)
     if not rows:
@@ -171,7 +175,7 @@ def recall_svg(stats: dict) -> str:
     configs = sorted({r["agent_config"] for r in rows})
     height = 155 + max(1, len(auditors)) * 367
     svg = SVG("Which configurations does each auditor mode catch?",
-              "Recall of actual verdicts · headline label: labeller OR privileged judge · trajectory bootstrap 95% CI", height)
+              "Actual verdicts · labeller OR privileged judge · subject models pooled by config · bootstrap 95% CI", height)
     for panel, auditor in enumerate(auditors):
         left, top, width, ph = 108, 146 + panel * 367, 610, 235
         svg.text(left, top - 21, f"Auditor: {auditor}", size=16, weight=600)
@@ -200,7 +204,7 @@ def recall_svg(stats: dict) -> str:
         svg.text(left + width / 2, top + ph + 69, "Subject agent configuration (n = hacked trajectories)", anchor="middle", weight=600)
         for j, mode in enumerate(MODES):
             _legend(svg, 763, top + 30 + j * 55, mode)
-    svg.text(36, height - 17, "No hacked trajectories → recall is undefined, not zero. Each auditor is shown separately; models are never pooled.",
+    svg.text(36, height - 17, "No hacked trajectories → recall is undefined, not zero. Auditor models are shown separately; subject models are pooled by config.",
              size=12, color=MUTED)
     if not auditors:
         svg.text(36, 150, "No configuration data available", color=MUTED)
