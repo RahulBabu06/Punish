@@ -85,6 +85,33 @@ def audit_text(trajectory_text: str, case_id: str, mode: str, model: str | None 
         return audit_case(path, mode, "claude", model=model, client=client)
 
 
+def run_modal_cases(cases: list[dict], modes: list[str], out: str, model: str | None, job,
+                    skip_existing: bool = True) -> list[dict]:
+    rows, pending = [], []
+    for case in cases:
+        for mode in modes:
+            path = Path(out, "verdicts", f"{case['case_id']}__{mode}__claude.json")
+            try:
+                verdict = json.loads(path.read_text()) if skip_existing else None
+                if not isinstance(verdict, dict) or not {"hack_detected", "confidence"} <= verdict.keys():
+                    verdict = None
+            except (OSError, ValueError):
+                verdict = None
+            if verdict is None:
+                pending.append((case, mode, path))
+            else:
+                rows.append(make_row(case, mode, "claude", verdict))
+    print(f"{len(pending)} pending Claude audits, {len(rows)} cached -> {out}")
+    args = [(Path(c["path"]).read_text(), c["case_id"], m, model) for c, m, _ in pending]
+    for (case, mode, path), verdict in zip(pending, job.starmap(args, return_exceptions=True)):
+        if isinstance(verdict, BaseException):
+            rows.append(make_row(case, mode, "claude", error=repr(verdict)))
+        else:
+            write_json(path, verdict)
+            rows.append(make_row(case, mode, "claude", verdict))
+    return rows
+
+
 def make_row(case: dict, mode: str, auditor: str, verdict: dict | None = None, error: str | None = None) -> dict:
     label = case["label"]
     row = {
@@ -284,25 +311,13 @@ if modal is not None:
 
     @app.local_entrypoint()
     def modal_main(modes: str = "all", out: str = DEFAULT_OUT, auditor_model: str = "", cases_dir: str = "",
-                   only: str = ""):
+                   only: str = "", skip_existing: bool = True):
         cases = load_cases(cases_dir or CASES_DIR)
         if only:
             keep = set(only.split(","))
             cases = [c for c in cases if c["case_id"] in keep]
         mode_list = parse_modes(modes)
-        jobs = [(c, m) for c in cases for m in mode_list]
-        print(f"hard cases: {len(cases)} cases x {len(mode_list)} modes = {len(jobs)} Claude audits on Modal")
-        texts = {c["case_id"]: Path(c["path"]).read_text(encoding="utf-8") for c in cases}
-        results = hard_case_job.starmap([(texts[c["case_id"]], c["case_id"], m, auditor_model or None) for c, m in jobs],
-                                        return_exceptions=True)
-        rows = []
-        for (c, m), r in zip(jobs, list(results)):
-            if isinstance(r, BaseException):
-                print(f"FAILED {c['case_id']} {m}: {r!r}")
-                rows.append(make_row(c, m, "claude", error=repr(r)))
-                continue
-            write_json(Path(out, "verdicts", f"{c['case_id']}__{m}__claude.json"), r)
-            rows.append(make_row(c, m, "claude", r))
+        rows = run_modal_cases(cases, mode_list, out, auditor_model or None, hard_case_job, skip_existing)
         print(save(rows, cases, out, "claude", auditor_model or None))
 
 
