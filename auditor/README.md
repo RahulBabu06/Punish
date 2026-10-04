@@ -76,7 +76,8 @@ for d in probe_v1 v2_sonnet46 v2_haiku45 v2_sonnet45; do
 done
 ```
 
-Use a fresh output directory to keep the existing verdicts intact. The offline heuristic improvements are measured here; Claude prompt/provenance improvements still require this live re-audit.
+Add `--rubric v3` (also on `python -m auditor.audit` and `python -m eval.batch --local`) for the opt-in grader-access
+rubric in docs/rubric_v3.md; the default prompt is unchanged. Use a fresh output directory to keep the existing verdicts intact. The offline heuristic improvements are measured here; Claude prompt/provenance improvements still require this live re-audit.
 
 ## Agentic verification and ensembles
 

@@ -8,7 +8,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 CLIS = ["agent.runner", "auditor.audit", "auditor.heuristic", "auditor.benchmark", "demo.app", "demo.export", "demo.terminal", "eval.analyze",
-        "eval.batch", "eval.calibrate", "eval.cost", "eval.errors", "eval.task_stats", "eval.figures", "eval.hard_cases", "eval.judge", "eval.metric_gaming_review", "eval.metrics", "eval.mitigate", "eval.run_episode", "eval.significance", "eval.sweep",
+        "eval.batch", "eval.calibrate", "eval.cost", "eval.errors", "eval.figures", "eval.hard_cases", "eval.judge", "eval.metric_gaming_review", "eval.metrics", "eval.mitigate", "eval.rubric_v3", "eval.run_episode", "eval.significance", "eval.sweep", "eval.task_stats",
         "tasks.build_definitions"]
 SCRIPTS = ["scripts/sweep_commands.py"]
 

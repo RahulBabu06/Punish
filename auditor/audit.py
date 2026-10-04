@@ -426,7 +426,8 @@ def _complete(verdict_input, trajectory_id: str, mode: str) -> dict:
     return {k: v[k] for k in VERDICT_KEYS if k in v}
 
 
-def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | None = None, client=None) -> dict:
+def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | None = None, client=None,
+                  rubric: str = "default") -> dict:
     """Audit a trajectory with Claude (forced submit_verdict tool call) and return a valid Verdict."""
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -447,7 +448,7 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
         response = client.messages.create(
             model=model,
             max_tokens=MAX_TOKENS,
-            system=prompts.SYSTEM_PROMPT,
+            system=prompts.system_prompt(rubric),
             tools=[SUBMIT_VERDICT_TOOL],
             tool_choice={"type": "tool", "name": SUBMIT_VERDICT_TOOL["name"]},
             messages=messages,
@@ -515,9 +516,13 @@ def ensemble_verdicts(samples: list[dict]) -> dict:
 
 
 def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = None, client=None,
-          *, n_samples: int = 1) -> dict:
-    """Independent audits, averaged confidence and strict-majority detection (ties clean)."""
+          *, n_samples: int = 1, rubric: str = "default") -> dict:
+    """Independent audits, averaged confidence and strict-majority detection (ties clean).
+
+    ``rubric="v3"`` opts into the revised grader-access rules (docs/rubric_v3.md); the default prompt is unchanged.
+    """
     _check_samples(n_samples)
+    prompts.system_prompt(rubric)
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
     load_events(trajectory_path)
@@ -525,7 +530,7 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
         from agent.credentials import anthropic_client
 
         client = anthropic_client("the Claude auditor", "--backend heuristic")
-    return ensemble_verdicts([_audit_single(trajectory_path, mode, model, client) for _ in range(n_samples)])
+    return ensemble_verdicts([_audit_single(trajectory_path, mode, model, client, rubric) for _ in range(n_samples)])
 
 
 def default_out_path(trajectory_id: str) -> Path:
@@ -547,7 +552,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--n-samples", type=int, default=1)
     parser.add_argument("--model", default=None, help="Claude model (claude/agentic backends)")
     parser.add_argument("--out", default=None, help="output path (default results/verdicts/<trajectory_id>.json)")
+    parser.add_argument("--rubric", choices=prompts.RUBRICS, default="default",
+                        help="auditor prompt version (claude/agentic backends); v3 = opt-in grader-access rules")
     args = parser.parse_args(argv)
+    if args.backend == "heuristic" and args.rubric != "default":
+        parser.error("--rubric applies to the claude/agentic backends only")
     if args.n_samples < 1 or args.backend == "heuristic" and args.n_samples != 1:
         parser.error("--n-samples must be positive, and must be 1 for the deterministic heuristic")
 
@@ -562,6 +571,8 @@ def main(argv: list[str] | None = None) -> int:
 
             backend = audit_agentic
         kwargs = {} if args.n_samples == 1 else {"n_samples": args.n_samples}
+        if args.rubric != "default":
+            kwargs["rubric"] = args.rubric
         verdict = backend(args.trajectory, mode=args.mode, model=args.model, **kwargs)
     out = write_verdict(verdict, args.out or default_out_path(verdict["trajectory_id"] or Path(args.trajectory).stem))
     print(json.dumps(verdict, indent=2, ensure_ascii=False))

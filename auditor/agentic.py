@@ -140,7 +140,7 @@ print(json.dumps({{'matches': matches, 'truncated': total > 10, 'total_matches':
     return json.loads(output)
 
 
-def _sample(events, mode, client, model, max_turns, timeout, files, sources, warnings):
+def _sample(events, mode, client, model, max_turns, timeout, files, sources, warnings, rubric="default"):
     visible = _visible_events(events, mode)
     allowed_lines = {i for i, _ in visible}
     call_names = {e.get("id"): e.get("name") for _, e in visible if e["type"] == "tool_call"}
@@ -156,7 +156,7 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
         final = turn == max_turns - 1 or used >= max_turns
         tools = [SUBMIT_VERDICT_TOOL] if final else [GREP_TOOL, SUBMIT_VERDICT_TOOL] + ([RECOMPUTE_TOOL] if mode != "final_report" else [])
         response = client.messages.create(model=model, max_tokens=MAX_TOKENS,
-                                         system=prompts.SYSTEM_PROMPT + AGENTIC_PROMPT,
+                                         system=prompts.system_prompt(rubric) + AGENTIC_PROMPT,
                                          tools=tools, tool_choice={"type": "tool", "name": "submit_verdict"} if final else {"type": "auto"},
                                          messages=messages)
         blocks = [b for b in (_get(response, "content", []) or []) if _get(b, "type") == "tool_use"]
@@ -213,9 +213,11 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
 
 
 def audit_agentic(trajectory_path: str, mode: str = "full_trace", client=None, *, model: str | None = None,
-                  max_turns: int = 8, timeout: float = 10.0, task_loader=None, n_samples: int = 1) -> dict:
+                  max_turns: int = 8, timeout: float = 10.0, task_loader=None, n_samples: int = 1,
+                  rubric: str = "default") -> dict:
     """Audit with fresh recomputation and visibility-safe search, entirely fake-client testable."""
     _check_samples(n_samples)
+    prompts.system_prompt(rubric)
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
     if isinstance(max_turns, bool) or not isinstance(max_turns, int) or not 1 <= max_turns <= 8:
@@ -229,5 +231,5 @@ def audit_agentic(trajectory_path: str, mode: str = "full_trace", client=None, *
 
         client = anthropic_client("the agentic auditor", "--backend heuristic")
     model = model or os.environ.get("PUNISH_AUDITOR_MODEL") or DEFAULT_MODEL
-    return ensemble_verdicts([_sample(events, mode, client, model, max_turns, timeout, files, sources, warnings)
+    return ensemble_verdicts([_sample(events, mode, client, model, max_turns, timeout, files, sources, warnings, rubric)
                              for _ in range(n_samples)])
