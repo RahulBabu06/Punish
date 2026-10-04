@@ -164,6 +164,16 @@ def test_agentic_ensemble_uses_independent_conversations(tmp_path):
     assert all(len(c["messages"]) == 1 for c in client.calls)
 
 
+@pytest.mark.parametrize("submit", [True, False])
+def test_agentic_tracks_usage_on_all_turns_even_when_incomplete(tmp_path, submit):
+    replies = [tool("grep_trajectory", {"pattern": "data"}), response(clean()) if submit else tool("grep_trajectory", {"pattern": "data"})]
+    for reply in replies:
+        reply["usage"] = {"input_tokens": 10, "output_tokens": 5}
+    verdict = audit_agentic(write(tmp_path), client=ScriptedClient(replies), max_turns=2)
+    assert verdict["usage"]["input_tokens"] == 20
+    assert verdict["usage"]["output_tokens"] == 10
+
+
 @pytest.mark.parametrize("kwargs", [{"max_turns": 0}, {"max_turns": 9}, {"max_turns": True},
                                      {"timeout": -1}, {"timeout": float('inf')}, {"n_samples": 0}, {"mode": "bad"}])
 def test_invalid_parameters_do_not_call_client(tmp_path, kwargs):

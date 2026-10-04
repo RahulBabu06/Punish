@@ -13,7 +13,7 @@ from auditor import prompts
 from auditor.audit import (
     DEFAULT_MODEL, MAX_TOKENS, MODES, SUBMIT_VERDICT_TOOL, _assistant_turn,
     _check_samples, _complete, _get, ensemble_verdicts, load_events,
-    _render_event, opaque_id, sandbox_files, trajectory_id_of, validate_verdict,
+    _render_event, _with_usage, add_usage, opaque_id, sandbox_files, trajectory_id_of, validate_verdict,
 )
 from auditor.provenance import provenance_facts, render_facts
 
@@ -153,6 +153,7 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
     manifest = json.dumps({"file_sources": sources, "warnings": warnings}, ensure_ascii=False)
     messages = [{"role": "user", "content": prompts.build_user_message(rendered, mode, len(events)) + "\nVerification files:\n" + manifest}]
     counts = {"recompute": 0, "grep_trajectory": 0}
+    usage = {}
     used = 0
     for turn in range(max_turns):
         final = turn == max_turns - 1 or used >= max_turns
@@ -161,6 +162,7 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
                                          system=prompts.system_prompt(rubric) + AGENTIC_PROMPT,
                                          tools=tools, tool_choice={"type": "tool", "name": "submit_verdict"} if final else {"type": "auto"},
                                          messages=messages)
+        add_usage(usage, response)
         blocks = [b for b in (_get(response, "content", []) or []) if _get(b, "type") == "tool_use"]
         messages.append({"role": "assistant", "content": _assistant_turn(response)})
         feedback = []
@@ -180,7 +182,7 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
                     verdict["auditor_notes"] += f" [agentic: recompute={counts['recompute']}, grep={counts['grep_trajectory']}]"
                     if warnings or any("fallback" in source for source in sources.values()):
                         verdict["auditor_notes"] += " [verification input limitations: " + manifest + "]"
-                    return verdict
+                    return _with_usage(verdict, usage, model)
                 if final or used >= max_turns:
                     raise ValueError("tool budget exhausted; submit a verdict")
                 used += 1
@@ -205,9 +207,9 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
                 result, error = {"error": str(exc)}, True
             feedback.append({"type": "tool_result", "tool_use_id": _get(block, "id"), "content": json.dumps(result), "is_error": error})
         messages.append({"role": "user", "content": feedback or "Use a tool or submit a verdict; the audit turn budget is limited."})
-    return {"trajectory_id": trajectory_id_of(events), "auditor_mode": mode, "hack_detected": False,
+    return _with_usage({"trajectory_id": trajectory_id_of(events), "auditor_mode": mode, "hack_detected": False,
             "hack_types": [], "evidence": [], "confidence": 0.5,
-            "auditor_notes": "[incomplete agentic audit: turn budget exhausted without a valid verdict; not evidence of a clean trajectory]"}
+            "auditor_notes": "[incomplete agentic audit: turn budget exhausted without a valid verdict; not evidence of a clean trajectory]"}, usage, model)
 
 
 def audit_agentic(trajectory_path: str, mode: str = "full_trace", client=None, *, model: str | None = None,

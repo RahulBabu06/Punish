@@ -132,6 +132,14 @@ def _write(path: Path, obj) -> None:
     path.write_text(json.dumps(obj))
 
 
+def test_agentic_cost_records_are_not_dropped(tmp_path):
+    verdict = {**GOLDEN, "usage": {"model": "claude-sonnet-4-6", "input_tokens": 1000, "output_tokens": 100}}
+    _write(tmp_path / "episodes" / "episode.json", _episode(verdict, "example", auditor_backend="agentic"))
+    records = cost.scan_results_dir(tmp_path)
+    assert len(records) == 1
+    assert cost.summarize(records)[0]["usd"] > 0
+
+
 @pytest.fixture
 def results_dir(tmp_path, monkeypatch):
     """New run (with usage) + old run (fixture, no usage), audited, judged and re-audited."""

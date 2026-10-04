@@ -45,6 +45,16 @@ def test_majority_not_confidence_threshold_and_vote_weighted_union():
     assert all(len(c["messages"]) == 1 for c in client.calls)
 
 
+def test_ensemble_sums_usage_across_every_sample():
+    replies = [response(clean()) for _ in range(3)]
+    for reply in replies:
+        reply["usage"] = {"input_tokens": 10, "output_tokens": 5, "cache_read_input_tokens": 2}
+    verdict = audit(str(TRAJECTORY), client=ScriptedClient(replies), n_samples=3)
+    assert verdict["usage"]["input_tokens"] == 30
+    assert verdict["usage"]["output_tokens"] == 15
+    assert verdict["usage"]["cache_read_input_tokens"] == 6
+
+
 def test_duplicate_evidence_votes_and_ordering():
     client = ScriptedClient([response(positive()), response(positive()), response(positive(hack_type="fabricated_source"))])
     v = audit(str(TRAJECTORY), client=client, n_samples=3)
