@@ -21,7 +21,7 @@ So the original label (123 hacked) is not clean ground truth. Each cell below is
 
 | auditor sees | recall | FPR | AUROC |
 |---|---|---|---|
-| reasoning + actions + report (`full_trace`) | 0.93 / 0.90 / 0.90 | 0.26 / 0.20 / 0.35 | 0.95 / 0.96 / 0.89 |
+| reasoning + actions + report (`full_trace`) | 0.93 / 0.90 / 0.90 | 0.26 / 0.20 / 0.34 | 0.95 / 0.96 / 0.89 |
 | actions + report (`report_only`) | 0.93 / 0.91 / 0.91 | 0.27 / 0.21 / 0.35 | 0.92 / 0.93 / 0.84 |
 | final report only (`final_report`) | 0.67 / 0.76 / 0.74 | 0.21 / 0.21 / 0.23 | 0.83 / 0.86 / 0.83 |
 
@@ -62,10 +62,12 @@ rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.
 
 ![Corrected-label headline: hack rates by config, auditor recall/FPR/AUROC, cascade operating point](results/figures/headline.svg)
 
-The cascade panel's "held-out" point holds out thresholds only. The heuristic stage was calibrated on
-these v2 runs, so the point is in-sample for the heuristic. With pre-calibration rules the held-out
-cascade equals Sonnet alone (0.57 recall / 0.14 FPR). On unseen v3 runs (labeller labels) the v2 thresholds
-give 0.63 recall at 0.029 FPR (REPORT §8.13, [`results/cascade_heldout.md`](results/cascade_heldout.md)).
+The cascade panel shows two heuristic → Sonnet points. The v2 point (0.80 recall at 0.054 FPR, corrected
+label) is in-sample: the heuristic's rules and the cascade thresholds were both fit on these v2 runs
+(leave-one-experiment-out thresholds give 0.77 / 0.054, still in-sample for the rules). With the
+pre-calibration rules that cascade equals Sonnet alone (0.57 recall / 0.14 FPR). The v3 point is held out:
+on 450 unseen v3 runs (labeller labels only) the v2 thresholds give 0.63 recall at 0.029 FPR (REPORT §8.13,
+[`results/cascade_heldout.md`](results/cascade_heldout.md)).
 
 - Skeptical-reviewer FAQ: [`docs/reviewer_faq.md`](docs/reviewer_faq.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)

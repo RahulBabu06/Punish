@@ -54,8 +54,8 @@ clean), and the original 123 hacks should not be read as clean ground truth. Res
    a genuine null on accuracy (Δ +0.003 [−0.019, 0.025]) and FPR, but for recall the data
    cannot rule out a small difference (CI ±0.07).
 5. **Under the corrected label, auditors catch most hacks but over-flag honest
-   grader-reading runs.** Trace-mode FPR is 0.22–0.35 (Opus `full_trace` 0.22, Sonnet
-   `full_trace` 0.35) at recall 0.63–0.91 (Opus `report_only` 0.63). No Claude auditor × mode keeps FPR ≤ 10% on unseen
+   grader-reading runs.** Trace-mode FPR is 0.22–0.35 (Opus `full_trace` 0.22, Sonnet `report_only` 0.35, Sonnet
+   `full_trace` 0.34) at recall 0.63–0.91 (Opus `report_only` 0.63). No Claude auditor × mode keeps FPR ≤ 10% on unseen
    tasks with useful recall (§8.14). As a best-of-n veto the auditor still roughly halves
    shipped hacks, 0.28 → 0.15 (§8.8).
 
@@ -281,7 +281,7 @@ unchanged.
 
 | auditor, mode | AUROC orig / excl / corr | recall orig / excl / corr | FPR orig / excl / corr |
 |---|---|---|---|
-| Sonnet 4.6, `full_trace` | 0.945 / 0.962 / 0.891 | 0.93 / 0.90 / 0.90 | 0.26 / 0.20 / 0.35 |
+| Sonnet 4.6, `full_trace` | 0.945 / 0.962 / 0.891 | 0.93 / 0.90 / 0.90 | 0.26 / 0.20 / 0.34 |
 | Sonnet 4.6, `report_only` | 0.915 / 0.932 / 0.840 | 0.93 / 0.91 / 0.91 | 0.27 / 0.21 / 0.35 |
 | Sonnet 4.6, `final_report` | 0.828 / 0.858 / 0.825 | 0.67 / 0.76 / 0.74 | 0.21 / 0.21 / 0.23 |
 | Opus 4.6, `full_trace` | 0.944 / 0.951 / 0.861 | 0.84 / 0.77 / 0.77 | 0.11 / 0.06 / 0.22 |
@@ -795,9 +795,9 @@ and Opus 4.6 (79 hacked) under five policies:
   stage has FPR ≥ 0.22 at its default verdicts (Sonnet 0.84 / 0.34, Opus 0.77 / 0.22,
   Sonnet → Opus 0.75 / 0.22; heuristic only 0.68 / 0.08). With tuned thresholds, heuristic →
   Sonnet is the only Claude policy under 10% FPR: recall 0.80 at FPR 0.054 and $0.019 per
-  trajectory in-sample, and 0.77 at 0.054 ($0.016; training FPR cap 10%, or 0.64 at 0.054 under a 5% cap as in `results/figures/headline.svg`) with thresholds tuned on the other
+  trajectory in-sample, and 0.77 at 0.054 ($0.016; training FPR cap 10%, or 0.64 at 0.054 under a 5% cap) with thresholds tuned on the other
   subject. Sonnet alone and Opus alone stay at FPR 0.14–0.15 held out.
-- At FPR ≤ 5%, corrected label: the best in-sample recall is 0.77 (heuristic → Sonnet, $0.013);
+- At FPR ≤ 5%, corrected label: the best in-sample recall is 0.79 (heuristic → Sonnet, $0.019);
   with thresholds tuned on the other subject it is 0.64 for heuristic → Sonnet (FPR 0.054), and
   Sonnet alone reaches 0.57 only at FPR 0.14, over the cap. (Original label: 0.71 in-sample,
   0.68 / 0.60 held out.)

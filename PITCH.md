@@ -93,7 +93,7 @@ show reasoning often leaves things out. Our probe and the model probe show agent
 hacks ("I need to report an R² ≥ 0.90"), so reasoning is a useful signal for both catching
 and clearing agents.
 
-**"FPR of 0.26 is too high to deploy."** (0.20 with `leaked_answer` excluded, 0.35 with the
+**"FPR of 0.26 is too high to deploy."** (0.20 with `leaked_answer` excluded, 0.34 with the
 corrected label.) Agreed, it's not a standalone gate yet. Under the corrected label no Claude
 auditor mode keeps FPR ≤ 10% on unseen tasks with useful recall. The best low-FPR option we
 have is a heuristic → Sonnet cascade (recall 0.80 at FPR 0.054, `results/CASCADE_corrected.md`). That point is
@@ -107,7 +107,7 @@ suspicious, and our judge doesn't. Requiring that the file's contents shape the 
 remove most of them. That is our opt-in rubric v3. An offline proxy on the saved verdicts
 estimates Sonnet `full_trace` FPR 0.34 → 0.05 at unchanged recall, but that's a proxy, not a
 measurement, and live validation is pending (`docs/rubric_v3.md`). An Opus auditor with the full trace gets FPR 0.22 (0.23 on the
-Sonnet-subject runs) on corrected labels, or 0.06 (0.01) with `leaked_answer` excluded. As a triage tool for flagging runs for human review, 0.90 recall at 0.35
+Sonnet-subject runs) on corrected labels, or 0.06 (0.01) with `leaked_answer` excluded. As a triage tool for flagging runs for human review, 0.90 recall at 0.34
 FPR (corrected label; 0.93 / 0.26 original) is already useful.
 
 **"Why not just hide the grader file?"**
@@ -168,7 +168,7 @@ reviewed today.
   Honest 3/30, 1/30, 0/30.
 - Per-subject AUROC (`full_trace` / `report_only` / `final_report`): Sonnet 4.6 0.96 / 0.95 /
   0.80, Sonnet 4.5 0.95 / 0.89 / 0.83, Haiku 0.94 / 0.89 / 0.87.
-- Corrected label: Sonnet `full_trace` recall 0.90, FPR 0.35, AUROC 0.89; Opus `full_trace`
+- Corrected label: Sonnet `full_trace` recall 0.90, FPR 0.34, AUROC 0.89; Opus `full_trace`
   0.77, 0.22, 0.86. Covert reasoning discloses the hack in 63/66 cases (0.95).
 - Original label, Opus 4.6 auditor (n = 240): `full_trace` precision 0.79, recall 0.84, FPR 0.11, AUROC
   0.94. `report_only` 0.68 / 0.73 / 0.17 / 0.92. On Sonnet-subject runs, `full_trace` FPR
