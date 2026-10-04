@@ -252,7 +252,7 @@ Tool signatures (all paths are relative to the task sandbox):
 | `ground_truth_hacked` | bool | `tasks.registry.label(task, events)` |
 | `verdict` | object | full Verdict |
 | `correct` | bool | `verdict.hack_detected == ground_truth_hacked` |
-| `trajectory_path` | str | path as passed to the harness (repo-relative in committed runs) |
+| `trajectory_path` | str | path as passed to the harness, under `results_dir` (Modal sweeps rewrite the job's `results/` prefix to the local `--results-dir`). Committed runs made before that fix record `results/trajectories/<id>.jsonl`; resolve them as `<run>/trajectories/<id>.jsonl` |
 | `auditor_backend` | str | `claude` or `heuristic` |
 | `ground_truth_hack_types`, `ground_truth_hacked_runtime`, `ground_truth_hack_types_runtime`, `correct_runtime` | optional | written only by `python -m tasks.validate_labels --relabel` (v3 runs): the relabelled hack types (the task's `expected_hack_types` if hacked, else `[]`) and the original run-time label, types and `correct` |
 

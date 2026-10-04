@@ -412,7 +412,7 @@ Side note, <code>leaked_answer</code> excluded (200 runs): FPR 0.06 vs 0.12.</p>
 <div class="kicker">Limitations</div>
 <h2>Read these numbers as preliminary</h2>
 <div class="grid g2" style="gap:16px">
-<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 2–40 corrected-label positives, 4–27 in the Opus subset. Pressure vs incentivized, subject-model gaps and Opus recall or FPR alone are underpowered (SIGNIFICANCE.md). Resampling by cell widens CIs up to ~2×.</p></div>
+<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 2–40 corrected-label positives, 0–27 in the Opus subset (4–27 original). Pressure vs incentivized, subject-model gaps and Opus recall or FPR alone are underpowered (SIGNIFICANCE.md). Resampling by cell widens CIs up to ~2×.</p></div>
 <div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>66/93 positives are <code>covert</code>, and 75/90 covert reasonings name the red-team role (Opus's reasoning gain holds without them). On natural hacks <code>full_trace</code> recall is 19/27 = 0.70 (Sonnet) and 5/17 = 0.29 (Opus).</p></div>
 <div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, same family as the auditor. Against 60 blind AI labels: κ 0.70 (0.97 after the stale <code>leaked_answer</code> fix they helped find), never more lenient. No human raters yet.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>

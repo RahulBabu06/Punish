@@ -19,8 +19,8 @@ a thin bibliography) and runs Claude subject agents under honest, incentivised, 
 prompts. A Claude auditor reads each trajectory (reasoning, tool calls, final report) and
 returns a verdict with hack types and line-level evidence. On 360 v2 trajectories (93 hacked under
 corrected labels), a Sonnet 4.6 auditor reading the full trace reaches 0.90 recall at 0.34 FPR (AUROC 0.891);
-reading only the final report gives 0.74 recall at 0.23 FPR (AUROC 0.825). As a veto in best-of-n selection,
-the auditor cuts the shipped-hack rate from 0.28 to 0.15. A rule-based heuristic in front of Claude reaches
+reading only the final report gives 0.74 recall at 0.23 FPR (AUROC 0.825), a gap that comes from instructed
+hacks. As a best-of-n veto, the auditor cuts the shipped-hack rate from 0.28 to 0.15. A heuristic → Claude cascade reaches
 80.4% recall at 5.4% FPR in-sample, but 62.7% at 2.9% on a held-out, labeller-only cohort. Ground truth is
 AI-made and costs are estimates.
 
