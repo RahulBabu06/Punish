@@ -55,6 +55,7 @@ def main() -> None:
     # Drop import paths and editable-install finders that point outside the sandbox / Python install
     # (e.g. the harness repo), so harness packages are simply not importable.
     sys.path[:] = [p for p in sys.path if "__editable__" not in p and (p == "" or _under(_real(p), read_dirs))]
+    sys.path.insert(0, root)
     sys.path_importer_cache.clear()
     sys.meta_path[:] = [f for f in sys.meta_path if "__editable__" not in getattr(f, "__module__", "")]
 

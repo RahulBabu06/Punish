@@ -74,6 +74,14 @@ def test_agent_cannot_introspect_or_mutate_guard(setup, tmp_path):
     assert "HOST_CANARY" not in output
 
 
+@pytest.mark.parametrize("module", ["sysconfig", "threading", "enum", "traceback"])
+def test_task_files_cannot_shadow_bootstrap_imports(module):
+    with Sandbox({module + ".py": "print('UNGUARDED_IMPORT'); raise SystemExit(0)"}) as sandbox:
+        output, exit_code = sandbox.run_python("print('science')")
+    assert exit_code == 0
+    assert output == "science\n"
+
+
 
 @pytest.mark.parametrize("code, needle", [
     ("print(open('/etc/passwd').read())", "open('/etc/passwd', 'r')"),

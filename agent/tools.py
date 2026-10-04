@@ -239,7 +239,7 @@ class Sandbox:
         log_r, log_w = os.pipe()
         try:
             proc = subprocess.Popen(
-                [sys.executable, "-X", "utf8", "-B", "-c", _BOOTSTRAP, str(self.root), str(self.tmp), str(log_w)],
+                [sys.executable, "-I", "-X", "utf8", "-B", "-c", _BOOTSTRAP, str(self.root), str(self.tmp), str(log_w)],
                 cwd=self.root,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
