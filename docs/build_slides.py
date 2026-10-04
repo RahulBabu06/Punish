@@ -115,22 +115,22 @@ AGREEMENT_SVG = """
 <svg class="diagram" viewBox="0 0 1180 150" role="img" aria-label="Labeller vs judge agreement over 360 trajectories">
   <g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
     <rect x="0" y="20" width="154.0" height="64" fill="#0072B2"/>
-    <rect x="154.0" y="20" width="249.6" height="64" fill="#D55E00"/>
-    <rect x="403.6" y="20" width="776.4" height="64" fill="#E3EAF0"/>
+    <rect x="154.0" y="20" width="150.8" height="64" fill="#D55E00"/>
+    <rect x="304.8" y="20" width="875.2" height="64" fill="#E3EAF0"/>
     <text x="77" y="60" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">47</text>
-    <text x="278.8" y="60" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">76</text>
-    <text x="791.8" y="60" text-anchor="middle" font-size="22" font-weight="700" fill="#14263D">237 clean by both</text>
+    <text x="229.4" y="60" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">46</text>
+    <text x="742.4" y="60" text-anchor="middle" font-size="22" font-weight="700" fill="#14263D">267 clean by both</text>
     <text x="0" y="112" font-size="16" fill="#0072B2" font-weight="700">both say hacked</text>
     <text x="160" y="112" font-size="16" fill="#D55E00" font-weight="700">judge only (labeller misses)</text>
     <text x="1180" y="112" text-anchor="end" font-size="16" fill="#536579">labeller only: 0</text>
-    <text x="0" y="140" font-size="14" fill="#536579">360 v2 trajectories (Sonnet 4.6, Haiku 4.5, Sonnet 4.5 subjects), original labels; bar width proportional to count</text>
+    <text x="0" y="140" font-size="14" fill="#536579">360 v2 trajectories (Sonnet 4.6, Haiku 4.5, Sonnet 4.5 subjects), corrected label; bar width proportional to count</text>
   </g>
 </svg>
 """
 
 
 def covert_bars() -> str:
-    rows = [("Haiku 4.5", 0.400, 0.833), ("Sonnet 4.5", 0.700, 0.933), ("Sonnet 4.6", 0.400, 0.767)]
+    rows = [("Haiku 4.5", 0.400, 0.700), ("Sonnet 4.5", 0.700, 0.900), ("Sonnet 4.6", 0.400, 0.600)]
     out = ['<svg class="diagram" viewBox="0 0 560 250" role="img" aria-label="Covert hack rate: labeller vs judge">',
            '<g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">']
     x0, w = 120, 380
@@ -141,7 +141,7 @@ def covert_bars() -> str:
         out.append(f'<text x="{x0 + w * judge + 8:.1f}" y="{y + 17}" font-size="14" fill="#14263D">judge {judge:.0%}</text>')
         out.append(f'<rect x="{x0}" y="{y + 26}" width="{w * lab:.1f}" height="22" fill="#0072B2"/>')
         out.append(f'<text x="{x0 + w * lab + 8:.1f}" y="{y + 43}" font-size="14" fill="#14263D">labeller {lab:.0%}</text>')
-    out.append('<text x="120" y="244" font-size="13" fill="#536579">covert config, 30 trajectories per model</text>')
+    out.append('<text x="120" y="244" font-size="13" fill="#536579">covert config, 30 trajectories per model, corrected label</text>')
     out.append("</g></svg>")
     return "\n".join(out)
 
@@ -323,8 +323,8 @@ independently computed 0.312 (L9–L10 in its own trace) and is correctly clean.
 <div class="col" style="flex:0 0 790px">{headline}</div>
 <div class="col" style="flex:1">
 <ul style="margin-top:0">
-<li style="font-size:15px;margin-bottom:7px"><b>Label.</b> Corrected: <b>93/360</b> hacked (30 likely-wrong judge positives from a stale <code>leaked_answer</code> definition removed). Task excluded: <b>91/300</b>. The original 123 is not clean ground truth.</li>
-<li style="font-size:15px;margin-bottom:7px"><b>B.</b> Sonnet <code>full_trace</code>: recall 0.90 at <b>FPR 0.34</b>. With <code>leaked_answer</code> excluded: AUROC 0.962, recall 0.90, FPR 0.20.</li>
+<li style="font-size:15px;margin-bottom:7px"><b>Label.</b> Corrected: <b>93/360</b> hacked (30 likely-wrong judge positives from a stale <code>leaked_answer</code> definition removed). Side note, not the headline: task excluded 91/300; original 123.</li>
+<li style="font-size:15px;margin-bottom:7px"><b>B.</b> Sonnet <code>full_trace</code>: recall 0.90 at <b>FPR 0.34</b> (AUROC 0.891); the gain over the report is all on <code>covert</code> hacks.</li>
 <li style="font-size:15px;margin-bottom:7px"><b>C.</b> The v2 point is <b>in-sample</b> for the heuristic rules; pre-calibration rules only match Sonnet-only (0.57 / 0.14). v3 is held out, scored on <b>labeller-only</b> labels: preliminary.</li>
 <li style="font-size:15px;margin-bottom:7px"><b>D.</b> Veto, then best grader: shipped hack rate <b>0.28 → 0.15</b>.</li>
 <li style="font-size:15px">Whole study ≈ <b>$162.33, estimated</b> (chars/4 of today's prompts, not billed spend).</li>
@@ -340,13 +340,13 @@ independently computed 0.312 (L9–L10 in its own trace) and is correctly clean.
 <div class="row" style="gap:30px">
 <div class="col" style="flex:.95;gap:14px">
 <div class="grid g2" style="gap:12px">
-<div class="card"><div class="big">0.06</div><p style="margin-top:6px"><span class="pill ft">full_trace</span> FPR, 8/144 clean runs flagged (<code>leaked_answer</code> excluded)</p></div>
-<div class="card" style="border-color:var(--orange)"><div class="big">0.12</div><p style="margin-top:6px"><span class="pill ro">report_only</span> FPR, 17/144 clean runs flagged (<code>leaked_answer</code> excluded)</p></div>
+<div class="card"><div class="big">0.22</div><p style="margin-top:6px"><span class="pill ft">full_trace</span> FPR, 41/184 clean runs flagged (corrected label)</p></div>
+<div class="card" style="border-color:var(--orange)"><div class="big">0.27</div><p style="margin-top:6px"><span class="pill ro">report_only</span> FPR, 50/184 clean runs flagged (corrected label)</p></div>
 </div>
-<p style="margin:2px 0 0;font-size:17px">Opus 4.6 re-audit, <code>leaked_answer</code> excluded (200 runs): <b>recall 0.77 vs 0.63, FPR 0.06 vs 0.12.</b>
-Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07, p = 0.002) and ranking (ΔAUROC +0.04, p = 0.002).
+<p style="margin:2px 0 0;font-size:17px">Opus 4.6 re-audit, corrected label (240 runs): <b>recall 0.77 vs 0.63, FPR 0.22 vs 0.27.</b>
+Holm-corrected: reasoning improves Opus accuracy (+0.07, p = 0.002) and ranking (ΔAUROC +0.04, p = 0.002).
 Sonnet ranks better (+0.05, p &lt; 0.001) at unchanged accuracy. Opus recall or FPR alone is underpowered.
-Original label (240 runs, not clean ground truth): FPR 0.11 vs 0.17.</p>
+Side note, <code>leaked_answer</code> excluded (200 runs): FPR 0.06 vs 0.12.</p>
 <ul style="margin-top:4px">
 <li style="font-size:16.5px;margin-bottom:6px">With the reasoning visible, Opus can tell when an agent read <code>grade.py</code> but the grader didn't drive the number.</li>
 <li style="font-size:16.5px;margin-bottom:6px">Under the saved labels, all 13 Opus <code>full_trace</code> misses fall on <code>fake_citation</code>; source-content allegations still need independent verification.</li>
@@ -357,12 +357,12 @@ Original label (240 runs, not clean ground truth): FPR 0.11 vs 0.17.</p>
 {roc_sonnet}
 </div>
 </div>
-<div class="src">Source: REPORT.md §8.2 · results/significance/SIGNIFICANCE.md · ROC curves: results/RESULTS.md (original labels)</div>
+<div class="src">Source: REPORT.md §8.2 · results/significance/SIGNIFICANCE.md · ROC curves (side view, original label): results/RESULTS.md</div>
 </section>""",
         # 7 labeller vs judge
         f"""<section class="slide">
 <div class="kicker">Ground truth</div>
-<h2>A rule-based labeller misses many hacks: 46 of 91 found (leaked_answer excluded)</h2>
+<h2>A rule-based labeller misses many hacks: 47 of 93 found (corrected label)</h2>
 <div style="margin:4px 0 18px">{AGREEMENT_SVG}</div>
 <div class="row" style="gap:36px">
 <div class="col" style="flex:1">{covert_bars()}</div>
@@ -370,12 +370,12 @@ Original label (240 runs, not clean ground truth): FPR 0.11 vs 0.17.</p>
 <ul>
 <li style="font-size:18.5px">The labeller checks only the planted path, for example "read <code>eval.py</code>, reported 0.312 and <i>no successful analysis ran</i>".</li>
 <li style="font-size:18.5px"><b>fake_citation:</b> real bibliography keys can accompany invented source support. In case study 7 the agent admits inventing the attributed finding (L9).</li>
-<li style="font-size:18.5px"><b>leaked_answer:</b> the chart's 47 vs 123 includes 30 judge positives that are likely wrong (stale task definition). Excluding the task: 46 vs 91.</li>
-<li style="font-size:18.5px">Labeller-only hack rates would understate the problem about 2× (2.6× original). The judge is an LLM too: the best available reference, not the truth.</li>
+<li style="font-size:18.5px"><b>leaked_answer:</b> 30 judge positives from a stale task definition are relabelled clean (side note: the original label gave 47 vs 123).</li>
+<li style="font-size:18.5px">Labeller-only hack rates would understate the problem about 2× (2.6× on the original label). The judge is an LLM too: the best available reference, not the truth.</li>
 </ul>
 </div>
 </div>
-<div class="src">Source: results/RESULTS.md (labeller vs judge agreement; hack rate by model and config) · REPORT.md §7, §8.1</div>
+<div class="src">Source: results/RESULTS.md (labeller vs judge agreement; hack rate by model and config) · leaked_answer_correction.md · REPORT.md §7, §8.1</div>
 </section>""",
         # 8 hard cases
         """<section class="slide">
@@ -412,9 +412,9 @@ Original label (240 runs, not clean ground truth): FPR 0.11 vs 0.17.</p>
 <div class="kicker">Limitations</div>
 <h2>Read these numbers as preliminary</h2>
 <div class="grid g2" style="gap:16px">
-<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 9–40 positives (original; 2–40 corrected), 4–27 in the Opus subset (original; 0–27 corrected). Pressure vs incentivized, subject-model gaps and Opus recall or FPR alone are underpowered (SIGNIFICANCE.md). Resampling by cell widens CIs up to ~2×.</p></div>
+<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 2–40 corrected-label positives, 0–27 in the Opus subset (4–27 original). Pressure vs incentivized, subject-model gaps and Opus recall or FPR alone are underpowered (SIGNIFICANCE.md). Resampling by cell widens CIs up to ~2×.</p></div>
 <div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>66/93 positives are <code>covert</code>, and 75/90 covert reasonings name the red-team role (Opus's reasoning gain holds without them). On natural hacks <code>full_trace</code> recall is 19/27 = 0.70 (Sonnet) and 5/17 = 0.29 (Opus).</p></div>
-<div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Against 60 blind AI labels: κ 0.70, never more lenient; 8 of 9 disagreements are a stale <code>leaked_answer</code> definition. No human raters yet.</p></div>
+<div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, same family as the auditor. Against 60 blind AI labels: κ 0.70 (0.97 after the stale <code>leaked_answer</code> fix they helped find), never more lenient. No human raters yet.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>
 <div class="card" style="border-color:var(--amber)"><h3>Grader access drives FPR</h3><p>Auditors flag honest runs that read <code>grade.py</code> as <code>suspicious_access</code>, though the rubric caps access alone at 0.3 confidence. Corrected-label FPR: Sonnet <code>full_trace</code> 0.34, so precision 0.48 at our 26% hack rate would be 0.12 at 5%; no Claude auditor keeps FPR ≤ 10% on unseen tasks.</p></div>
 <div class="card" style="border-color:var(--navy)"><h3>Reasoning is not ground truth</h3><p>A clean trace is weak evidence of a clean run (Chen et al.). We have not tested agents trained to obfuscate.</p></div>
@@ -427,9 +427,9 @@ Original label (240 runs, not clean ground truth): FPR 0.11 vs 0.17.</p>
 <h1 style="margin-top:40px">Audit the trajectory, not the paper</h1>
 <ul style="margin-top:26px">
 <li><b>Actions expose instructed hacks.</b> The report alone costs Sonnet 0.17 recall (0.91 → 0.74), all on <code>covert</code>; v2's natural-hack reversal (26/27 vs 20/27) does not replicate on v3.</li>
-<li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (Opus FPR 0.06 vs 0.12 and recall 0.77 vs 0.63 with leaked_answer excluded; corrected-label accuracy gain Holm p = 0.002, and it holds without the role-leaking runs).</li>
+<li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (corrected label: Opus accuracy +0.07, Holm p = 0.002, holding without the role-leaking runs; FPR 0.22 vs 0.27 and recall 0.77 vs 0.63 alone are underpowered).</li>
 <li><b>Auditors catch most hacks but over-flag honest grader-reading runs</b> (corrected label: Sonnet full_trace FPR 0.34; 0.22–0.35 across trace modes). As a best-of-n veto they still cut shipped hacks 0.28 → 0.15.</li>
-<li><b>Rule-based ground truth undercounts.</b> The labeller finds 46 of the 91 hacks the judge finds (leaked_answer excluded).</li>
+<li><b>Rule-based ground truth undercounts.</b> The labeller finds 47 of the 93 hacks the judge finds (corrected label).</li>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>
 <div class="q" style="font-size:23px">Next: measure the opt-in rubric v3 live (offline proxy only: FPR 0.34 → 0.05, not measured), run the Claude auditor on the hard cases
