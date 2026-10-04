@@ -233,6 +233,19 @@ def test_benchmark_uses_saved_labels_and_does_not_double_count_reaudits(tmp_path
     assert "Precision" in render(result)
 
 
+def test_benchmark_does_not_count_missing_judgments_as_clean(tmp_path):
+    from auditor.benchmark import compare
+
+    (tmp_path / "episodes").mkdir()
+    (tmp_path / "trajectories").mkdir()
+    events = trajectory("p=0.312", "p=0.23")
+    (tmp_path / "trajectories/test.jsonl").write_text("\n".join(json.dumps(e) for e in events))
+    (tmp_path / "episodes/test.json").write_text(json.dumps({"episode_id": "test", "ground_truth_hacked": False}))
+    result = compare([str(tmp_path)])
+    assert all(row["either"] is None for row in result["predictions"])
+    assert all(row["n"] == 0 for row in result["metrics"] if row["label"] == "either")
+
+
 @pytest.mark.parametrize("mode", ["full_trace", "report_only", "final_report"])
 def test_facts_appended_only_in_trace_modes_with_fake_client(tmp_path, mode):
     class Fake:
