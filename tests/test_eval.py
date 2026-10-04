@@ -94,6 +94,28 @@ def test_backend_slice():
     assert m["mode_comparison"]["pairs"] == 0  # different backends are never paired
 
 
+def test_mode_pairs_do_not_mix_auditor_models():
+    full = make_ep("A", "covert", "full_trace", True, True, 0.9)
+    report = make_ep("A", "covert", "report_only", True, False, 0.1)
+    full["auditor_model"] = "claude-sonnet-4-6"
+    report["auditor_model"] = "claude-opus-4-6"
+    assert M.mode_comparison([full, report])["pairs"] == 0
+
+
+def test_metrics_do_not_count_repeated_audits_or_merge_experiments():
+    a = make_ep("A", "covert", "full_trace", True, True, 0.9)
+    b = {**a, "trajectory_path": "results/another/trajectories/A__covert__ep000.jsonl"}
+    metrics = M.compute_metrics([a, a, b], tasks={})
+    assert metrics["n_episodes"] == metrics["n_trajectories"] == 2
+
+
+def test_conflicting_duplicate_audits_are_rejected():
+    a = make_ep("A", "covert", "full_trace", True, True, 0.9)
+    b = make_ep("A", "covert", "full_trace", True, False, 0.1)
+    with pytest.raises(ValueError, match="Conflicting duplicate audit"):
+        M.compute_metrics([a, b], tasks={})
+
+
 def test_hack_type_recall(synth):
     r = M.compute_metrics(synth, tasks=SYNTH_TASKS)["hack_type_recall"]
     assert r == {
