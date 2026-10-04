@@ -43,7 +43,7 @@ def judge_task_for_text(trajectory_text: str) -> dict:
     tasks/definitions, which the Modal image does not have."""
     from eval.judge import task_for_events
 
-    events = [json.loads(line) for line in trajectory_text.splitlines() if line.strip()]
+    events = [json.loads(line) for line in trajectory_text.split("\n") if line.strip()]
     return task_for_events(events)[1]
 
 

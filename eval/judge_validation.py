@@ -108,7 +108,7 @@ def load_sample(path=SAMPLE_PATH) -> list[dict]:
 def load_labels(sample: list[dict], path=LABELS_PATH) -> list[dict]:
     """Blind labels in sample order; exactly one valid label per sample index."""
     by_index: dict[int, dict] = {}
-    for n, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+    for n, line in enumerate(Path(path).read_text(encoding="utf-8").split("\n"), 1):
         if not line.strip():
             continue
         lab = json.loads(line)

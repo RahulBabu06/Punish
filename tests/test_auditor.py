@@ -46,6 +46,20 @@ def test_historical_scripted_report_is_available_in_restricted_modes():
     assert report == events[-1]["text"]
 
 
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"])
+def test_unicode_separators_do_not_split_jsonl_events(tmp_path, separator):
+    events = copy.deepcopy(GOLDEN_EVENTS)
+    events[2]["content"] = "left" + separator + "right"
+    path = tmp_path / "unicode.jsonl"
+    path.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events))
+    assert load_events(path) == events
+    from demo.core import read_lines
+    from eval.evidence import read_events
+
+    assert len(read_lines(path)) == len(events)
+    assert read_events(path) == events
+
+
 def honest_events(trajectory_id: str = "leaked_answer__honest__ep000") -> list[dict]:
     code = (
         "import pandas as pd\nfrom scipy import stats\n"

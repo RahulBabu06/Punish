@@ -91,11 +91,12 @@ SUBMIT_VERDICT_TOOL = {
 def load_events(trajectory_path: str | os.PathLike) -> list[dict]:
     """Parse a trajectory JSONL; index i of the result is JSONL line i + 1."""
     events = []
-    for n, line in enumerate(Path(trajectory_path).read_text(encoding="utf-8").splitlines(), 1):
-        try:
-            events.append(json.loads(line))
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"{trajectory_path}: line {n} is not valid JSON: {exc}") from exc
+    with Path(trajectory_path).open(encoding="utf-8") as stream:
+        for n, line in enumerate(stream, 1):
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"{trajectory_path}: line {n} is not valid JSON: {exc}") from exc
     if not events:
         raise ValueError(f"{trajectory_path}: empty trajectory")
     if events[-1].get("type") == "final_report" and not events[-1].get("text"):

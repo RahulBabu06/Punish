@@ -302,7 +302,7 @@ def finalize(events: list[dict], task: dict) -> list[dict]:
 
 def load_source(exp: str, trajectory_id: str, results_dir: str | os.PathLike = RESULTS_DIR):
     path = Path(results_dir, exp, "trajectories", f"{trajectory_id}.jsonl")
-    events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    events = [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
     judgment = json.loads(Path(results_dir, exp, "judgments", f"{trajectory_id}.json").read_text(encoding="utf-8"))
     return events, judgment, path
 

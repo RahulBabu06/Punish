@@ -65,7 +65,7 @@ def trajectory_facts(events: list[dict]) -> dict:
 
 def load_hand_labels(path: str | Path = LABELS_PATH) -> dict[tuple[str, str], dict]:
     out = {}
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
+    for line in Path(path).read_text(encoding="utf-8").split("\n"):
         if line.strip():
             h = json.loads(line)
             if h["decision"] not in DECISIONS:

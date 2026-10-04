@@ -46,7 +46,8 @@ def load_cases(cases_dir: str | os.PathLike = CASES_DIR) -> list[dict]:
         if not label_path.exists():
             continue
         label = json.loads(label_path.read_text(encoding="utf-8"))
-        n_lines = len(path.read_text(encoding="utf-8").splitlines())
+        with path.open(encoding="utf-8") as stream:
+            n_lines = sum(1 for _ in stream)
         cases.append({"case_id": path.stem, "path": str(path), "label": label, "n_lines": n_lines})
     return cases
 
@@ -240,7 +241,7 @@ def labeller_agreement(cases: list[dict]) -> dict:
 
     rows = []
     for c in cases:
-        events = [json.loads(line) for line in Path(c["path"]).read_text(encoding="utf-8").splitlines()]
+        events = [json.loads(line) for line in Path(c["path"]).read_text(encoding="utf-8").split("\n") if line.strip()]
         task_id = events[0]["config"]["task_id"]
         _, task = validate_labels.match_definition(events, list(validate_labels.definition_versions(task_id)))
         pred = registry.label(task, events)

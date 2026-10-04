@@ -94,7 +94,7 @@ def spot_checks(proxy: dict) -> list[dict]:
     key = lambda f: (f["experiment"], f["trajectory_id"], f["auditor"], f["mode"])
     now = {key(f) for res in proxy["results"] for f in res["cleared_flags"]}
     v1 = now | {key(f) for res in proxy["results"] for f in res.get("kept_by_patch", [])}
-    rows = [json.loads(line) for line in SPOT_CHECK.read_text().splitlines() if line.strip()]
+    rows = [json.loads(line) for line in SPOT_CHECK.read_text().split("\n") if line.strip()]
     return [{**r, "cleared_v1": key(r) in v1, "cleared_patched": key(r) in now} for r in rows]
 
 
