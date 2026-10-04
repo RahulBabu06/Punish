@@ -6,6 +6,8 @@
   modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit --rubric v3 \
       --out-dir results/v2_sonnet46/reaudit_rubric_v3            # opt-in prompt, docs/rubric_v3.md
   python -m eval.batch --local --results-dir ... --job judge
+  python -m eval.batch --local --results-dir results/v2_sonnet46 --job reaudit --auditor open \
+      --out-dir results/v2_sonnet46/reaudit_qwen3-30b-a3b --workers 24   # open weights via live/vllm_server.py
 
 judge   -> <results-dir>/judgments/<trajectory_id>.json (privileged ground truth, eval/judge.py)
 reaudit -> <out-dir>/{verdicts,episodes}/... with another auditor model (Episode trajectory_path
@@ -69,15 +71,22 @@ def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], 
 
     _check_samples(n_samples)
     system_prompt(rubric)
-    if auditor not in ("claude", "agentic"):
-        raise ValueError("auditor must be claude or agentic")
+    if auditor not in ("claude", "agentic", "open"):
+        raise ValueError("auditor must be claude, agentic or open")
     backend = audit
     if auditor == "agentic":
         from auditor.agentic import audit_agentic
 
         backend = audit_agentic
+    elif auditor == "open":
+        from live.openai_client import OpenModelClient
+
+        client = OpenModelClient()
+        model = model or client.model
+        backend = partial(audit, client=client)
     extra = {} if rubric == "default" else {"rubric": rubric}
-    audit_fn = partial(backend, n_samples=n_samples, **extra) if auditor == "agentic" or n_samples != 1 or extra else None
+    audit_fn = (partial(backend, n_samples=n_samples, **extra)
+                if auditor != "claude" or n_samples != 1 or extra else None)
     out = []
     with tempfile.TemporaryDirectory() as work:
         path = os.path.join(work, os.path.basename(trajectory_path))
@@ -85,7 +94,7 @@ def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], 
         for mode in modes:
             ep = audit_existing(path, mode, "claude", results_dir=os.path.join(work, "out"), auditor_model=model, audit_fn=audit_fn)
             ep["trajectory_path"] = trajectory_path
-            ep["auditor_backend"] = auditor
+            ep["auditor_backend"] = "claude" if auditor == "open" else auditor
             ep["auditor_model"] = model
             ep["auditor_n_samples"] = n_samples
             if extra:
@@ -245,7 +254,8 @@ def _cli(argv: list[str] | None = None) -> int:
     p.add_argument("--job", choices=["judge", "reaudit"], default="judge")
     p.add_argument("--judge-model", default=None)
     p.add_argument("--auditor-model", default=None)
-    p.add_argument("--auditor", choices=["claude", "agentic"], default="claude")
+    p.add_argument("--auditor", choices=["claude", "agentic", "open"], default="claude",
+                   help="open = the same auditor prompt/schema on the open-weight model at $PUNISH_VLLM_URL (live/)")
     p.add_argument("--n-samples", type=int, default=1)
     p.add_argument("--rubric", choices=["default", "v3"], default="default", help="auditor prompt version (reaudit)")
     p.add_argument("--auditor-modes", default="full_trace,report_only,final_report")
@@ -257,9 +267,13 @@ def _cli(argv: list[str] | None = None) -> int:
         p.error("--n-samples must be positive")
     if not args.local:
         p.error("pass --local, or use `modal run eval/batch.py ...`")
-    from agent.credentials import require_anthropic
+    if args.job == "judge" and args.auditor == "open":
+        p.error("--auditor open only applies to --job reaudit")
+    if args.auditor != "open":
+        from agent.credentials import require_anthropic
 
-    require_anthropic(f"eval.batch --job {args.job}")
+        require_anthropic(f"eval.batch --job {args.job}")
+    path_backend = "claude" if args.auditor == "open" else args.auditor
     destination = output_directory(args.results_dir, args.job, args.out_dir, args.rubric)
     paths = _pending(destination, select_paths(_trajectories(args.results_dir), args.only), args.job, True)
     texts = [p.read_text(encoding="utf-8") for p in paths]
@@ -277,7 +291,7 @@ def _cli(argv: list[str] | None = None) -> int:
             _save_judgments(destination, paths, res)
         else:
             modes = args.auditor_modes.split(",")
-            jobs = [(t, p, pending_modes(p, modes, destination, args.auditor, rubric=args.rubric))
+            jobs = [(t, p, pending_modes(p, modes, destination, path_backend, rubric=args.rubric))
                     for t, p in zip(texts, paths, strict=True)]
             jobs = [(t, p, ms) for t, p, ms in jobs if ms]
             res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), tp[2], args.auditor_model, args.auditor,

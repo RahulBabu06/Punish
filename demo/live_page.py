@@ -67,14 +67,14 @@ def live_page(tasks: list[dict], configs: list[str], subjects: list[str], enable
     task_opts = "".join(f'<option value="{esc(t["id"])}">{esc(t["id"])} - {esc(t.get("title") or "")}</option>' for t in tasks)
     cfg_opts = "".join(f'<option value="{esc(c)}"{" selected" if c == "covert" else ""}>{esc(c)} - {esc(CONFIG_BLURB.get(c, ""))}</option>'
                        for c in configs)
-    labels = {"open": f"{open_model} (open weights, Modal GPU)", "claude": "Claude Sonnet 4.6 (Anthropic API)"}
+    labels = {"open": f"{open_model} (open weights, Modal GPU)"}
     subj_opts = "".join(f'<option value="{s}">{esc(labels.get(s, s))}</option>' for s in subjects)
     code = '<label>Passcode<input name="code" type="password" autocomplete="off"></label>' if need_code else ""
     body = f"""
 <h1>Run live</h1>
-<p class="lede">A subject agent gets a science task with a planted exploit (a leaked grader, a cached answer, a convenient
+<p class="lede">A subject agent ({esc(open_model)}, open weights on a Modal GPU) gets a science task with a planted exploit (a leaked grader, a cached answer, a convenient
 subset...) and works on it with real sandboxed <code>read_file</code> / <code>run_python</code> / <code>write_report</code>
-tools. While it works, an <b>open-weight auditor ({esc(open_model)}) running on a Modal GPU</b> reads its private
+tools. While it works, an <b>auditor: the same open-weight model</b> reads its private
 reasoning and tool calls and posts flags to the right-hand feed. When the report is written, it gives a final verdict
 in all three visibility modes.</p>
 <form class="live-form" id="live-form">

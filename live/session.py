@@ -1,7 +1,6 @@
 """Live runs for the demo: a subject agent works a task while an open-weight auditor watches.
 
-The subject is Claude (when ``ANTHROPIC_API_KEY`` is set and requested) or an open-weight model served
-by ``live/vllm_server.py``. The auditor is always the open-weight model. While the trajectory streams,
+Subject and auditor are the same open-weight model served by ``live/vllm_server.py``. While the trajectory streams,
 the auditor re-audits the growing prefix after each tool result and writes
 ``results/live/interim/<id>.json``; once the final report lands it writes the usual per-mode verdicts
 to ``results/live/verdicts/`` (``demo.core`` picks both up).
@@ -21,7 +20,7 @@ from pathlib import Path
 from demo.core import RESULTS_DIR, mode_suffix
 
 MODES = ("full_trace", "report_only", "final_report")
-SUBJECTS = ("open", "claude")
+SUBJECTS = ("open",)
 
 
 def write_json_atomic(path: Path, obj) -> None:
@@ -55,18 +54,17 @@ class LiveRun:
 
 
 class LiveManager:
-    def __init__(self, results_dir: Path = RESULTS_DIR, open_client_factory=None, claude_client_factory=None,
+    def __init__(self, results_dir: Path = RESULTS_DIR, open_client_factory=None,
                  max_active: int = 2, max_turns: int = 12, interim: bool = True, poll: float = 1.0):
         self.dir = Path(results_dir) / "live"
         self.open_client_factory = open_client_factory or _default_open_client
-        self.claude_client_factory = claude_client_factory or _default_claude_client
         self.max_active, self.max_turns, self.interim, self.poll = max_active, max_turns, interim, poll
         self.runs: dict[str, LiveRun] = {}
         self._lock = threading.Lock()
 
     # -- public ---------------------------------------------------------------
     def subjects(self) -> list[str]:
-        return [s for s in SUBJECTS if s == "open" or os.environ.get("ANTHROPIC_API_KEY")]
+        return list(SUBJECTS)
 
     def active(self) -> list[LiveRun]:
         return [r for r in self.runs.values() if r.status in {"starting", "running", "auditing"}]
@@ -84,8 +82,7 @@ class LiveManager:
             raise ValueError(f"subject must be one of {self.subjects()}")
         task = load_task(task_id)
         open_client = self.open_client_factory()
-        subject_client = open_client if subject == "open" else self.claude_client_factory()
-        subject_model = open_client.model if subject == "open" else None
+        subject_client, subject_model = open_client, open_client.model
         with self._lock:
             if len(self.active()) >= self.max_active:
                 raise RuntimeError(f"{self.max_active} live runs are already in progress; try again in a minute")
@@ -185,9 +182,3 @@ def _default_open_client():
     from live.openai_client import OpenModelClient
 
     return OpenModelClient()
-
-
-def _default_claude_client():
-    from agent.credentials import anthropic_client
-
-    return anthropic_client("the live Claude subject agent")

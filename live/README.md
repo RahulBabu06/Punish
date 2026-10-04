@@ -4,7 +4,7 @@ Both models run on a Modal H100 through vLLM (`Qwen/Qwen3-30B-A3B` by default; i
 
 - **Subject agent:** the unchanged `agent.runner` loop works a task with a planted exploit, using the real sandboxed
   `read_file` / `run_python` / `write_report` tools. Qwen's `reasoning_content` goes to the trajectory's private
-  `reasoning` field, the same way Claude's extended thinking does. With `ANTHROPIC_API_KEY` set, Claude Sonnet 4.6 can be the subject instead.
+  `reasoning` field, the same way Claude's extended thinking does. No Anthropic key is needed.
 - **Auditor:** the unchanged `auditor.audit` (same prompt, rubric, `submit_verdict` schema and evidence validation)
   re-audits the trace prefix after every new tool result and writes `results/live/interim/<run>.json`. The demo streams
   these flags while the subject works. After the final report, it gives verdicts in all three visibility modes

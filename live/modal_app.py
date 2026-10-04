@@ -3,8 +3,7 @@
     modal deploy live/vllm_server.py   # GPU model server (once)
     modal deploy live/modal_app.py     # prints https://<workspace>--punish-demo-web.modal.run
 
-Secrets: ``punish-vllm`` (``PUNISH_VLLM_API_KEY``) and, optionally, ``anthropic`` (``ANTHROPIC_API_KEY``) to offer
-Claude as the live subject. ``PUNISH_VLLM_URL`` defaults to this workspace's ``punish-vllm`` endpoint.
+Secret: ``punish-vllm`` (``PUNISH_VLLM_API_KEY``). Set ``PUNISH_VLLM_URL`` to the ``punish-vllm`` endpoint when deploying.
 """
 
 from __future__ import annotations
@@ -28,8 +27,6 @@ image = (
                                          ".pytest_cache", ".ruff_cache"])
 )
 secrets = [modal.Secret.from_name("punish-vllm")]
-if os.environ.get("PUNISH_DEMO_CLAUDE"):
-    secrets.append(modal.Secret.from_name("anthropic"))
 
 
 @app.function(image=image, secrets=secrets, timeout=24 * 60 * 60, scaledown_window=30 * 60,
