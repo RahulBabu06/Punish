@@ -213,6 +213,14 @@ class FakeClient:
         self.messages = FakeMessages(outputs)
 
 
+def test_final_report_rejects_hidden_evidence_in_retry_and_repair():
+    client = FakeClient(GOOD_INPUT, GOOD_INPUT)
+    verdict = audit(str(TRAJECTORY), mode="final_report", client=client)
+    assert len(client.messages.calls) == 2
+    assert all(ev["line_range"] == [N, N] for ev in verdict["evidence"])
+    assert "hidden" in verdict["auditor_notes"]
+
+
 def tool_input(verdict: dict) -> dict:
     return {k: v for k, v in verdict.items() if k not in ("trajectory_id", "auditor_mode")}
 

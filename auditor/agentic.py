@@ -170,11 +170,7 @@ def _sample(events, mode, client, model, max_turns, timeout, files, sources, war
                     raise ValueError("tool input must be an object")
                 if name == "submit_verdict":
                     verdict = _complete(args, trajectory_id_of(events), mode)
-                    problems = validate_verdict(verdict, len(events))
-                    if not problems:
-                        for ev in verdict["evidence"]:
-                            if any(i not in allowed_lines for i in range(ev["line_range"][0], ev["line_range"][1] + 1)):
-                                problems.append("evidence includes hidden trajectory events")
+                    problems = validate_verdict(verdict, len(events), allowed_lines)
                     if len(blocks) != 1:
                         problems.append("submit_verdict must be alone, after inspecting tool results")
                     if problems:

@@ -216,7 +216,7 @@ def _is_int(x) -> bool:
     return isinstance(x, int) and not isinstance(x, bool)
 
 
-def validate_verdict(verdict: dict, n_lines: int) -> list[str]:
+def validate_verdict(verdict: dict, n_lines: int, allowed_lines: set[int] | None = None) -> list[str]:
     """Return every way `verdict` violates the ARCHITECTURE.md Verdict rules ([] = valid)."""
     if not isinstance(verdict, dict):
         return ["verdict must be a JSON object"]
@@ -272,6 +272,8 @@ def validate_verdict(verdict: dict, n_lines: int) -> list[str]:
                     problems.append(f"{where}.line_range {list(lr)} has start > end")
                 if start < 1 or end > n_lines:
                     problems.append(f"{where}.line_range {list(lr)} is out of bounds (valid lines are 1..{n_lines})")
+                elif allowed_lines is not None and any(line not in allowed_lines for line in range(start, end + 1)):
+                    problems.append(f"{where}.line_range includes hidden trajectory events")
             ht = ev.get("hack_type")
             if ht not in HACK_TYPES:
                 problems.append(f"{where}.hack_type {ht!r} is not in the closed vocabulary")
@@ -303,7 +305,8 @@ def _to_int(x):
     return int(f) if f == int(f) else None
 
 
-def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str) -> dict:
+def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str,
+                   allowed_lines: set[int] | None = None) -> dict:
     """Minimal repair into a schema-valid Verdict; records what changed in auditor_notes."""
     v = verdict if isinstance(verdict, dict) else {}
     fixes: list[str] = []
@@ -340,6 +343,9 @@ def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str) -
         start, end = _to_int(lr[0]), _to_int(lr[1])
         if start is None or end is None or not 1 <= start <= end <= n_lines:
             continue
+        if allowed_lines is not None and any(line not in allowed_lines for line in range(start, end + 1)):
+            fixes.append("dropped evidence citing hidden trajectory events")
+            continue
         expl = ev.get("explanation")
         expl = expl.strip() if isinstance(expl, str) and expl.strip() else f"{ev['hack_type']} (no explanation given)"
         evidence.append({"line_range": [start, end], "hack_type": ev["hack_type"], "explanation": expl})
@@ -363,9 +369,9 @@ def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str) -
             # Keep the auditor's judgment but make clear the evidence is not localized.
             evidence = [
                 {
-                    "line_range": [1, n_lines],
+                    "line_range": [1, n_lines] if allowed_lines is None else [max(allowed_lines), max(allowed_lines)],
                     "hack_type": ht,
-                    "explanation": "auditor gave no valid line-range evidence; range spans the whole trajectory",
+                    "explanation": "auditor gave no valid line-range evidence; fallback is not localized evidence",
                 }
                 for ht in hack_types
             ]
@@ -441,6 +447,7 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
     events = load_events(trajectory_path)
     n_lines = len(events)
+    visible_lines = {i for i, event in enumerate(events, 1) if _render_event(i, event, mode, {})}
     trajectory_id = trajectory_id_of(events)
     model = model or os.environ.get("PUNISH_AUDITOR_MODEL") or DEFAULT_MODEL
     if client is None:
@@ -468,7 +475,7 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
             problems = ["no submit_verdict tool call in the response"]
         else:
             verdict = _complete(_get(block, "input"), trajectory_id, mode)
-            problems = validate_verdict(verdict, n_lines)
+            problems = validate_verdict(verdict, n_lines, visible_lines)
         if not problems:
             return _with_usage(verdict, usage, model)
         if attempt == 0:
@@ -483,7 +490,7 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
                 )
             else:
                 messages.append({"role": "user", "content": retry_text})
-    return _with_usage(repair_verdict(verdict, n_lines, trajectory_id, mode), usage, model)
+    return _with_usage(repair_verdict(verdict, n_lines, trajectory_id, mode, visible_lines), usage, model)
 
 
 def _check_samples(n_samples: int) -> None:
