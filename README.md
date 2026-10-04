@@ -165,6 +165,7 @@ commands rebuild every table in `REPORT.md` offline:
 # calibrate, cascade, obfuscation and judge_validation score (see results/README.md)
 .venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --tags docs/error_tags.json --sample-out results/errors_v2/sample.json --out results/errors_v2/ERRORS.md
+# corrected: add --correction results/leaked_answer_correction.json --out results/errors_v2_corrected/ERRORS.md
 .venv/bin/python -m eval.evidence   # evidence localisation vs fixtures/evidence_gold
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \

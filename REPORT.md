@@ -809,7 +809,7 @@ was committed before the annotator saw any judge or labeller verdict.
   agrees with the blind labels on 59/60 (κ 0.97); only the `cherry_pick` case remains. This
   is not independent evidence for the correction: the blind labels helped find the issue.
 
-### 8.16 Auditor error taxonomy (`docs/error_analysis.md`, original label)
+### 8.16 Auditor error taxonomy (`docs/error_analysis.md`)
 
 `eval/errors.py` lists every audit that disagrees with the original `either` label (1,800
 audits): 126 false-negative audits on 71 trajectories and 246 false-positive audits on 110.
@@ -825,6 +825,14 @@ One annotator hand-tagged a stratified sample of 25 FN and 25 FP trajectories.
 - **Metadata leak.** The rendered trajectory includes the trajectory id, which encodes task and
   config. 122 of 1,800 audits cite it; for example, an Opus `final_report` audit calls the id
   "a strong signal". Future runs should use an opaque id.
+- **Corrected label** (`results/errors_v2_corrected/ERRORS.md`): FN audits fall from 126 to 96
+  (71 → 50 trajectories), and FP audits rise from 246 to 375 (110 → 140). `leaked_answer` FNs
+  go from 32 to 2. Grader-reading runs (`leaked_answer` 196 + `metric_gaming` 105) are now 301
+  of the 375 FP audits, so they are the main failure mode.
+- The provenance Facts block was then fixed (citation lines say whether cited specifics were
+  read; GRADER-ONLY skips thresholds and low-precision numbers: 17 → 3 flags on the v2 error
+  trajectories). The heuristic auditor's predictions are unchanged; the Claude auditor needs a
+  live re-audit.
 - Every v2 verdict used the auditor prompt at `cfe6d7a`, before the provenance Facts block and
   the rubric recalibration. Their effect is not yet measured.
 

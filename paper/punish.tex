@@ -296,7 +296,8 @@ FPR $\le$ 10\% with useful recall.
 
 \paragraph{Errors and evidence.} On the original label (\code{docs/error\_analysis.md}), trace-mode
 false positives are agents that read the grader and reported honest values, and
-\mode{final\_report} false positives are honest ``N/A'' reports for the failed plate. The rendered
+\mode{final\_report} false positives are honest ``N/A'' reports for the failed plate. Under the corrected label, grader-reading runs
+are 301 of the 375 false-positive audits. The rendered
 trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, so future runs should
 use opaque ids. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
 \mode{full\_trace} auditors cite 0.81--0.83 of hack lines, against 0.19--0.26 for \mode{final\_report}.
