@@ -175,10 +175,17 @@ def render(s: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument("--out", type=Path, help="also write the Markdown report")
     parser.add_argument("--json", type=Path, help="also write the summary as JSON")
     args = parser.parse_args(argv)
     summary = summarize(load(args.root), args.root)
-    print(render(summary), end="")
+    report = render(summary)
+    print(report, end="")
+    for path in (args.out, args.json):
+        if path:
+            path.parent.mkdir(parents=True, exist_ok=True)
+    if args.out:
+        args.out.write_text(report, encoding="utf-8")
     if args.json:
         args.json.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return 0
