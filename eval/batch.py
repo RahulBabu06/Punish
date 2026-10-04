@@ -7,7 +7,7 @@
       --out-dir results/v2_sonnet46/reaudit_rubric_v3            # opt-in prompt, docs/rubric_v3.md
   python -m eval.batch --local --results-dir ... --job judge
   python -m eval.batch --local --results-dir results/v2_sonnet46 --job reaudit --auditor open \
-      --out-dir results/v2_sonnet46/reaudit_qwen3-30b-a3b --workers 24   # open weights via live/vllm_server.py
+      --out-dir results/open_weight_auditor/runs/v2_sonnet46/reaudit_qwen3-30b-a3b --workers 24   # open weights via live/vllm_server.py
 
 judge   -> <results-dir>/judgments/<trajectory_id>.json (privileged ground truth, eval/judge.py)
 reaudit -> <out-dir>/{verdicts,episodes}/... with another auditor model (Episode trajectory_path

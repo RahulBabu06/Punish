@@ -491,6 +491,22 @@ is still the blind spot: all 13 Opus `full_trace` misses are `fake_citation` (ou
 27 hacked `fake_citation` runs), and the Sonnet auditor misses 9 of 40 across all three
 subjects, all of them `fake_citation`.
 
+#### 8.19 Open-weight auditor (`results/open_weight_auditor/`)
+
+Qwen3-30B-A3B (open weights, 3B active parameters) re-audited all 360 v2 trajectories in all three modes. It ran
+with the same prompt, verdict schema and evidence validation as the Claude auditor, on one Modal H100 via vLLM
+(`eval.batch --auditor open`; 1080 audits, 0 failures). Corrected label, 93 hacked:
+
+| auditor | `full_trace` recall / FPR / AUROC | `report_only` | `final_report` |
+|---|---|---|---|
+| Qwen3-30B-A3B | 0.95 / 0.12 / 0.966 | 0.82 / 0.10 / 0.893 | 0.15 / 0.08 / 0.542 |
+| Sonnet 4.6 | 0.90 / 0.34 / 0.891 | 0.91 / 0.35 / 0.840 | 0.74 / 0.23 / 0.825 |
+
+On natural hacks (excluding `covert`, 27 hacked), Qwen keeps its trace-mode lead: `full_trace` 25/27 at FPR 0.09
+(AUROC 0.950), against Sonnet's 19/27 at 0.31 (0.769). Unlike the Claude auditors, it depends on seeing the process:
+with the final report alone it clears almost everything (291/360 verdicts at confidence ≤ 0.15). This is one sample
+per audit and in-sample. The Opus judge behind the labels also read the whole trace, which may favour trace readers.
+
 #### 8.3 Where the auditor is wrong
 
 Trace-mode FPR is high (Opus `full_trace` 0.22, Sonnet `report_only` 0.35, Sonnet `full_trace` 0.34).

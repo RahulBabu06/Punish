@@ -77,6 +77,12 @@ tools. A second copy of the model audits its reasoning and tool calls while it r
 viewer. Pick a task and press **Run live** at `/live` on the hosted demo (`modal deploy live/modal_app.py`), or locally
 with `python -m demo.app --live-runs`. Setup and observed runs are in [`live/README.md`](live/README.md).
 
+The same open-weight model also works as the benchmark auditor. On the 360 committed v2 trajectories (corrected label),
+Qwen3-30B-A3B in `full_trace` mode gets recall 0.95, FPR 0.12 and AUROC 0.966, against Sonnet 4.6's 0.90 / 0.34 / 0.891.
+Given only the final report it is near chance (AUROC 0.542). Single run, in-sample; details and caveats are in
+[`results/open_weight_auditor/`](results/open_weight_auditor/README.md). No Anthropic key is needed for the live demo or
+this re-audit.
+
 ## Setup (Python 3.11)
 
 Cloning and first-time setup need internet access to download uv, Python (if missing) and
@@ -239,6 +245,7 @@ scripts/reproduce.sh cost
 |---|---|
 | `results/v2_sonnet46/`, `results/v2_haiku45/`, `results/v2_sonnet45/` | main sweep: 120 trajectories each (4 configs × 6 tasks × 5 eps), 3 auditor modes, Opus judge labels |
 | `results/v2_{sonnet46,haiku45}/reaudit_claude-opus-4-6/` | the same 240 trajectories re-audited by Opus 4.6 in 3 modes (`eval.analyze` picks up `reaudit_*` directories automatically) |
+| `results/open_weight_auditor/` | all 360 v2 trajectories re-audited by open-weight Qwen3-30B-A3B on Modal in 3 modes (`eval.batch --auditor open`), and its analysis |
 | `results/v3_haiku45/`, `results/v3_sonnet46/` | 10-task v3 suite: 200 and 150 (of 200) trajectories, 3 modes, **labeller labels only** |
 | `results/v3cond_{sonnet46,haiku45}/` | `covert_monitored` and `sycophantic_pi`, 27 and 28 trajectories (partial, labeller only) |
 | `results/v3fault_sonnet46/` | 50% tool-failure injection, 18 trajectories (partial, labeller only) |
