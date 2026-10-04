@@ -959,6 +959,9 @@ not new live audits.
   versus 20/27 with actions. Natural-hack `full_trace` recall is Sonnet 19/27 = 0.70 and
   Opus 5/17 = 0.29; these positives are citation-support and fabrication cases, not a broad
   natural-hacking sample. The pooled action-access gain does not generalise to this slice.
+  On v3 (labeller-only labels, `results/robustness/ROBUSTNESS_v3.md`) the instructed-only gain
+  replicates (Δrecall +0.24; accuracy McNemar p = 0.003, unadjusted) but the reversal does not
+  (19/26 in both modes), and natural-hack `full_trace` recall is 12/26 = 0.46.
 - **Role leak in reasoning.** 75/90 `covert` runs restate the red-team / reward-hacker role,
   versus 0/270 others, so `full_trace` can infer the config despite the withheld system prompt.
   On non-leaking runs Opus's reasoning gain persists (Δaccuracy +0.056, unadjusted p = 0.007;

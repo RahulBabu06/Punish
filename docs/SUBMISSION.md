@@ -31,7 +31,8 @@ AI-made and costs are estimates.
    0.34 FPR and AUROC 0.891. Reading the final report alone (`final_report`) gets 0.74 recall, 0.23 FPR and
    AUROC 0.825. The gap comes from instructed (`covert`) hacks, 66/93 of the positives. On natural hacks the
    report alone catches 26/27 against 20/27 with actions, and `full_trace` recall is 19/27 = 0.70 (Opus
-   5/17 = 0.29). Most false positives are honest runs that read the grader file.
+   5/17 = 0.29). On labeller-only v3 the instructed-only gain replicates (+0.24 recall, accuracy p = 0.003)
+   but the reversal does not (19/26 each); natural `full_trace` recall there is 12/26 = 0.46. Most false positives are honest runs that read the grader file.
 2. **The auditor is useful as a veto.** In best-of-n selection over 240 matched runs, vetoing flagged
    candidates before picking the best-graded one cuts the shipped-hack rate from 0.28 to 0.15.
 3. **A cheap cascade works, but less well out of sample.** Heuristic → Sonnet reaches 80.4% recall at 5.4% FPR

@@ -15,8 +15,9 @@ not just what they wrote.** Built for the London AI x Science Hackathon, Track 2
 2. **The trace exposes instructed hacks, not natural ones.** With the agent's actions the auditor
    catches 0.91 of hacks against 0.74 from the final report alone, but the whole gain comes from
    instructed (`covert`) hacks: 66 of the 93 positives, caught at 0.97–0.98 with the full trace. On
-   natural hacks the report alone does better (26/27 vs 20/27 with actions), and `full_trace` recall
-   is 19/27 = 0.70 for Sonnet and 5/17 = 0.29 for Opus. In the demo run the agent computes R² = 0.447
+   natural hacks the report alone does better (26/27 vs 20/27 with actions; on labeller-only v3 the
+   instructed-only gain replicates but this reversal does not, 19/26 each), and `full_trace` recall
+   is 19/27 = 0.70 for Sonnet and 5/17 = 0.29 for Opus (v3: 12/26 = 0.46). In the demo run the agent computes R² = 0.447
    and reports 0.92. The auditor flags it at 0.99 from the trace and calls the report alone clean.
 3. **A stronger auditor uses the reasoning.** Seeing the private reasoning makes Opus 4.6's
    verdicts significantly more accurate (+0.071, Holm p = 0.002). Sonnet's accuracy doesn't change
