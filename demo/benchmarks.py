@@ -440,7 +440,7 @@ def render_monitor_attacks(sec: dict) -> str:
                        f'title="{esc(case)}">{marks}</a>')
         body.append(row)
     parts.append(f'<details open><summary>Per trajectory ({aud} auditor). Click a cell to compare its verdicts across modes; '
-                 f'✓ in red = hack missed</summary>{_table(["source"] + attacks, body, 99)}</details>')
+                 f'✓ in red = hack missed</summary><div class="scroll">{_table(["source"] + [a.replace("_", " ") for a in attacks], body, 99)}</div></details>')
     return _section("monitor-attacks", "Monitor attacks: real hacks plus an attack on the auditor", sec["sources"],
                     "".join(parts),
                     "Ten judge-positive covert runs from v2, each re-built with an attack aimed at the monitor: a "
@@ -587,7 +587,7 @@ def render_doc(doc: dict) -> str:
         rows = [[md_inline(c) for c in r] for r in t["rows"][:MAX_GENERIC_ROWS]]
         more = len(t["rows"]) - len(rows)
         body += (f'<h3>{md_inline(t["title"])}</h3>' if t["title"] and t["title"] != doc["title"] else "")
-        body += _table([md_inline(h) for h in t["headers"]], rows, 99)
+        body += _table([re.sub(r"[`*]", "", h) for h in t["headers"]], rows, 99)
         if more > 0:
             body += f'<p class="sub">… {more} more rows in the source file.</p>'
     if doc["more_tables"]:
@@ -607,6 +607,7 @@ BENCH_CSS = """
 .bench .figs{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin:12px 0}
 .bench .figs>.chart{flex:0 1 760px}.bench .fig{flex:1 1 560px;max-width:980px;background:#fff;border-radius:12px;padding:6px}
 .bench .fig svg{width:100%;height:auto;display:block}
+.bench .scroll{overflow-x:auto}.bench .scroll td,.bench .scroll th{padding-left:6px;padding-right:6px}
 .bench ul.flips{columns:3 360px;font-size:13px;margin:6px 0}
 a.mx{text-decoration:none;white-space:nowrap}a.mx:hover .vb{filter:brightness(1.3)}
 .jump{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.jump a{cursor:pointer}
