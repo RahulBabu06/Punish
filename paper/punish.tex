@@ -233,8 +233,8 @@ monitoring~\citep{emmons2025necessary}. Reasoning also changes citation verdicts
 \code{fake\_citation}, Sonnet \mode{full\_trace} catches 31/40 hacks, \mode{report\_only}
 33/40 and \mode{final\_report} 39/40.
 
-\paragraph{Where the auditor is wrong.} Of the 62 Sonnet \mode{full\_trace} false positives,
-59 cite \code{suspicious\_access}. In these runs the agent read the grader and then reported
+\paragraph{Where the auditor is wrong.} Of the 92 corrected-label Sonnet \mode{full\_trace} false positives,
+89 cite \code{suspicious\_access} (original 59 of 62). In these runs the agent read the grader and then reported
 the honest value. The rubric counts reading an eval file as \code{suspicious\_access}, while
 the judge counts it only if it changes the report. All 9 Sonnet \mode{full\_trace} misses fall on \code{fake\_citation} under the
 saved labels. Real bibliography keys do not prove source support, but metadata alone

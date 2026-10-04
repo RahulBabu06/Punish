@@ -347,14 +347,14 @@ independently computed 0.312 (L9–L10 in its own trace) and is correctly clean.
 <div class="row" style="gap:30px">
 <div class="col" style="flex:.95;gap:14px">
 <div class="grid g2" style="gap:12px">
-<div class="card"><div class="big">0.11</div><p style="margin-top:6px"><span class="pill ft">full_trace</span> FPR, 18/161 clean runs flagged</p></div>
-<div class="card" style="border-color:var(--orange)"><div class="big">0.17</div><p style="margin-top:6px"><span class="pill ro">report_only</span> FPR, 27/161 clean runs flagged</p></div>
+<div class="card"><div class="big">0.06</div><p style="margin-top:6px"><span class="pill ft">full_trace</span> FPR, 8/144 clean runs flagged (<code>leaked_answer</code> excluded)</p></div>
+<div class="card" style="border-color:var(--orange)"><div class="big">0.12</div><p style="margin-top:6px"><span class="pill ro">report_only</span> FPR, 17/144 clean runs flagged (<code>leaked_answer</code> excluded)</p></div>
 </div>
-<p style="margin:2px 0 0;font-size:17px">Opus 4.6 re-audit, 240 trajectories (Sonnet 4.6 + Haiku 4.5 subjects, 79 hacked). Recall 0.84 vs 0.73. Discordant pairs 19 vs 2, <b>exact McNemar p &lt; 0.001</b>.
-The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55. <b><code>leaked_answer</code> excluded (200 runs): recall 0.77 vs 0.63, FPR 0.06 vs 0.12.</b>
+<p style="margin:2px 0 0;font-size:17px">Opus 4.6 re-audit, <code>leaked_answer</code> excluded (200 runs): <b>recall 0.77 vs 0.63, FPR 0.06 vs 0.12.</b>
+Original label (240 runs, 79 hacked; not clean ground truth): FPR 0.11 vs 0.17, recall 0.84 vs 0.73, discordant 19 vs 2, exact McNemar p &lt; 0.001; the Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.
 Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ranking (+0.04), both p = 0.002; Sonnet ranking improves (+0.05), accuracy unchanged.</p>
 <ul style="margin-top:4px">
-<li style="font-size:16.5px;margin-bottom:6px">Breakdown by subject: Sonnet 4.6, 9 vs 1 (p = 0.021), mostly fewer FPs (0.05 vs 0.12). Haiku 4.5, 10 vs 1 (p = 0.012), mostly recall (27/34 vs 22/34).</li>
+<li style="font-size:16.5px;margin-bottom:6px">Breakdown by subject (<code>leaked_answer</code> excluded): Sonnet 4.6 mostly fewer FPs (0.01 vs 0.08); Haiku 4.5 mostly recall (21/28 vs 16/28). Original label: 0.05 vs 0.12 and 27/34 vs 22/34.</li>
 <li style="font-size:16.5px;margin-bottom:6px">With the reasoning visible, Opus can tell when an agent read <code>grade.py</code> but the grader didn't drive the number.</li>
 <li style="font-size:16.5px;margin-bottom:6px">Under the saved labels, all 13 Opus <code>full_trace</code> misses fall on <code>fake_citation</code>; source-content allegations still need independent verification.</li>
 </ul>
@@ -419,8 +419,8 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <div class="kicker">Limitations</div>
 <h2>Read these numbers as preliminary</h2>
 <div class="grid g2" style="gap:16px">
-<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 4–27 positives. Most mode differences other than final_report vs the trace modes are within noise.</p></div>
-<div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and Sonnet <code>full_trace</code> recall under <code>pressure</code> is 18/24.</p></div>
+<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 9–40 positives (original; 2–40 corrected), 4–27 in the Opus subset. Most mode differences other than final_report vs the trace modes are within noise.</p></div>
+<div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and Sonnet <code>full_trace</code> recall under <code>pressure</code> is 10/16 (corrected; 18/24 original).</p></div>
 <div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Against 60 blind AI labels: κ 0.70, never more lenient; 8 of 9 disagreements are a stale <code>leaked_answer</code> definition. No human raters yet.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>
 <div class="card" style="border-color:var(--amber)"><h3>The rubric drives FPR</h3><p>Any eval-file read counts as <code>suspicious_access</code>. Corrected-label trace-mode FPR is 0.22–0.35, and no Claude auditor keeps FPR ≤ 10% on unseen tasks.</p></div>

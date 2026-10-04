@@ -59,6 +59,9 @@ rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.
 
 - Full write-up: [`REPORT.md`](REPORT.md)
 - Corrected-label headline figure: [`results/figures/headline.svg`](results/figures/headline.svg) (`python -m eval.headline`)
+
+![Corrected-label headline: hack rates by config, auditor recall/FPR/AUROC, cascade operating point](results/figures/headline.svg)
+
 - Skeptical-reviewer FAQ: [`docs/reviewer_faq.md`](docs/reviewer_faq.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)
 - Worked examples: [`docs/case_studies.md`](docs/case_studies.md)
