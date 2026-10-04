@@ -184,3 +184,13 @@ def test_headline_figure_leads_the_page(tmp_path):
     assert h["title"] == "Hacks & audits" and h["desc"] == "n=3" and "<script" not in h["svg"]
     page = b.benchmarks_page({"headline": h})
     assert page.index('id="headline"') < page.index("</body>") and "Hacks &amp; audits" in page
+
+
+def test_bug_hunt_writeup_has_a_card():
+    from demo import benchmarks as b
+
+    if not (b.ROOT / "docs" / "bug_hunt.md").exists():
+        pytest.skip("docs/bug_hunt.md not committed")
+    ids = [d["id"] for d in b.generic_docs(b.RESULTS_DIR)]
+    assert "doc-docs-bug-hunt-md" in ids
+    assert 'data-jump="doc-docs-bug-hunt-md"' in b.benchmarks_page(b.benchmarks())
