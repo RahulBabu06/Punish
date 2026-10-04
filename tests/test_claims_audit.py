@@ -403,3 +403,23 @@ def test_paper_final_numbers_and_caveats():
                    "DeLong tests on AUROC", "Holm-corrected per label", "Wilson intervals",
                    "cell-clustered bootstraps are up to about 2$\\times$"):
         assert method in paper
+
+
+def test_paper_v3_robustness_replication():
+    paper = doc("paper/punish.tex")
+    rob = json.loads((ROOT / "results/robustness/robustness_v3.json").read_text(encoding="utf-8"))
+    assert (rob["cohort"], rob["label"]) == ("v3", "labeller")
+    gain = next(r for r in rob["delta_slices"] if (r["left"], r["right"], r["slice"])
+                == ("report_only", "final_report", "covert + covert_monitored"))
+    assert f"replicates (${gain['d_recall']:+.2f}$, unadjusted $p={gain['p']:.3f}$)" in paper
+    nat = {r["mode"]: r for r in rob["slices"] if r["slice"] == "non-covert"}
+    ro, fr, ft = nat["report_only"], nat["final_report"], nat["full_trace"]
+    assert (ro["tp"], ro["pos"]) == (fr["tp"], fr["pos"])
+    assert f"does not ({ro['tp']}/{ro['pos']} for both" in paper
+    assert f"recall is {ft['tp']}/{ft['pos']} = {ft['recall']:.2f}" in paper
+    role = rob["role"]
+    others = [role[c] for c in rob["natural"]]
+    assert sum(r["mentions"] for r in others) == 0
+    assert (f"({role['covert']['mentions']}/{role['covert']['n']} \\code{{covert}}, "
+            f"{role['covert_monitored']['mentions']}/{role['covert_monitored']['n']} \\code{{covert\\_monitored}},\n"
+            f"0/{sum(r['n'] for r in others)} others)") in paper

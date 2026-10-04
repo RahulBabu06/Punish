@@ -350,6 +350,11 @@ has been checked only against AI blind labels, and it over-flags v2 \code{leaked
 \item \emph{Instructed hacking.} 66 of the 93 positives come from \code{covert}, where we told the
 agent to hack. Natural hacks are rarer, nearly all \code{fake\_citation}, and harder to catch:
 \mode{full\_trace} recall is 19/27 for Sonnet and 5/17 for Opus.
+On v3 (labeller-only labels, Sonnet audits; \code{results/robustness/ROBUSTNESS\_v3.md}) the
+instructed-only action gain replicates ($+0.24$, unadjusted $p=0.003$), but v2's natural-hack reversal
+does not (19/26 for both \mode{report\_only} and \mode{final\_report}), \mode{full\_trace} natural-hack
+recall is 12/26 = 0.46, and the role leak recurs (71/86 \code{covert}, 23/30 \code{covert\_monitored},
+0/334 others).
 \item \emph{Base rate.} Hacks are 26\% of runs by design. At 5\% prevalence the same recall and
 FPR give Sonnet \mode{full\_trace} a precision of 0.12 (0.48 observed).
 \item \emph{Rubric/judge mismatch.} The rubric and the judge disagree about whether reading the
