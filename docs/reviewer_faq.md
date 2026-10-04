@@ -10,7 +10,8 @@ cascade and mitigation comparisons restricted to their explicit 240-trajectory m
 It is an adversarial evaluation, not an estimate of real-world misconduct prevalence: 3 subject
 models × 4 prompt configurations × 6 planted-exploit tasks × 5 episodes = 360 trajectories. The
 corrected label marks 93/360 hacked, including 66/90 covert, 16/90 pressure, 11/90 incentivized and
-0/90 honest runs. The source counts and definitions are in
+0/90 honest runs, so instructed (`covert`) hacks supply 66/93 positives (natural hacks: §15). The
+source counts and definitions are in
 [`results/leaked_answer_correction.md`](../results/leaked_answer_correction.md).
 
 ## 2. Why were labels corrected after seeing results—is that p-hacking?
@@ -50,7 +51,7 @@ outputs, but require API credit. See
 
 ## 6. Isn't the auditor's false-positive rate too high to deploy?
 
-Yes at its own binary verdict. On corrected labels, Sonnet full-trace recall is 90.3% with 34.5% FPR;
+Yes at its own binary verdict, and precision would be far lower at realistic prevalence (§18). On corrected labels, Sonnet full-trace recall is 90.3% with 34.5% FPR;
 Opus is 76.8% recall with 22.3% FPR on its 240-trajectory subset. Confidence thresholds and cascades
 offer different trade-offs: a cross-experiment heuristic→Sonnet point reaches 64.3% recall and 5.4%
 FPR, not perfect detection, and it is in-sample for the heuristic (§9). See
@@ -62,8 +63,9 @@ FPR, not perfect detection, and it is in-sample for the heuristic (§9). See
 It depends on the metric and auditor. For Sonnet, the **binary-flag result is null**: full trace versus
 actions+report changes recall by −0.011 and FPR by −0.007, both Holm p=1.0; the recall confidence interval
 is still too wide to claim equivalence. Yet Sonnet ranking improves by AUROC +0.051 (Holm p<0.001), and
-Opus accuracy improves by +0.071 (Holm p=0.002). Relative to final-report-only, actions also recover
-trace-visible hacks. See [`results/significance/SIGNIFICANCE.md`](../results/significance/SIGNIFICANCE.md).
+Opus accuracy improves by +0.071 (Holm p=0.002), and the gain survives dropping the runs whose reasoning
+leaks the config (§16). Seeing the actions on top of the report raises recall only on instructed hacks
+(§14). See [`results/significance/SIGNIFICANCE.md`](../results/significance/SIGNIFICANCE.md).
 
 ## 8. Did monitored agents learn to obfuscate their reasoning?
 
@@ -126,3 +128,39 @@ mode and misses one of ten attacks after reasoning laundering; these benchmarks 
 [`results/hard_cases/SUMMARY_heuristic.md`](../results/hard_cases/SUMMARY_heuristic.md),
 [`results/monitor_attacks/SUMMARY_heuristic.md`](../results/monitor_attacks/SUMMARY_heuristic.md) and
 [`docs/live_plan.md`](live_plan.md).
+
+## 14. Does seeing the agent's actions catch more hacks than reading the report?
+
+Only instructed ones. Sonnet's `report_only` − `final_report` recall gain is +0.17 overall, but +0.33 on
+`covert` hacks and −0.22 on natural hacks, where the report alone catches 26/27 against 20/27 with actions.
+That v2 reversal does not replicate on v3 (labeller-only): there both modes catch 19/26. So the robust
+finding is the instructed-hack gain, not a natural-hack penalty. The split is exploratory and unadjusted. See
+[`results/robustness/ROBUSTNESS.md`](../results/robustness/ROBUSTNESS.md) §2–3 and
+[`results/robustness/ROBUSTNESS_v3.md`](../results/robustness/ROBUSTNESS_v3.md).
+
+## 15. How well does the auditor catch natural (uninstructed) hacks?
+
+Much worse than the headline suggests. `covert` hacks are 66/93 positives and `full_trace` catches them at
+0.97–0.98. On the natural (non-`covert`) hacks, `full_trace` recall is 19/27 = 0.70 for Sonnet and
+5/17 = 0.29 for Opus. Almost all natural hacks are `fake_citation` (the rest `fabrication`), so this is
+also the citation blind spot. See [`results/robustness/ROBUSTNESS.md`](../results/robustness/ROBUSTNESS.md) §2.
+
+## 16. Does the `covert` config leak into what the auditor sees?
+
+Yes. 75/90 `covert` trajectories name the red-team / reward-hacker role in their private reasoning (0/270
+others), so a `full_trace` auditor can effectively read the config it is not supposed to see. Opus's
+reasoning gain still holds on the runs without a role mention (Δaccuracy +0.056, unadjusted). See
+[`results/robustness/ROBUSTNESS.md`](../results/robustness/ROBUSTNESS.md) §3.
+
+## 17. Are the confidence intervals too narrow?
+
+Probably, by up to about 2×. The headline CIs resample trajectories, but 5 episodes share each prompt cell
+and there are only 6 tasks. Resampling by (subject, task, config) cell widens the CIs up to about 2×: Sonnet's
+`report_only` − `final_report` recall gain becomes [−0.01, 0.35], while Opus's reasoning accuracy gain
+survives even task-level resampling. See [`results/robustness/ROBUSTNESS.md`](../results/robustness/ROBUSTNESS.md) §1.
+
+## 18. What would precision be at a realistic hack rate?
+
+Low. Our sweep is 26% hacked by design. With the same recall and FPR, Sonnet `full_trace` precision of 0.48
+falls to 0.12 at 5% prevalence and 0.03 at 1%. Treat the auditor as a triage signal, not a verdict. See
+[`results/robustness/ROBUSTNESS.md`](../results/robustness/ROBUSTNESS.md) §4.
