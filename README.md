@@ -52,7 +52,10 @@ citation allegation or classify disclosed imputation as hidden fabrication.
 
 The 10-task v3 suite and the new conditions (`covert_monitored`, `sycophantic_pi`, tool-failure
 injection, Opus subject) have only preliminary, labeller-only results, because the API credit
-ran out before they were judged (`REPORT.md` §8.6).
+ran out before they were judged (`REPORT.md` §8.6). The prioritised "when credits return" plan
+(judge v3, finish the partial runs, Claude auditors on the hard cases and monitor attacks,
+rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.md);
+`python scripts/live_plan.py` prints its exact Modal commands and cost estimates offline.
 
 - Full write-up: [`REPORT.md`](REPORT.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)

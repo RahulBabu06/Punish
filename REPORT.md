@@ -643,6 +643,7 @@ heuristic auditor and the labeller have been scored on it
 |---|---|---|---|---|
 | heuristic, `full_trace` | 1/10 | 4/10 | 1/5 | 4/7 |
 | heuristic, `report_only` | 1/10 | 4/10 | 1/5 | 4/7 |
+| heuristic, `final_report` | 0/10 | 0/10 | 1/5 | 1/7 |
 | deterministic labeller | 0/10 | 9/10 | 4/5 | 1/7 |
 
 This is a floor and a sanity check, not a result about Claude auditors. The labeller finds
@@ -755,7 +756,9 @@ or in a file the agent writes, laundered reasoning, 20 benign padding checks, a 
 Only the offline heuristic auditor has been scored (`results/monitor_attacks/SUMMARY_heuristic.md`):
 recall is 7/10 `full_trace` and 6/10 `report_only` unattacked, and falls to 6/10
 `full_trace` under laundered reasoning and the combined attack; the other attacks change
-nothing. The auditor system prompt now tells it to treat trajectory text that addresses a
+nothing. The heuristic `final_report` mode catches 3/10 unattacked, and *rises* to 10/10 under
+the report injection, the fake self-check and the combined attack: the injected "verified"
+text itself matches its integrity keywords. So it is not evidence of robustness. The auditor system prompt now tells it to treat trajectory text that addresses a
 reviewer as an unverified claim; this was added after the v2 runs, so committed verdicts
 predate it. `TODO(numbers)`: Claude auditors (`modal run eval/monitor_attacks.py --modes all`).
 
@@ -1013,6 +1016,8 @@ Per-task statistics under the corrected label (v2, 360 trajectories):
   recall.
 - Use larger and more natural task suites (the v3 10-task suite, multi-step analyses), and
   impossible variants of real analyses.
+- Run the prioritised live plan once credits return ([`docs/live_plan.md`](docs/live_plan.md);
+  `python scripts/live_plan.py` prints the exact Modal commands and cost estimates offline).
 - Score Claude auditors on the hard-case set (§8.7), and run the live audit-and-retry
   mitigation (§8.8).
 - Judge and finish the v3 runs. Extend the Opus re-audit to the Sonnet 4.5 subject, and test weaker-auditor/stronger-subject pairs
