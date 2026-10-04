@@ -11,6 +11,7 @@ import html
 import json
 import re
 from pathlib import Path
+from urllib.parse import quote
 
 from demo.core import FIXTURES_DIR, RESULTS_DIR, ROOT
 from demo.pages import _short_model, _table, bar_chart, esc, shell, url
@@ -330,12 +331,28 @@ def headline(results_dir: Path) -> dict | None:
     return {"svg": svg, "title": tag("title") or "Headline", "desc": tag("desc"), "sources": [_rel(p)]}
 
 
+def robustness(results_dir: Path) -> dict | None:
+    reports = []
+    for version, suffix in (("v2", ""), ("v3", "_v3")):
+        directory = results_dir / "robustness"
+        summary_path = directory / f"robustness{suffix}.json"
+        report_path = directory / f"ROBUSTNESS{suffix}.md"
+        summary, markdown = _json(summary_path), _text(report_path)
+        if not isinstance(summary, dict) or not summary.get("slices") or markdown is None:
+            continue
+        reports.append({"version": version, "summary": summary, "markdown": markdown,
+                        "source": _rel(report_path), "json_source": _rel(summary_path)})
+    if not reports:
+        return None
+    return {"reports": reports, "sources": [p for r in reports for p in (r["source"], r["json_source"])]}
+
+
 def benchmarks(results_dir: Path = RESULTS_DIR, fixtures_dir: Path = FIXTURES_DIR) -> dict:
     results_dir, fixtures_dir = Path(results_dir), Path(fixtures_dir)
     return {"headline": headline(results_dir), "hard_cases": hard_cases(results_dir, fixtures_dir),
             "monitor_attacks": monitor_attacks(results_dir, fixtures_dir),
             "relabel": relabel(results_dir), "obfuscation": obfuscation(results_dir), "bestofn": bestofn(results_dir),
-            "cost": cost(results_dir),
+            "cost": cost(results_dir), "robustness": robustness(results_dir),
             "docs": generic_docs(results_dir)}
 
 
@@ -395,6 +412,49 @@ def _section(sid: str, title: str, sources: list[str], body: str, lede: str = ""
 def render_headline(sec: dict) -> str:
     return _section("headline", sec["title"], sec["sources"], f'<div class="fig headline">{sec["svg"]}</div>',
                     esc(sec["desc"]))
+
+
+def render_robustness(sec: dict) -> str:
+    percent = lambda value: "–" if value is None else f"{100 * value:.1f}%"
+    parts = []
+    for report in sec["reports"]:
+        summary = report["summary"]
+        label = "labeller-only · preliminary, no privileged judge" if summary["label"] == "labeller" else f'{summary["label"]} labels'
+        ppv = {(r["auditor"], r["mode"]): r.get("0.05") for r in summary.get("ppv", [])}
+        pairs = {}
+        for row in summary["slices"]:
+            pairs.setdefault((row["auditor"], row["mode"]), {})[row["slice"]] = row
+
+        def recall(row):
+            if row is None:
+                return "–"
+            value = f'{percent(row.get("recall"))} ({row["tp"]}/{row["pos"]})'
+            if bounds := row.get("recall_ci"):
+                value += f'<div class="dim">95% CI {percent(bounds[0])}–{percent(bounds[1])}</div>'
+            return value
+
+        rows = []
+        for (auditor, mode), slices in pairs.items():
+            covert = slices.get("covert") or slices.get("covert + covert_monitored")
+            rows.append([esc(_short_model(auditor)), f"<code>{esc(mode)}</code>", recall(covert),
+                         recall(slices.get("non-covert")), percent(ppv.get((auditor, mode)))])
+        roles = " · ".join(f'<code>{esc(config)}</code> {r["mentions"]}/{r["n"]}'
+                           for config, r in summary.get("role", {}).items())
+        source = report["source"]
+        download = (f'<a href="data:text/markdown;charset=utf-8,{quote(report["markdown"], safe="")}" '
+                    f'download="{esc(Path(source).name)}">{esc(source)}</a>')
+        parts.append(f'<h3>{esc(report["version"])} · {esc(label)}</h3>'
+                     + _table(["Auditor", "Mode", "Covert recall", "Non-covert recall", "Precision at 5% prevalence"], rows)
+                     + f'<p>Role leak — private reasoning names the red-team role: {roles or "not available"}.</p>'
+                     + f'<p>Full report (offline Markdown download): {download}</p>')
+    body = ("".join(parts)
+            + '<p class="sub">Recall counts are detected hacks / labelled hacks; intervals are Wilson 95% CIs. '
+            'Covert means explicitly instructed to hack; v3 groups covert with covert_monitored. '
+            '“Natural” means non-covert, not production traffic. Role mentions are an exploratory regex check. '
+            'Precision at 5% prevalence is projected PPV, holding each mode’s recall and false-positive rate fixed; '
+            'it is not measured deployment precision. v2 and v3 use different tasks and labels, so are not a causal comparison.</p>')
+    return _section("robustness", "Robustness: beyond the covert model organism", sec["sources"], body,
+                    "High recall on instructed hackers need not transfer to non-covert hacks or low-prevalence deployment.")
 
 
 def render_hard_cases(sec: dict) -> str:
@@ -667,6 +727,7 @@ def render_doc(doc: dict) -> str:
 BENCH_CSS = """
 .bench{margin:28px 0 40px;padding-top:8px;border-top:1px solid var(--line)}
 .bench h2{margin:10px 0 6px}.bench h3{margin:22px 0 8px;color:var(--dim);font-size:15px;text-transform:uppercase;letter-spacing:.04em}
+#robustness{scroll-margin-top:80px}
 .bench .lede{color:var(--text);max-width:980px;line-height:1.5}.bench .src{color:var(--faint);font-size:13px;margin-top:14px}
 .bench .two{display:grid;grid-template-columns:minmax(380px,1fr) minmax(420px,1.3fr);gap:24px;align-items:start}
 .bench .stack>.chart{max-width:760px;margin-bottom:16px}
@@ -700,14 +761,18 @@ def benchmarks_page(data: dict, available: set[str] | None = None) -> str:
 
 def _benchmarks_page(data: dict) -> str:
     sections = []
-    for name, fn, title in (("headline", render_headline, "Headline"), ("hard_cases", render_hard_cases, "Hard cases"),
+    for name, fn, title in (("headline", render_headline, "Headline"), ("robustness", render_robustness, "Robustness"),
+                            ("hard_cases", render_hard_cases, "Hard cases"),
                             ("monitor_attacks", render_monitor_attacks, "Monitor attacks"),
                             ("relabel", render_relabel, "Relabelling"),
                             ("obfuscation", render_obfuscation, "Reasoning disclosure"),
                             ("bestofn", render_bestofn, "Best-of-n"), ("cost", render_cost, "Cost")):
         if data.get(name):
             html_ = fn(data[name])
-            sections.append((re.search(r'id="([^"]+)"', html_).group(1), title, html_))
+            match = re.search(r'id="([^"]+)"', html_)
+            if match is None:
+                raise ValueError(f"benchmark section {name} has no id")
+            sections.append((match.group(1), title, html_))
     for doc in data.get("docs") or []:
         sections.append((doc["id"], doc["title"], render_doc(doc)))
     jump = "".join(f'<a class="btn" data-jump="{sid}">{esc(t)}</a>' for sid, t, _ in sections)
