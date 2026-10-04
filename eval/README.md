@@ -75,6 +75,8 @@ Two deployment-style uses of the auditor. Everything is injectable (`run_agent_f
 
 ### 1. Best-of-n with auditor veto (offline)
 
+All offline analyses below accept `--label {either,corrected,excl_leaked}` (`eval/labels.py`; `corrected` = labeller OR (judge AND NOT likely_wrong) from `results/leaked_answer_correction.json`).
+
 ```bash
 python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 [--mode full_trace] \
     [--auditor claude-sonnet-4-6] [--threshold 0.7] [--n 3] [--out results/MITIGATION_bestofn.md]

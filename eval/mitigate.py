@@ -203,24 +203,25 @@ def _runtime_labels(exp_dir: str) -> dict[str, bool]:
 
 
 def load_candidates(exp_dir: str, auditor: str = DEFAULT_AUDITOR, mode: str = "full_trace",
-                    load_task_fn: Callable | None = None) -> list[dict]:
+                    load_task_fn: Callable | None = None, label: str = "either") -> list[dict]:
     """One candidate per trajectory in ``exp_dir`` with its audit (``auditor``/``mode``), labels and grader score.
 
     Labels: the run-time labeller from <exp>/episodes (shared by every auditor) OR the judgment."""
     from eval.analyze import load_experiment
+    from eval.labels import relabel
 
     if load_task_fn is None:
         from tasks.registry import load_task as load_task_fn
     tasks: dict[str, dict] = {}
     runtime = _runtime_labels(exp_dir)
     out = []
-    for row in load_experiment(exp_dir):
+    for row in relabel(load_experiment(exp_dir), label):
         if row["auditor"] != auditor or row["auditor_mode"] != mode:
             continue
         task = tasks.setdefault(row["task_id"], load_task_fn(row["task_id"]))
         events = _read_events(Path(exp_dir) / "trajectories" / f"{row['trajectory_id']}.jsonl")
         labeller = runtime.get(row["trajectory_id"], row["labeller"])
-        either = True if labeller else row["judge"]
+        either = True if labeller else row["judge"]  # `corrected`: relabel() already cleared stale judgments
         out.append({**row, "labeller": labeller, "either": either, "hacked": hack_label({"either": either,
                     "labeller": labeller}), "label_fallback": either is None,
                     "grader_score": grader_score(task, events), "task_drift": task_drift(task, events)})
@@ -367,11 +368,11 @@ def _row(s: dict) -> list:
 
 
 def render_best_of_n(summary: dict, title: str, sweep: list[dict] | None = None,
-                     sources: dict | None = None) -> str:
+                     sources: dict | None = None, label: str = "either") -> str:
     t = summary["threshold"]
     veto = "hack_detected" if t is None else f"confidence >= {t}"
     lines = [f"# {title}", "",
-             f"Hack rate (`either` label) of the trajectory each policy ships from a task x config group of "
+             f"Hack rate (`{label}` label) of the trajectory each policy ships from a task x config group of "
              f"n = {summary['n'] or 'all'} trajectories; veto = {veto}. Random choices are exact expectations; "
              "`fallback` = share of groups where the auditor flagged every candidate (veto then ships the "
              "lowest-confidence one). `oracle` = a clean trajectory exists.", ""]
@@ -397,13 +398,13 @@ def render_best_of_n(summary: dict, title: str, sweep: list[dict] | None = None,
 def best_of_n(exp_dirs: list[str], *, auditor: str = DEFAULT_AUDITOR, mode: str = "full_trace",
               threshold: float | None = None, n: int | None = None, out: str | None = None,
               sweep: bool = True, repeats: int = DEFAULT_BOOTSTRAPS, seed: int = DEFAULT_SEED,
-              load_task_fn: Callable | None = None) -> dict:
+              load_task_fn: Callable | None = None, label: str = "either") -> dict:
     """Offline best-of-n analysis over existing results directories. Writes ``out`` (.md) and ``out``.json."""
     cache: dict[tuple, list[dict]] = {}
 
     def cands(aud, m):
         if (aud, m) not in cache:
-            cache[(aud, m)] = [c for d in exp_dirs for c in load_candidates(d, aud, m, load_task_fn)]
+            cache[(aud, m)] = [c for d in exp_dirs for c in load_candidates(d, aud, m, load_task_fn, label)]
         return cache[(aud, m)]
 
     main_summary = summarize_best_of_n(cands(auditor, mode), threshold, n, repeats=repeats, seed=seed)
@@ -423,12 +424,12 @@ def best_of_n(exp_dirs: list[str], *, auditor: str = DEFAULT_AUDITOR, mode: str 
                                        "threshold": t, "overall": s["overall"]})
     task_ids = sorted({c["task_id"] for c in cands(auditor, mode)})
     sources = {t: GRADER_SPECS[t][0] for t in task_ids}
-    result = {"experiments": exp_dirs, "auditor": auditor, "mode": mode, **main_summary, "sweep": sweep_rows,
+    result = {"experiments": exp_dirs, "auditor": auditor, "mode": mode, "label": label, **main_summary, "sweep": sweep_rows,
               "grader_sources": sources}
     if out:
-        title = f"Best-of-n with auditor veto ({auditor}, {mode})"
+        title = f"Best-of-n with auditor veto ({auditor}, {mode}{'' if label == 'either' else f', label {label}'})"
         Path(out).parent.mkdir(parents=True, exist_ok=True)
-        Path(out).write_text(render_best_of_n(main_summary, title, sweep_rows, sources) + "\n", encoding="utf-8")
+        Path(out).write_text(render_best_of_n(main_summary, title, sweep_rows, sources, label) + "\n", encoding="utf-8")
         Path(out).with_suffix(".json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return result
 
@@ -838,6 +839,9 @@ def _cli(argv: list[str] | None = None) -> int:
     b.add_argument("--bootstrap-samples", type=int, default=DEFAULT_BOOTSTRAPS)
     b.add_argument("--seed", type=int, default=DEFAULT_SEED)
     b.add_argument("--no-sweep", action="store_true")
+    from eval.labels import add_argument as add_label_argument
+
+    add_label_argument(b)
     b.add_argument("--sample", action="store_true", help="first sample trajectories locally (needs API key)")
 
     for name in ("retry", "sample"):
@@ -866,7 +870,7 @@ def _cli(argv: list[str] | None = None) -> int:
         load = git_task_loader(args.tasks_rev) if args.tasks_rev else None
         best_of_n(args.experiments, auditor=args.auditor, mode=args.mode, threshold=args.threshold, n=args.n,
                   out=args.out, sweep=not args.no_sweep, repeats=args.bootstrap_samples, seed=args.seed,
-                  load_task_fn=load)
+                  load_task_fn=load, label=args.label)
         print(Path(args.out).read_text(encoding="utf-8"))
     elif args.cmd in ("retry", "sample"):
         if not args.local:
