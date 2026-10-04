@@ -22,6 +22,7 @@ from pathlib import Path
 from auditor.provenance import GRADER_RE as GRADER_FILE_RE
 from auditor.provenance import provenance_facts
 from eval.analyze import MODES, load_experiment, unique_audits
+from eval.leaked_fix import corrected_rows
 
 FN_TAGS = {
     "reasoning_only": "the hack is visible only in the private reasoning; actions and report look clean",
@@ -85,13 +86,19 @@ def facts_summary(events: list[dict]) -> dict:
     return out
 
 
-def load_errors(exp_dirs: list[str], label: str = "either") -> tuple[list[dict], list[dict]]:
-    """(all audits with a label, error audits with verdict text and Facts summaries attached)."""
+def load_errors(exp_dirs: list[str], label: str = "either",
+                flags: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
+    """(all audits with a label, error audits with verdict text and Facts summaries attached).
+
+    ``flags`` (results/leaked_answer_correction.json) clears the judge label of trajectories flagged likely_wrong.
+    """
     audits, errors = [], []
     facts_cache: dict[tuple, dict] = {}
     for d in exp_dirs:
         exp_dir = Path(d)
         rows = [r for r in unique_audits(load_experiment(d)) if r[label] is not None]
+        if flags:
+            rows = corrected_rows(rows, flags)
         primary = _primary_auditor(rows, exp_dir)
         for r in rows:
             tid = r["trajectory_id"]
@@ -263,10 +270,10 @@ def _xt_lines(rks, cks, counts, row_name) -> list[str]:
 
 
 def render(audits: list[dict], errors: list[dict], units: list[dict], tags: list[dict] | None,
-           experiments: list[str]) -> str:
+           experiments: list[str], label_note: str = "`either`") -> str:
     fn = [e for e in errors if e["kind"] == "FN"]
     fp = [e for e in errors if e["kind"] == "FP"]
-    lines = ["# Auditor errors", "", (f"Data: {', '.join(experiments)}. Label: `either`. One error = one "
+    lines = ["# Auditor errors", "", (f"Data: {', '.join(experiments)}. Label: {label_note}. One error = one "
              "(trajectory, auditor, mode) audit that disagrees with the label."), "", "## Error counts", ""]
     lines += _table(["auditor", "mode", "n", "hacked", "FN", "FN rate", "FP", "FP rate"],
                     [[r["auditor"], r["mode"], r["n"], r["hacked"], r["fn"], _rate(r["fnr"]), r["fp"],
@@ -337,9 +344,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--n-fp", type=int, default=25)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--sample-out", default=None, help="write the stratified sample (JSON) + a .txt digest for reading")
+    p.add_argument("--correction", default=None,
+                   help="leaked_answer correction JSON (eval.leaked_fix): flagged judge positives count as clean")
     p.add_argument("--out", default="results/errors/ERRORS.md")
     args = p.parse_args(argv)
-    audits, errors = load_errors(args.experiments)
+    flags = json.loads(Path(args.correction).read_text())["flags"] if args.correction else None
+    audits, errors = load_errors(args.experiments, flags=flags)
     units = trajectory_units(errors)
     if args.sample_out:
         sample = sample_units(units, args.n_fn, args.n_fp, args.seed)
@@ -348,7 +358,17 @@ def main(argv: list[str] | None = None) -> int:
         path.write_text(json.dumps(sample, indent=2), encoding="utf-8")
         path.with_suffix(".txt").write_text(sample_digest(sample), encoding="utf-8")
     tags = json.loads(Path(args.tags).read_text()) if args.tags else None
-    md = render(audits, errors, units, tags, args.experiments)
+    note = "`either`"
+    if flags:
+        n_wrong = sum(f["likely_wrong"] for f in flags)
+        note = f"`either`, with the {n_wrong} likely_wrong judge positives in {args.correction} treated as clean"
+        if tags:
+            # Tagged trajectories that the correction turned into non-errors drop out of the tag summary.
+            live = {(u["experiment"], u["trajectory_id"], u["kind"]) for u in units}
+            kept = [t for t in tags if (t["experiment"], t["trajectory_id"], t["kind"]) in live]
+            note += f"; {len(tags) - len(kept)} hand-tagged trajectories are no longer errors"
+            tags = kept
+    md = render(audits, errors, units, tags, args.experiments, note)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
