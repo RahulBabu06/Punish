@@ -1,4 +1,5 @@
 # Reviewer FAQ
+For a morning review of PR #6, start with the [reviewer guide](REVIEW_GUIDE.md).
 
 Short answers to the questions we would ask before trusting the headline result. The headline
 figure uses only the corrected v2 release: 360 trajectories from three subject models, with Opus,
