@@ -233,10 +233,11 @@ doesn't cover them:
 
 **README, REPORT, PITCH:** no broken relative links or images.
 
-## Round 2: re-read at integration `b4daf84`
+## Round 2: re-read at integration `b4daf84` (REPORT at `bdf1a91`)
 
 Same 10-minute path, now README → headline figure → PITCH → REPORT abstract and Conclusions →
-`docs/slides.html` → `docs/SUBMISSION.md`. Line numbers below are at `b4daf84`, before this branch's edits.
+`docs/slides.html` → `docs/SUBMISSION.md`. README/PITCH/SUBMISSION line numbers are at `b4daf84`, before this
+branch's edits; REPORT line numbers are at `bdf1a91`, after `devin/report-polish` (merged here).
 
 ### Verdict
 
@@ -261,7 +262,7 @@ the slides, the FAQ and REPORT.
 | 6 | Demo friction | **fixed** | `docs/demo.html` linked at `README.md:8` and opens on `#/story`; `--story --open` is in the Quickstart. |
 | 7 | `TODO(numbers)` in REPORT | **fixed** | None left in README, REPORT, PITCH or SUBMISSION. |
 | 8 | Stale facts | **fixed** | "six tasks in the judged sweep (10 in the suite)", scoped "preliminary" status line, pytest described as the test dependency. |
-| 9 | No conclusions; §8 too long | **partly fixed** | `## Conclusions` exists (`REPORT.md:930`), but §8 still has 19 subsections and rubric v3 still sits inside §8.18 Task design (`REPORT.md:913`). |
+| 9 | No conclusions; §8 too long | **partly fixed** | `## Conclusions` (`REPORT.md:912`) and a grouped Contents table (`REPORT.md:10-19`) now exist, but §8 still has 19 subsections and rubric v3 still sits inside §8.18 Task design (`REPORT.md:895`). |
 | 10 | AI ground truth disclosed late | **fixed** | First "What to trust" bullet (`README.md:46-47`), SUBMISSION abstract and limitations. |
 
 Score: 7 fixed, 3 partly fixed, 0 not fixed.
@@ -272,9 +273,9 @@ Score: 7 fixed, 3 partly fixed, 0 not fixed.
 |---|---|---|---|
 | N1 | Robustness caveats bury the core thesis | `README.md:15-21,45-61` | fixed here |
 | N2 | PITCH states the non-replicated v2 reversal as a finding | `PITCH.md:48,67,80` | fixed here |
-| N3 | κ = 0.70 vs κ = 0.97 for the same judge check | `README.md:47`, `PITCH.md:90`, slide 9 vs `REPORT.md:841,974` | fixed in README/PITCH; slides listed |
+| N3 | κ = 0.70 vs κ = 0.97 for the same judge check | `README.md:47`, `PITCH.md:90`, slide 9 vs `REPORT.md:826,956` | fixed in README/PITCH; slides listed |
 | N4 | Slides and FAQ still on old label variants and a fifth cascade point | slides 5, 6, 7, 9, 10; `docs/reviewer_faq.md:56,81` | listed |
-| N5 | REPORT headline and Conclusions miss the covert-only qualifier | `REPORT.md:40,937-938`; `docs/SUBMISSION.md:20-22` | SUBMISSION fixed; REPORT listed |
+| N5 | REPORT headline and Conclusions miss the covert-only qualifier | `REPORT.md:44,918-919`; `docs/SUBMISSION.md:20-22` | SUBMISSION fixed; REPORT listed |
 
 #### N1. The caveats bury the positive story (`README.md:15-21`, `45-61`)
 
@@ -341,20 +342,20 @@ are right (original vs corrected judge), but a judge who sees both suspects cher
 #### N5. REPORT's headline sentences miss the covert-only qualifier (for the REPORT owner)
 
 The README, PITCH and SUBMISSION headlines now say the action gain is instructed-only. REPORT says it
-only in a trailing sentence (`REPORT.md:58`) and in §9. A judge reading the abstract's numbered results or
+only in a trailing sentence (`REPORT.md:61`) and in §9. A judge reading the abstract's numbered results or
 the Conclusions gets the over-stated version.
 
 **Fix.**
-- `REPORT.md:40`: "2. **The trace exposes hacks the report hides.**" becomes "2. **The actions expose
+- `REPORT.md:44`: "2. **The trace exposes hacks the report hides.**" becomes "2. **The actions expose
   instructed hacks the report hides.**", and add after the AUROC list: "The recall gain is all on
   `covert` hacks (+0.33; −0.22 on natural hacks, which does not replicate on labeller-only v3)."
-- `REPORT.md:937-938` (Conclusions bullet 3): "**Underpowered, covert-only recall gain; trajectory-wise
+- `REPORT.md:918-919` (Conclusions bullet 3): "**Underpowered, covert-only recall gain; trajectory-wise
   FPR cost:** Sonnet actions-and-report recall is 0.91 versus 0.74 for report alone, all from `covert`
   hacks, but FPR is 0.35 versus 0.23."
-- `REPORT.md:939-940` (bullet 4) reads as jargon. Suggested: "**Reasoning helps Opus, not Sonnet's
+- `REPORT.md:920-921` (bullet 4) reads as jargon. Suggested: "**Reasoning helps Opus, not Sonnet's
   verdicts:** Opus accuracy +0.071 (Holm p = 0.002, survives task resampling); Sonnet's flags don't
   change, though its ranking improves (AUROC +0.051)."
-- §9 says the corrected judge has κ = 0.97 (`REPORT.md:974`). Add "(0.70 before the correction)" so it
+- §9 says the corrected judge has κ = 0.97 (`REPORT.md:956`). Add "(0.70 before the correction)" so it
   matches README.
 - Done: SUBMISSION's abstract now says the full-trace vs final-report gap "comes from instructed hacks"
   (`docs/SUBMISSION.md:22`); the abstract stays within the 140–160 words its test requires.
