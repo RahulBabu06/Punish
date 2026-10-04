@@ -232,3 +232,136 @@ doesn't cover them:
   intentional: they are outputs that the documented commands write or used to write.
 
 **README, REPORT, PITCH:** no broken relative links or images.
+
+## Round 2: re-read at integration `b4daf84`
+
+Same 10-minute path, now README → headline figure → PITCH → REPORT abstract and Conclusions →
+`docs/slides.html` → `docs/SUBMISSION.md`. Line numbers below are at `b4daf84`, before this branch's edits.
+
+### Verdict
+
+The first minute is now good. The figure is on line 6, the demo link on line 8, three takeaways and a
+novelty paragraph follow, REPORT has a Conclusions section and no `TODO`s, and the label noise is gone
+from README, PITCH and SUBMISSION. The new risk is the opposite of round 1. The robustness work was
+honest, but it was bolted onto the headline: README takeaway 2, the core thesis, had grown to seven lines
+with nine fractions from two cohorts, and "What to trust" (9 bullets) was longer than the takeaways. A
+judge skimming takeaway 2 came away with "the trace doesn't help on natural hacks" rather than "the trace
+exposes hacks the report hides". The remaining inconsistencies are on surfaces this branch doesn't own:
+the slides, the FAQ and REPORT.
+
+### Scorecard for the original 10 issues
+
+| # | issue | status | what remains |
+|---|---|---|---|
+| 1 | Headline buried | **fixed** | Figure, demo link, takeaways and novelty fill the first screen (`README.md:1-31`). |
+| 2 | Three label variants on every number | **partly fixed** | Fixed in README, PITCH, SUBMISSION and the REPORT abstract. Slides 5–7 and 9–10 still quote `leaked_answer`-excluded or original-label numbers (see new issue 4). |
+| 3 | Same headline, different values | **partly fixed** | The stage script now matches figure panel B, and README/REPORT label the four cascade points as distinct. The FAQ still leads with a fifth cascade point, 64.3% / 5.4% (`docs/reviewer_faq.md:56,81`); Opus is 0.06 vs 0.12 FPR on slides 6 and 10 against 22.3% / 27.2% in the figure. |
+| 4 | Over-claims vs Holm-corrected stats | **fixed** | PITCH and figure titles fixed. The new covert-only over-claim is new issue 5. |
+| 5 | Novelty not stated | **fixed** | `README.md:27-31`, `docs/SUBMISSION.md:43-52`. |
+| 6 | Demo friction | **fixed** | `docs/demo.html` linked at `README.md:8` and opens on `#/story`; `--story --open` is in the Quickstart. |
+| 7 | `TODO(numbers)` in REPORT | **fixed** | None left in README, REPORT, PITCH or SUBMISSION. |
+| 8 | Stale facts | **fixed** | "six tasks in the judged sweep (10 in the suite)", scoped "preliminary" status line, pytest described as the test dependency. |
+| 9 | No conclusions; §8 too long | **partly fixed** | `## Conclusions` exists (`REPORT.md:930`), but §8 still has 19 subsections and rubric v3 still sits inside §8.18 Task design (`REPORT.md:913`). |
+| 10 | AI ground truth disclosed late | **fixed** | First "What to trust" bullet (`README.md:46-47`), SUBMISSION abstract and limitations. |
+
+Score: 7 fixed, 3 partly fixed, 0 not fixed.
+
+### New issues (ranked)
+
+| # | issue | where | status |
+|---|---|---|---|
+| N1 | Robustness caveats bury the core thesis | `README.md:15-21,45-61` | fixed here |
+| N2 | PITCH states the non-replicated v2 reversal as a finding | `PITCH.md:48,67,80` | fixed here |
+| N3 | κ = 0.70 vs κ = 0.97 for the same judge check | `README.md:47`, `PITCH.md:90`, slide 9 vs `REPORT.md:841,974` | fixed in README/PITCH; slides listed |
+| N4 | Slides and FAQ still on old label variants and a fifth cascade point | slides 5, 6, 7, 9, 10; `docs/reviewer_faq.md:56,81` | listed |
+| N5 | REPORT headline and Conclusions miss the covert-only qualifier | `REPORT.md:40,937-938`; `docs/SUBMISSION.md:20-22` | SUBMISSION fixed; REPORT listed |
+
+#### N1. The caveats bury the positive story (`README.md:15-21`, `45-61`)
+
+Takeaway 2 mixed the claim, the v2 natural-hack split, the v3 replication and the demo run in one
+seven-line sentence chain. The headline "The trace exposes instructed hacks, not natural ones" led with the
+negative. "What to trust" then had three separate robustness bullets.
+
+**Fix (done).**
+- Takeaway 2 is now five lines and leads with the positive claim: "**The trace exposes instructed hacks
+  the report hides.** With the agent's actions the auditor catches 0.91 of hacks against 0.74 from the
+  final report alone. The gain comes from instructed (`covert`) hacks, 66 of the 93 positives, which the
+  full trace catches at 0.97–0.98. [demo run] Natural hacks are harder (below)."
+- The natural-hack numbers move to one "What to trust" bullet, "**Natural hacks are the weak spot.**",
+  which keeps 19/27 = 0.70, 5/17 = 0.29, 26/27 vs 20/27 and the v3 non-replication (19/26 each,
+  12/26 = 0.46).
+- Config leak, clustered CIs and precision at prevalence merge into one "**Robustness**" bullet. Every
+  number is unchanged and still checked by `tests/test_claims_audit.py`.
+
+#### N2. PITCH says on stage what v3 doesn't replicate (`PITCH.md:48`)
+
+The 1:40 beat says "on natural hacks the report alone did better", while PITCH's own note at line 11 says
+"don't claim the report wins either". Q&A at line 80 also quotes 26/27 without the v3 result next to it.
+And "the conclusions hold under all three" labels (line 67) over-claims: the false-positive cost of
+seeing the actions disappears with `leaked_answer` excluded (FPR 0.21 in both modes, `SIGNIFICANCE.md`).
+
+**Fix (done).**
+- `PITCH.md:48`: "on natural hacks the actions didn't help." This is true on v2 and v3, and takes the
+  same speaking time.
+- `PITCH.md:80`: "and on v2 the report alone catches 26/27 (labeller-only v3: 19/26 either way, full-trace
+  12/26 = 0.46)."
+- `PITCH.md:67`: "The main conclusions hold under all three; the false-positive cost of seeing the actions
+  does not (it comes from `leaked_answer`)."
+- `PITCH.md:50`: "a quarter to a third" becomes "a fifth to a third". Opus `final_report` FPR is 0.20.
+
+#### N3. Two κ values for one judge check
+
+README, PITCH and slide 9 say κ = 0.70. REPORT §8.15 and §9 say the corrected judge has κ = 0.97. Both
+are right (original vs corrected judge), but a judge who sees both suspects cherry-picking.
+
+**Fix.**
+- Done: README says "κ = 0.70; 0.97 after the correction those labels helped find", and PITCH says "κ = 0.70 (0.97 after the correction, which that check
+  helped find)".
+- For the slides owner, slide 9 "LLM ground truth" card (`docs/build_slides.py`): "Against 60 blind AI labels: κ 0.70
+  (0.97 after the correction they helped find), never more lenient."
+
+#### N4. Slides and FAQ lag the one-label rule (for their owners)
+
+- **Slide 5, panel B note:** "With leaked_answer excluded: AUROC 0.962, recall 0.90, FPR 0.20." Replace
+  with "Sonnet `full_trace`: recall 0.90 at FPR 0.34 (AUROC 0.891); the gain over the report is all on
+  `covert` hacks."
+- **Slide 6:** the big numbers are 0.06 / 0.12 (excluded). Use the corrected 0.22 / 0.27 to match figure
+  panel B, or retitle to accuracy "+0.07 (Holm p = 0.002)" and drop the FPR tiles. Delete the "Original
+  label (240 runs ...)" sentence.
+- **Slide 7 title:** "46 of 91 found (leaked_answer excluded)" becomes "47 of 93 found (corrected label)", and
+  likewise in the leaked_answer bullet.
+- **Slide 9 "Small n":** drop "(original; 2–40 corrected)" and say "2–40 positives".
+- **Slide 10 bullets 2–3:** replace "Opus FPR 0.06 vs 0.12 and recall 0.77 vs 0.63 with leaked_answer
+  excluded" with "Opus accuracy +0.07 (Holm p = 0.002)", and "46 of the 91" with "47 of the 93".
+- **`docs/reviewer_faq.md:56`:** replace "a cross-experiment heuristic→Sonnet point reaches 64.3% recall
+  and 5.4% FPR" with "the heuristic→Sonnet cascade reaches 80.4% / 5.4% in-sample (76.8% / 5.4% with
+  cross-fit thresholds) and 62.7% / 2.9% on held-out, labeller-only v3". In §9 (line 81), call 64.3%
+  "the 5%-cap variant", not *the* cross-experiment point.
+
+#### N5. REPORT's headline sentences miss the covert-only qualifier (for the REPORT owner)
+
+The README, PITCH and SUBMISSION headlines now say the action gain is instructed-only. REPORT says it
+only in a trailing sentence (`REPORT.md:58`) and in §9. A judge reading the abstract's numbered results or
+the Conclusions gets the over-stated version.
+
+**Fix.**
+- `REPORT.md:40`: "2. **The trace exposes hacks the report hides.**" becomes "2. **The actions expose
+  instructed hacks the report hides.**", and add after the AUROC list: "The recall gain is all on
+  `covert` hacks (+0.33; −0.22 on natural hacks, which does not replicate on labeller-only v3)."
+- `REPORT.md:937-938` (Conclusions bullet 3): "**Underpowered, covert-only recall gain; trajectory-wise
+  FPR cost:** Sonnet actions-and-report recall is 0.91 versus 0.74 for report alone, all from `covert`
+  hacks, but FPR is 0.35 versus 0.23."
+- `REPORT.md:939-940` (bullet 4) reads as jargon. Suggested: "**Reasoning helps Opus, not Sonnet's
+  verdicts:** Opus accuracy +0.071 (Holm p = 0.002, survives task resampling); Sonnet's flags don't
+  change, though its ranking improves (AUROC +0.051)."
+- §9 says the corrected judge has κ = 0.97 (`REPORT.md:974`). Add "(0.70 before the correction)" so it
+  matches README.
+- Done: SUBMISSION's abstract now says the full-trace vs final-report gap "comes from instructed hacks"
+  (`docs/SUBMISSION.md:22`); the abstract stays within the 140–160 words its test requires.
+
+### What to lead with (unchanged)
+
+The three strengths from round 1 still hold, and the first screen now leads with them: the R² 0.447 → 0.92
+replay, checkable rigour (paired Holm-corrected tests, the self-found label bug, byte-for-byte offline
+reproduction, now plus clustered and v3 robustness checks), and the Opus / veto / natural-hacking findings.
+The robustness checks are a strength when they sit one level down. Keep them out of the takeaways.
