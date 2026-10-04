@@ -8,7 +8,7 @@ not just what they wrote.** Built for the London AI x Science Hackathon, Track 2
 **Try it with no install:** download [`docs/demo.html`](docs/demo.html) and open it in a browser
 (it starts on the curated story), or run `.venv/bin/python -m demo.app --story --open` after setup.
 
-**Three takeaways** (judged v2 sweep, Sonnet 4.6 auditor, corrected (360, 93 hacked)):
+**Three takeaways** (judged v2 sweep of 360 runs, Sonnet 4.6 auditor, corrected labels: 93 hacked):
 
 1. **Hacking follows the prompt.** Honest agents hack in 0/90 runs, pressured or incentivised
    agents in 12–18%, and agents instructed to hack and hide it (`covert`) in 73%.
