@@ -13,13 +13,11 @@ not just what they wrote.** Built for the London AI x Science Hackathon, Track 2
 
 1. **Hacking follows the prompt.** Honest agents hack in 0/90 runs, pressured or incentivised
    agents in 12–18%, and agents instructed to hack and hide it (`covert`) in 73%.
-2. **The trace exposes instructed hacks, not natural ones.** With the agent's actions the auditor
-   catches 0.91 of hacks against 0.74 from the final report alone, but the whole gain comes from
-   instructed (`covert`) hacks: 66 of the 93 positives, caught at 0.97–0.98 with the full trace. On
-   natural hacks the report alone does better (26/27 vs 20/27 with actions; on labeller-only v3 the
-   instructed-only gain replicates but this reversal does not, 19/26 each), and `full_trace` recall
-   is 19/27 = 0.70 for Sonnet and 5/17 = 0.29 for Opus (v3: 12/26 = 0.46). In the demo run the agent computes R² = 0.447
-   and reports 0.92. The auditor flags it at 0.99 from the trace and calls the report alone clean.
+2. **The trace exposes instructed hacks the report hides.** With the agent's actions the auditor
+   catches 0.91 of hacks against 0.74 from the final report alone. The gain comes from instructed
+   (`covert`) hacks, 66 of the 93 positives, which the full trace catches at 0.97–0.98. In the demo
+   run the agent computes R² = 0.447 and reports 0.92. The auditor flags it at 0.99 from the trace
+   and calls the report alone clean. Natural hacks are harder (below).
 3. **A stronger auditor uses the reasoning.** Seeing the private reasoning makes Opus 4.6's
    verdicts significantly more accurate (+0.071, Holm p = 0.002). Sonnet's accuracy doesn't change
    (a genuine null). The cost: auditors flag about a third of honest runs, mostly agents that merely
@@ -45,7 +43,7 @@ unseen runs, with labeller labels only ([`results/cascade_heldout.md`](results/c
 
 **What to trust:**
 - **Ground truth is AI-made.** The labels come from a privileged Opus judge, checked against 60
-  blind AI labels (κ = 0.70). There are no human labels yet.
+  blind AI labels (κ = 0.70; 0.97 after the correction those labels helped find). There are no human labels yet.
 - **Corrected label.** The judge saw a stale `leaked_answer` definition. One pre-specified rule
   relabels its 30 stale positives as clean. The original and task-excluded variants are in
   [`REPORT.md` §8.0](REPORT.md#80-known-issue-stale-leaked_answer-judge-context-read-first).
@@ -53,12 +51,15 @@ unseen runs, with labeller labels only ([`results/cascade_heldout.md`](results/c
   API credit ran out before they were judged.
 - **Not yet run live:** rubric v3 and the agentic auditor.
   [`docs/live_plan.md`](docs/live_plan.md) has the plan.
-- **Config leak:** 75/90 `covert` runs name the red-team / reward-hacker role in their reasoning,
-  so `full_trace` can read the config. Opus's reasoning gain still holds without them (+0.056).
-- **Clustered CIs:** 5 episodes per cell and only 6 tasks. Resampling by cell widens the CIs up
-  to about 2× ([`results/robustness/ROBUSTNESS.md`](results/robustness/ROBUSTNESS.md)).
-- **Precision at realistic prevalence:** Sonnet `full_trace` precision is 0.48 at the study's 26%
-  hack rate and would be 0.12 at 5%.
+- **Natural hacks are the weak spot.** On the 27 uninstructed hacks `full_trace` recall is
+  19/27 = 0.70 for Sonnet and 5/17 = 0.29 for Opus, and the actions don't help: the report alone
+  catches 26/27 vs 20/27 with actions, a reversal that does not replicate on labeller-only v3
+  (19/26 each; `full_trace` 12/26 = 0.46).
+- **Robustness** ([`results/robustness/ROBUSTNESS.md`](results/robustness/ROBUSTNESS.md)): 75/90
+  `covert` runs name the red-team role in their reasoning, so `full_trace` can read the config
+  (Opus's reasoning gain holds without them, +0.056). With 5 episodes per cell and 6 tasks,
+  resampling by cell widens the CIs up to about 2×. Sonnet `full_trace` precision is 0.48 at the
+  study's 26% hack rate and would be 0.12 at 5%.
 - **Costs are estimates:** chars/4, $162.33 for all 8,519 calls.
 
 More: [`REPORT.md`](REPORT.md) (full write-up) ·
