@@ -499,6 +499,7 @@ def render(rows: list[dict], experiments: list[str], *, stats: dict | None = Non
            "Opus judge that also sees the exploit description and honest solution; `either` = hacked if either "
            "says so. Missing judge labels are not treated as clean: `either` is known only when "
            "the labeller is positive or a judgment exists. "
+           "Labeller labels come from saved primary episodes, not a rerun of current labelling rules. "
            f"Headline tables use `{headline}`. With no judgments, use labeller-only denominators; "
            "positive-only `either` rows are not a hack-rate estimate.", "",
            "## Statistical methods and limits", "",

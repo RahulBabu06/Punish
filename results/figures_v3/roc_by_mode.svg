@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="539" viewBox="0 0 1080 539" role="img" aria-labelledby="title desc">
-<title id="title">Auditor ROC: detection versus false alarms</title><desc id="desc">Headline label: labeller OR privileged judge · threshold score = P(hacked) · ties move together</desc>
+<title id="title">Auditor ROC: detection versus false alarms</title><desc id="desc">Headline label: deterministic labeller · threshold score = P(hacked) · ties move together</desc>
 <style>text{font-family:Inter,Arial,Helvetica,sans-serif} line,path{vector-effect:non-scaling-stroke}</style>
 <rect x="0.00" y="0.00" width="1080.00" height="539.00" rx="0" fill="#FFFFFF"/>
 <rect x="0.00" y="0.00" width="1080.00" height="98.00" rx="0" fill="#F3F7FA"/>
 <text x="36.00" y="39.00" font-size="25" fill="#14263D" text-anchor="start" font-weight="700">Auditor ROC: detection versus false alarms</text>
-<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">Headline label: labeller OR privileged judge · threshold score = P(hacked) · ties move together</text>
+<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">Headline label: deterministic labeller · threshold score = P(hacked) · ties move together</text>
 <text x="108.00" y="125.00" font-size="16" fill="#14263D" text-anchor="start" font-weight="600">Auditor: claude-sonnet-4-6</text>
 <line x1="108.00" y1="401.00" x2="718.00" y2="401.00" stroke="#E3EAF0" stroke-width="1"/>
 <line x1="108.00" y1="146.00" x2="108.00" y2="401.00" stroke="#E3EAF0" stroke-width="1"/>
@@ -37,16 +37,22 @@
 <text x="144.50" y="161.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">5% FPR</text>
 <line x1="763.00" y1="164.00" x2="786.00" y2="164.00" stroke="#0072B2" stroke-width="3"/>
 <text x="796.00" y="168.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="600">Full trace</text>
-<text x="796.00" y="188.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">AUC n/a · n=102</text>
-<text x="796.00" y="208.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Recall @ ≤5% FPR: n/a</text>
+<text x="796.00" y="188.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">AUC 0.930 · n=450</text>
+<text x="796.00" y="208.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Recall @ ≤5% FPR: 75%</text>
+<path d="M 108.00,401.00 L 108.00,401.00 L 122.02,268.50 L 123.78,253.50 L 123.78,236.00 L 125.53,231.00 L 125.53,228.50 L 129.03,226.00 L 130.79,223.50 L 130.79,218.50 L 136.05,211.00 L 148.32,191.00 L 150.07,191.00 L 155.33,183.50 L 183.37,183.50 L 185.13,183.50 L 188.63,181.00 L 190.39,181.00 L 199.15,181.00 L 209.67,181.00 L 209.67,181.00 L 211.42,181.00 L 213.17,181.00 L 213.17,176.00 L 216.68,168.50 L 230.70,161.00 L 232.45,158.50 L 444.55,156.00 L 682.94,146.00 L 718.00,146.00 L 718.00,146.00" stroke="#0072B2" stroke-width="2.5" fill="none"/>
+<circle cx="136.05" cy="211.00" r="5" fill="#0072B2"/>
 <line x1="763.00" y1="239.00" x2="786.00" y2="239.00" stroke="#D55E00" stroke-width="3"/>
 <text x="796.00" y="243.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="600">Report only</text>
-<text x="796.00" y="263.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">AUC n/a · n=102</text>
-<text x="796.00" y="283.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Recall @ ≤5% FPR: n/a</text>
+<text x="796.00" y="263.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">AUC 0.916 · n=450</text>
+<text x="796.00" y="283.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Recall @ ≤5% FPR: 62%</text>
+<path d="M 108.00,401.00 L 108.00,401.00 L 123.78,288.50 L 123.78,273.50 L 125.53,266.00 L 127.28,253.50 L 129.03,246.00 L 130.79,243.50 L 148.32,236.00 L 157.08,223.50 L 158.83,216.00 L 174.61,203.50 L 195.64,178.50 L 197.40,173.50 L 200.90,173.50 L 202.66,173.50 L 209.67,173.50 L 209.67,173.50 L 211.42,173.50 L 211.42,171.00 L 213.17,168.50 L 214.93,163.50 L 220.18,161.00 L 221.94,161.00 L 469.09,156.00 L 677.68,146.00 L 718.00,146.00 L 718.00,146.00" stroke="#D55E00" stroke-width="2.5" fill="none"/>
+<circle cx="130.79" cy="243.50" r="5" fill="#D55E00"/>
 <line x1="763.00" y1="314.00" x2="786.00" y2="314.00" stroke="#009E73" stroke-width="3"/>
 <text x="796.00" y="318.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="600">Final report</text>
-<text x="796.00" y="338.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">AUC n/a · n=102</text>
-<text x="796.00" y="358.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Recall @ ≤5% FPR: n/a</text>
+<text x="796.00" y="338.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">AUC 0.860 · n=450</text>
+<text x="796.00" y="358.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Recall @ ≤5% FPR: 30%</text>
+<path d="M 108.00,401.00 L 108.00,401.00 L 108.00,398.50 L 108.00,391.00 L 113.26,376.00 L 113.26,368.50 L 116.76,358.50 L 127.28,323.50 L 155.33,301.00 L 155.33,296.00 L 169.35,268.50 L 190.39,231.00 L 199.15,221.00 L 199.15,218.50 L 199.15,218.50 L 202.66,218.50 L 207.91,218.50 L 211.42,218.50 L 220.18,218.50 L 239.47,213.50 L 293.80,181.00 L 349.90,156.00 L 388.46,153.50 L 646.13,146.00 L 700.47,146.00 L 714.49,146.00 L 718.00,146.00 L 718.00,146.00" stroke="#009E73" stroke-width="2.5" fill="none"/>
+<circle cx="127.28" cy="323.50" r="5" fill="#009E73"/>
 <text x="36.00" y="500.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Auditor panels can cover different subject populations; compare modes within each panel.</text>
 <text x="36.00" y="522.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Dashed diagonal: chance ranking. Dots: attainable operating points at FPR ≤5%; no interpolation for the reported recall.</text>
 </svg>

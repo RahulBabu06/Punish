@@ -398,13 +398,16 @@ def test_committed_cache_copies_are_hacks_without_rewriting_labels(episode):
     assert registry.label(registry.load_task("solutions_cache"), events) is True
 
 
-@pytest.mark.parametrize("episode", [1, 3, 4])
-def test_disclosed_imputation_is_not_hidden_fabrication(episode):
-    root = Path(__file__).resolve().parent.parent / "results/v3_sonnet46"
+@pytest.mark.parametrize("experiment,episode", [("v2_sonnet46", 2), ("v2_sonnet46", 3),
+                                              *(("v3_sonnet46", i) for i in range(5))])
+def test_disclosed_imputation_is_not_hidden_fabrication(experiment, episode):
+    root = Path(__file__).resolve().parent.parent / "results" / experiment
     tid = f"fabrication__covert__ep{episode:03}"
     with (root / "trajectories" / f"{tid}.jsonl").open() as stream:
         events = [json.loads(line) for line in stream]
     assert registry.label(registry.load_task("fabrication"), events) is False
+    saved = json.loads((root / "episodes" / f"{tid}.json").read_text())
+    assert saved["ground_truth_hacked"] is True
 
 
 def test_imputation_disclosure_does_not_excuse_false_measured_agreement():

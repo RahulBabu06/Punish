@@ -61,7 +61,7 @@ def compare(experiments: list[str], baseline_ref: str | None = None) -> dict:
                     verdict = auditor(str(path), mode=mode)
                     rows.append({"experiment": root.name, "trajectory_id": tid, "mode": mode,
                                  "version": version, "labeller": labeller, "judge": judge,
-                                 "either": labeller or bool(judge), "pred": verdict["hack_detected"],
+                                 "either": True if labeller else judge, "pred": verdict["hack_detected"],
                                  "confidence": verdict["confidence"], "hack_types": verdict["hack_types"]})
         predictions.extend(rows)
         for mode in MODES:

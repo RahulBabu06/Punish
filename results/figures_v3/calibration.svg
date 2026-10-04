@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="539" viewBox="0 0 1080 539" role="img" aria-labelledby="title desc">
-<title id="title">Calibration: do hack probabilities match observed frequency?</title><desc id="desc">Reliability diagram · ten equal-width confidence bins · headline label: labeller OR privileged judge</desc>
+<title id="title">Calibration: do hack probabilities match observed frequency?</title><desc id="desc">Reliability diagram · ten equal-width confidence bins · headline label: deterministic labeller</desc>
 <style>text{font-family:Inter,Arial,Helvetica,sans-serif} line,path{vector-effect:non-scaling-stroke}</style>
 <rect x="0.00" y="0.00" width="1080.00" height="539.00" rx="0" fill="#FFFFFF"/>
 <rect x="0.00" y="0.00" width="1080.00" height="98.00" rx="0" fill="#F3F7FA"/>
 <text x="36.00" y="39.00" font-size="25" fill="#14263D" text-anchor="start" font-weight="700">Calibration: do hack probabilities match observed frequency?</text>
-<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">Reliability diagram · ten equal-width confidence bins · headline label: labeller OR privileged judge</text>
+<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">Reliability diagram · ten equal-width confidence bins · headline label: deterministic labeller</text>
 <text x="108.00" y="125.00" font-size="16" fill="#14263D" text-anchor="start" font-weight="600">Auditor: claude-sonnet-4-6</text>
 <line x1="108.00" y1="401.00" x2="718.00" y2="401.00" stroke="#E3EAF0" stroke-width="1"/>
 <line x1="108.00" y1="146.00" x2="108.00" y2="401.00" stroke="#E3EAF0" stroke-width="1"/>
@@ -35,34 +35,42 @@
 <line x1="108.00" y1="401.00" x2="718.00" y2="146.00" stroke="#536579" stroke-width="1" stroke-dasharray="6 5"/>
 <line x1="763.00" y1="167.00" x2="786.00" y2="167.00" stroke="#0072B2" stroke-width="3"/>
 <text x="796.00" y="171.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="600">Full trace</text>
-<text x="796.00" y="191.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Brier 0.127 · n=102</text>
-<path d="M 144.60,146.00 L 169.00,146.00 L 504.50,146.00 L 565.50,146.00 L 618.05,146.00 L 707.60,146.00" stroke="#0072B2" stroke-width="2.5" fill="none"/>
-<circle cx="144.60" cy="146.00" r="4.732050807568877" fill="#0072B2"/>
+<text x="796.00" y="191.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Brier 0.109 · n=450</text>
+<path d="M 135.63,390.80 L 169.00,146.00 L 321.50,401.00 L 382.50,401.00 L 443.50,401.00 L 485.52,372.67 L 551.44,367.74 L 615.32,262.88 L 706.24,185.46" stroke="#0072B2" stroke-width="2.5" fill="none"/>
+<circle cx="135.63" cy="390.80" r="7" fill="#0072B2"/>
 <circle cx="169.00" cy="146.00" r="3.7071067811865475" fill="#0072B2"/>
-<circle cx="504.50" cy="146.00" r="3.5" fill="#0072B2"/>
-<circle cx="565.50" cy="146.00" r="3.8660254037844384" fill="#0072B2"/>
-<circle cx="618.05" cy="146.00" r="4.802775637731995" fill="#0072B2"/>
-<circle cx="707.60" cy="146.00" r="7" fill="#0072B2"/>
+<circle cx="321.50" cy="401.00" r="3.5" fill="#0072B2"/>
+<circle cx="382.50" cy="401.00" r="3.5" fill="#0072B2"/>
+<circle cx="443.50" cy="401.00" r="4.224744871391589" fill="#0072B2"/>
+<circle cx="485.52" cy="372.67" r="4.5" fill="#0072B2"/>
+<circle cx="551.44" cy="367.74" r="5.39791576165636" fill="#0072B2"/>
+<circle cx="615.32" cy="262.88" r="5.449489742783178" fill="#0072B2"/>
+<circle cx="706.24" cy="185.46" r="7" fill="#0072B2"/>
 <line x1="763.00" y1="235.00" x2="786.00" y2="235.00" stroke="#D55E00" stroke-width="3"/>
 <text x="796.00" y="239.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="600">Report only</text>
-<text x="796.00" y="259.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Brier 0.111 · n=102</text>
-<path d="M 141.21,146.00 L 184.25,146.00 L 504.50,146.00 L 553.30,146.00 L 612.78,146.00 L 706.69,146.00" stroke="#D55E00" stroke-width="2.5" fill="none"/>
-<circle cx="141.21" cy="146.00" r="4.5" fill="#D55E00"/>
-<circle cx="184.25" cy="146.00" r="3.7071067811865475" fill="#D55E00"/>
-<circle cx="504.50" cy="146.00" r="3.7071067811865475" fill="#D55E00"/>
-<circle cx="553.30" cy="146.00" r="4.936491673103708" fill="#D55E00"/>
-<circle cx="612.78" cy="146.00" r="4.732050807568877" fill="#D55E00"/>
-<circle cx="706.69" cy="146.00" r="6.937003937005906" fill="#D55E00"/>
+<text x="796.00" y="259.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Brier 0.110 · n=450</text>
+<path d="M 135.40,393.27 L 179.17,231.00 L 382.50,401.00 L 443.50,401.00 L 493.32,316.00 L 554.32,294.75 L 617.24,295.48 L 706.46,187.35" stroke="#D55E00" stroke-width="2.5" fill="none"/>
+<circle cx="135.40" cy="393.27" r="7" fill="#D55E00"/>
+<circle cx="179.17" cy="231.00" r="3.8660254037844384" fill="#D55E00"/>
+<circle cx="382.50" cy="401.00" r="3.5" fill="#D55E00"/>
+<circle cx="443.50" cy="401.00" r="4.0" fill="#D55E00"/>
+<circle cx="493.32" cy="316.00" r="4.224744871391589" fill="#D55E00"/>
+<circle cx="554.32" cy="294.75" r="6.0" fill="#D55E00"/>
+<circle cx="617.24" cy="295.48" r="5.692582403567252" fill="#D55E00"/>
+<circle cx="706.46" cy="187.35" r="7" fill="#D55E00"/>
 <line x1="763.00" y1="303.00" x2="786.00" y2="303.00" stroke="#009E73" stroke-width="3"/>
 <text x="796.00" y="307.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="600">Final report</text>
-<text x="796.00" y="327.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Brier 0.228 · n=102</text>
-<path d="M 191.66,146.00 L 234.07,146.00 L 498.40,146.00 L 557.00,146.00 L 624.47,146.00 L 677.74,146.00" stroke="#009E73" stroke-width="2.5" fill="none"/>
-<circle cx="191.66" cy="146.00" r="4.87082869338697" fill="#009E73"/>
-<circle cx="234.07" cy="146.00" r="4.936491673103708" fill="#009E73"/>
-<circle cx="498.40" cy="146.00" r="4.118033988749895" fill="#009E73"/>
-<circle cx="557.00" cy="146.00" r="5.645751311064591" fill="#009E73"/>
-<circle cx="624.47" cy="146.00" r="5.738612787525831" fill="#009E73"/>
-<circle cx="677.74" cy="146.00" r="4.58113883008419" fill="#009E73"/>
+<text x="796.00" y="327.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Brier 0.137 · n=450</text>
+<path d="M 154.72,401.00 L 176.26,384.40 L 236.96,333.89 L 299.71,401.00 L 364.20,401.00 L 501.45,273.50 L 555.97,252.25 L 620.40,259.33 L 675.77,204.85" stroke="#009E73" stroke-width="2.5" fill="none"/>
+<circle cx="154.72" cy="401.00" r="6.201562118716424" fill="#009E73"/>
+<circle cx="176.26" cy="384.40" r="7" fill="#009E73"/>
+<circle cx="236.96" cy="333.89" r="6.774917217635375" fill="#009E73"/>
+<circle cx="299.71" cy="401.00" r="4.322875655532295" fill="#009E73"/>
+<circle cx="364.20" cy="401.00" r="4.118033988749895" fill="#009E73"/>
+<circle cx="501.45" cy="273.50" r="4.58113883008419" fill="#009E73"/>
+<circle cx="555.97" cy="252.25" r="6.464101615137754" fill="#009E73"/>
+<circle cx="620.40" cy="259.33" r="6.674234614174767" fill="#009E73"/>
+<circle cx="675.77" cy="204.85" r="4.802775637731995" fill="#009E73"/>
 <text x="36.00" y="500.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Auditor panels can cover different subject populations; compare modes within each panel.</text>
 <text x="36.00" y="522.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Dashed diagonal: perfect calibration. Larger dots: more trajectories. Empty bins are omitted; lines only guide the eye.</text>
 </svg>
