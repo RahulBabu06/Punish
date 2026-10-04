@@ -678,7 +678,7 @@ deployment picked one of the 5 trajectories per task × config group to ship (48
 Grader scores do not depend on the label.
 
 - Selecting on the grader alone ships *more* hacks than picking at random, under both labels.
-- The auditor veto cuts the shipped hack rate by 0.13 under the corrected label (bootstrap CI
+- The auditor veto cuts the shipped hack rate from 0.28 to 0.15, by 0.13, under the corrected label (bootstrap CI
   [0.05, 0.23]; original 0.19, CI [0.10, 0.30]) at a cost of 0.06 grader score. Under both
   labels it reaches the oracle floor, which is set by groups in which every trajectory hacked.
 - The veto mode matters more here than in §8.2. With Sonnet as the vetoing auditor,
