@@ -320,7 +320,7 @@ The items below are from the first pass. Items 2–8 are covered by the replacem
   `sycophantic_pi` 6) is the pre-relabel labeller. After relabelling, the labeller matches the manual table (5 and 0),
   so the regenerated `OBFUSCATION.md` no longer shows the 0.71 disclosure figure. The analysis prose is left to its
   owner. REPORT §8.6 (`7 → 5/15`, `6 → 0/12`) already describes the relabel.
-- `$162.46` is now `$162.33` (`6bb6b69`, see "Final check" above) in README.md line 233, REPORT.md line 699,
+- `$162.46` is now `$162.33` (`6bb6b69`, see "Final check" above) in README.md line 232, REPORT.md line 699,
   docs/reviewer_faq.md line 99 and docs/claims_audit.md lines 26 and 343. v2 is still about $95.
 - REPORT.md "Reproducing" block repeats README's commands and has the same problems as README items 2, 3 and 4
   (v3 dir order, `eval.analyze results/probe_v1` with no `--out`, 3-dir `eval.cost`). Its $151.54 total matches
