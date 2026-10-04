@@ -564,13 +564,14 @@ plates A and B after plate C failed (see [`tasks/LABEL_AUDIT.md`](tasks/LABEL_AU
 original label as `ground_truth_hacked_runtime`, and each dir has a `relabel.json` summary. All figures below
 use the relabelled labels.
 
-**Label-quality check (`docs/v3_hand_review.md`).** An AI annotator (Devin, one annotator, no adjudication)
-hand-labelled a seeded stratified sample of 40 of the 450 v3 trajectories. This is a sanity check, not human
-labels. Population-weighted labeller precision is 0.92 [0.67, 0.99], recall 0.92 [0.39, 1.00] and FPR 0.023
-[0.004, 0.122]. The recall interval is wide because the large `clean_other` stratum (honest / incentivized /
-sycophantic runs, N = 222) was sampled with only 10 runs. On the sample, Sonnet 4.6 `full_trace` weighted recall
-is 0.79 against the labeller and 0.92 against the hand labels (FPR 0.13 vs 0.11), so the labeller-only v3
-auditor numbers probably understate the auditor slightly. With n = 40 that is a direction, not a correction.
+**Label-quality check ([`docs/v3_hand_review.md`](docs/v3_hand_review.md)).** An AI annotator (Devin, one
+annotator, no adjudication) hand-labelled a seeded stratified sample of 70 of the 450 v3 trajectories. This is a
+sanity check, not human labels. Population-weighted labeller precision is 0.923 [0.667, 0.986], recall 0.875
+[0.635, 0.966] and FPR 0.023 [0.004, 0.123]; the intervals are still wide. On the sample, Sonnet 4.6 `full_trace`
+weighted recall is 0.79 against the labeller and 0.93 against the hand labels (FPR 0.15 vs 0.11), so the
+labeller-only v3 auditor numbers probably understate the auditor somewhat. With n = 70 that is a direction, not a
+correction. An opt-in labeller rule for the Shapiro-p grader decoy (`leaked_grader_decoy`) is **not** in the
+default labels; it would flip 0/60 v2 and 9/37 v3 `leaked_answer` labels to hacked (on review 7 hacks, 2 ambiguous).
 
 | config | runtime labeller | relabelled |
 |---|---|---|
