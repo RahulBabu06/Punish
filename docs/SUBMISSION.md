@@ -70,6 +70,12 @@ AI-made and costs are estimates.
 
 ## How to run it (offline, no API key)
 
+The replay is offline; the first two commands are setup and need internet access on a fresh
+machine. Install uv first using [README's setup](../README.md); uv can obtain
+the required Python interpreter if needed. A pre-populated uv cache permits setup in uv's offline mode, but a cold
+installation cannot run offline. The last command stays running: open the local viewer, and
+press Ctrl-C to stop it before starting another demo on the same port.
+
 ```bash
 git clone https://github.com/RahulBabu06/Punish && cd Punish
 ~/.local/bin/uv venv -p 3.11 .venv && ~/.local/bin/uv pip install -p .venv -e .
