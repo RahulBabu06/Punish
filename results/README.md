@@ -63,7 +63,9 @@ Column notes:
 - **Est. cost**: from `python -m eval.cost --by-dir` (agent + auditor + judge + reaudit). Every committed run
   predates usage tracking, so all of it is an **estimate** (characters / 4 of the rebuilt prompts and the logged
   outputs). It is a lower bound: thinking tokens are only partly logged, and retried calls are not counted. The
-  per-role breakdown is in [`COST.md`](COST.md).
+  per-role breakdown is in [`COST.md`](COST.md). The prompts are rebuilt with the current code, whose auditor and judge
+  prompts have since grown, so rerunning `scripts/reproduce.sh cost` (or `eval.cascade`) today reads about 7% higher
+  ($162 in total) than the committed `COST.md` / `CASCADE.md`, which were estimated with the prompts the runs used.
 
 ## v3 labels: labeller only, relabelled
 
