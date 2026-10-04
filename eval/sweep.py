@@ -10,6 +10,7 @@ then compute metrics and write results/SUMMARY.md.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import tempfile
@@ -86,14 +87,23 @@ def episode_job(task_id: str, agent_config: str, episode_idx: int, auditor_modes
     return [{"episode": ep, "files": files if i == 0 else {}} for i, ep in enumerate(episodes)]
 
 
+def relocate(text: str, results_dir: str) -> str:
+    """Point `trajectory_path` values written under the job's "results/" at the local `results_dir`."""
+    target = Path(results_dir).as_posix().rstrip("/")
+    if target == "results":
+        return text
+    old = '"trajectory_path": "results/'
+    return text.replace(old, f'"trajectory_path": "{json.dumps(target)[1:-1]}/')
+
+
 def write_records(records: list[dict], results_dir: str = "results") -> list[dict]:
     episodes = []
     for rec in records:
         for rel, text in rec["files"].items():
             path = Path(results_dir) / rel
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding="utf-8")
-        episodes.append(rec["episode"])
+            path.write_text(relocate(text, results_dir) if rel.endswith(".json") else text, encoding="utf-8")
+        episodes.append(json.loads(relocate(json.dumps(rec["episode"], indent=2), results_dir)))
     return episodes
 
 

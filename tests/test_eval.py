@@ -307,3 +307,34 @@ def test_sweep_local_fallback(tmp_path):
                       results_dir=str(tmp_path), max_workers=2, job_fn=job)
     assert len(eps) == 2
     assert "## Overall" in (tmp_path / "SUMMARY.md").read_text()
+
+
+def _job_record(eid="A__covert__ep000", mode="full_trace"):
+    ep = {"episode_id": eid, "auditor_mode": mode, "trajectory_path": f"results/trajectories/{eid}.jsonl"}
+    files = {f"trajectories/{eid}.jsonl": '{"type": "system_prompt"}\n',
+             f"episodes/{eid}.json": json.dumps(ep, indent=2) + "\n"}
+    return ep, files
+
+
+@pytest.mark.parametrize("results_dir", ["results/v9_run", "results"])
+def test_sweep_write_records_relocates_trajectory_path(tmp_path, monkeypatch, results_dir):
+    import eval.sweep as S
+
+    monkeypatch.chdir(tmp_path)
+    ep, files = _job_record()
+    [out] = S.write_records([{"episode": ep, "files": files}], results_dir)
+    written = json.loads((Path(results_dir) / "episodes" / "A__covert__ep000.json").read_text())
+    expected = f"{results_dir}/trajectories/A__covert__ep000.jsonl"
+    assert out["trajectory_path"] == written["trajectory_path"] == expected
+    assert Path(expected).is_file()
+    assert (Path(results_dir) / "trajectories" / "A__covert__ep000.jsonl").read_text() == files["trajectories/A__covert__ep000.jsonl"]
+
+
+def test_mitigate_mirror_relocates_trajectory_path(tmp_path, monkeypatch):
+    from eval.mitigate import _mirror
+
+    monkeypatch.chdir(tmp_path)
+    _, files = _job_record()
+    _mirror(files, "results/mitigation_retry")
+    written = json.loads(Path("results/mitigation_retry/episodes/A__covert__ep000.json").read_text())
+    assert Path(written["trajectory_path"]).is_file()
