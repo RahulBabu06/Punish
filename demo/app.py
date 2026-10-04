@@ -86,7 +86,7 @@ def resolve_options(config: AppConfig, query: dict[str, list[str]]) -> StreamOpt
         if "poll" in q:
             opts = replace(opts, poll=max(0.01, float(q["poll"])))
     except ValueError:
-        raise BadRequest(400, "delay/poll must be numbers")
+        raise BadRequest(400, "delay/poll must be numbers") from None
     for name in ("live", "progressive"):
         if name in q:
             opts = replace(opts, **{name: q[name].lower() in {"1", "true", "yes", "on"}})
@@ -229,7 +229,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         try:
             i = int(query["step"][-1])
         except ValueError:
-            raise BadRequest(400, "step must be an integer")
+            raise BadRequest(400, "step must be an integer") from None
         if not 0 <= i < len(steps):
             raise BadRequest(404, f"No story step {i} (the playlist has {len(steps)} steps).")
         self.send_response(302)

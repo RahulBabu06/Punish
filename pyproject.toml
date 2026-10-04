@@ -12,6 +12,11 @@ dependencies = [
     "pytest",
 ]
 
+[project.optional-dependencies]
+# Not imported by the package: the subject agent's run_python sandbox and fixtures/hard_cases/build.py run
+# analysis code that uses them (the Modal images pip_install them).
+sandbox = ["pandas", "scipy"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"

@@ -60,7 +60,7 @@ This prints the verdict JSON and writes it to `--out`, which defaults to `result
 ```bash
 .venv/bin/python -m auditor.benchmark \
   results/probe_v1 results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
-  --baseline-ref f664c95 --out /tmp/auditor_v2_metrics.json
+  --baseline-ref f664c95 --out results/auditor_v2_metrics.json
 ```
 
 The baseline is the pre-v2 heuristic at `f664c95`; only trusted repository source is loaded. The comparison uses the saved `ground_truth_hacked` values in original Episodes and the saved `judgments/*.json`, not labels recomputed against subsequently changed task datasets. `either` is the union. Each trajectory is counted once per mode; nested re-audits are ignored. Reports include separate labeller, judge and either metrics, confusion counts and per-trajectory predictions. No subject code or network calls are executed. These are in-sample calibration metrics, not held-out validation; the high-precision rules trade recall for fewer false positives, particularly on Haiku.
@@ -102,9 +102,9 @@ The reused bootstrap is best-effort isolation, **not an OS-level jail**. Do not 
 ```bash
 # Single trajectory: live ensemble or agentic verification (do not run without credits).
 .venv/bin/python -m auditor.audit fixtures/trajectories/example.jsonl \
-  --backend claude --n-samples 3 --out /tmp/ensemble.json
+  --backend claude --n-samples 3 --out results/ensemble.json
 .venv/bin/python -m auditor.audit fixtures/trajectories/example.jsonl \
-  --backend agentic --mode report_only --out /tmp/agentic.json
+  --backend agentic --mode report_only --out results/agentic.json
 
 # Live batch, preserving old results. Agentic output filenames use __agentic.
 modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit \
