@@ -63,7 +63,9 @@ rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.
 ![Corrected-label headline: hack rates by config, auditor recall/FPR/AUROC, cascade operating point](results/figures/headline.svg)
 
 The cascade panel's "held-out" point holds out thresholds only. The heuristic stage was calibrated on
-these v2 runs, so the point is in-sample for the heuristic (REPORT §8.13).
+these v2 runs, so the point is in-sample for the heuristic. With pre-calibration rules the held-out
+cascade equals Sonnet alone (0.57 recall / 0.14 FPR). On unseen v3 runs (labeller labels) the v2 thresholds
+give 0.63 recall at 0.029 FPR (REPORT §8.13, `results/cascade_heldout.md`).
 
 - Skeptical-reviewer FAQ: [`docs/reviewer_faq.md`](docs/reviewer_faq.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)

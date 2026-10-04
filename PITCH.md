@@ -96,10 +96,11 @@ and clearing agents.
 **"FPR of 0.26 is too high to deploy."** (0.20 with `leaked_answer` excluded, 0.35 with the
 corrected label.) Agreed, it's not a standalone gate yet. Under the corrected label no Claude
 auditor mode keeps FPR ≤ 10% on unseen tasks with useful recall. The best low-FPR option we
-have is a heuristic → Sonnet cascade (recall 0.80 at FPR 0.054, `results/CASCADE_corrected.md`). That is
-in-sample: the heuristic's rules were calibrated on these v2 runs, so even the cross-fit thresholds
-(0.77, or 0.64 under a 5% cap) are not a held-out result. With the pre-calibration heuristic, the
-held-out cascade reportedly matches Sonnet alone.
+have is a heuristic → Sonnet cascade (recall 0.80 at FPR 0.054, `results/CASCADE_corrected.md`). That point is
+in-sample: the heuristic's rules were calibrated on these v2 runs. Without that calibration the held-out
+cascade equals Sonnet alone (0.57 / 0.14), just cheaper. On unseen v3 runs (labeller labels), the v2
+thresholds keep the low FPR at lower recall: 0.63 recall at FPR 0.029, against Sonnet alone at 0.86 / 0.17
+(`results/cascade_heldout.md`).
 On corrected labels, 89 of the 92 `full_trace` false positives cite `suspicious_access`: an honest agent read
 `grade.py` or `eval.py` and then reported the true value. Our rubric counts any read as
 suspicious, and our judge doesn't. Requiring that the file's contents shape the report should

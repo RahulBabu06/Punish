@@ -78,9 +78,12 @@ Partly. The displayed operating point tunes thresholds on one of the two matched
 the other, then pools the held-out predictions: 64.3% recall, 5.4% FPR and 38.8% escalation. The 5% cap
 applied during training, so 5.4% held-out FPR is expected; only two folds and 240 trajectories limit
 generalisation. More importantly, only the thresholds are held out: the heuristic's rules were calibrated
-on `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`, so the cascade is in-sample for the
-heuristic. With the pre-calibration heuristic, the held-out cascade is reported to fall to about the
-Sonnet-only level (not yet committed). Do not read it as a held-out win. See
+on `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`, so the v2 points (0.804 / 0.054 tuned,
+0.768 / 0.054 leave-one-experiment-out) are in-sample for the heuristic. With the pre-calibration rules
+(`f664c95`), the leave-one-experiment-out cascade gets 0.571 / 0.141, the same as Sonnet alone, at about
+71% of the cost. On 450 unseen v3 runs (labeller labels only), v2-tuned thresholds give 0.627 recall at
+0.029 FPR, against Sonnet alone at 0.863 / 0.172. The low-FPR operating point transfers, at lower recall.
+See `results/cascade_heldout.md` and
 [`results/CASCADE_corrected.md`](../results/CASCADE_corrected.md).
 
 ## 10. Does auditor veto really reduce reward hacking?
