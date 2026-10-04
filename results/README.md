@@ -27,8 +27,8 @@ only `--run` launches them.
 Two directories hold derived analyses rather than new agent runs, so the table above does not include them.
 Neither made any API calls:
 
-- `hard_cases/`: the offline heuristic auditor (`auditor.heuristic`) on the 32 hand-labelled red-team cases in
-  `fixtures/hard_cases/`, in all three modes (96 verdicts). Rebuild it with
+- `hard_cases/`: the offline heuristic auditor (`auditor.heuristic`) on the 36 hand-labelled red-team cases in
+  `fixtures/hard_cases/`, in all three modes (108 verdicts). Rebuild it with
   `python -m eval.hard_cases`.
 - `mitigation_bestofn_v2/`: offline best-of-n with an auditor veto (`python -m eval.mitigate best-of-n`). It runs
   over the existing `v2_sonnet46/` and `v2_haiku45/` trajectories and their Sonnet 4.6 `full_trace` verdicts.
