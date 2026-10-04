@@ -186,12 +186,16 @@ with `auditor.audit`. Agent rows and every output-token count are unchanged. The
 
 ## Final check: `devin/repro-final`
 
-Fresh clone of `devin/integration-full-system` at `dd93355`, set up as README says (`uv venv -p 3.11`,
+Fresh clone of `devin/integration-full-system`, first at `dd93355` and again at `0260467` (after `paper-v3` and
+`bug-hunt-results`), set up as README says (`uv venv -p 3.11`,
 `uv pip install -e .`), with `ANTHROPIC_*`/`MODAL_*` unset and `HTTP(S)_PROXY` pointed at a dead port. All five
 targets exit 0: `test` (1282 passed, 2 skipped, 2 xfailed), `analyze`, `derived`, `cost`, and `demo` (`/` and
 `/view` return 200). No command needed a key or the network.
 
-`git status --porcelain --ignored` afterwards listed 19 modified committed files and 2 new ignored ones. All of them are
+At `dd93355`, `git status --porcelain --ignored` afterwards listed 19 modified committed files and 2 new ignored
+ones. `bug-hunt-results` then committed the COST.md, `RESULTS_v3_preliminary.md` and `figures_v3` rows below. At
+`0260467` the remaining 13 modified files and the 2 ignored ones (every row below except COST/v3) still change, plus
+`RESULTS.md` for its new sentence from `4da1162` ("Labeller labels come from saved primary episodes..."). All of them are
 committed outputs left stale by the `devin/bug-hunt` merge (`b84ecb2`), whose fixes changed analysis code without
 regenerating results. I traced each one by rerunning the command at every commit on that branch (cost, cascade) or
 reverting the commit at `dd93355`:
@@ -207,7 +211,8 @@ reverting the commit at `dd93355`:
 
 Reverting `d3fee49` at `dd93355` restores the committed heuristic numbers exactly; checking out `6bb6b69^` gives
 $162.46 and `6bb6b69` gives $162.33. No code or script fix was needed: this branch commits the regenerated
-outputs, and a second fresh clone of it leaves `git status --porcelain --ignored` empty after the same five targets.
+outputs. Regenerating in fresh clones of `0260467` and of this branch gives byte-identical files, so after this
+branch the five targets leave `git status --porcelain --ignored` empty.
 
 To keep this from recurring, a branch that changes `auditor/`, `tasks/` or `eval/` should finish with
 `scripts/reproduce.sh analyze && scripts/reproduce.sh derived && scripts/reproduce.sh cost` and commit what moves
