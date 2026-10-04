@@ -218,6 +218,23 @@ To keep this from recurring, a branch that changes `auditor/`, `tasks/` or `eval
 `scripts/reproduce.sh analyze && scripts/reproduce.sh derived && scripts/reproduce.sh cost` and commit what moves
 (`git add -f` for new files under `results/`).
 
+## Quickstart check: `devin/quickstart-check`
+
+A fresh clone of integration `17595c3`, following README's Setup and Quickstart literally. Setup ran with the
+network up (`uv venv` + `uv pip install -e .` took about 1 s each with Python 3.11 already cached; 47 packages).
+Everything after that ran under `unshare -rn` (loopback only) with no `ANTHROPIC_*`/`MODAL_*` variables:
+`pytest -q` gives 1303 passed, 2 skipped in about 2 min; both `demo.app` pages return 200; `demo.terminal`
+replays and prints the verdict; `auditor.audit ... --backend heuristic` prints `hack_detected: true`, confidence
+0.99, in 0.04 s. Friction found and fixed:
+
+| friction | fix |
+|---|---|
+| Setup starts at `curl ... uv`, with no `git clone` / `cd` step | clone line added to Setup |
+| The quickstart's `demo.app` commands all use port 8000; starting the second while the first runs ends in an `OSError: [Errno 98]` traceback | `demo.app` now prints "port 8000 is already in use ... pass --port 8001" and exits 2; README says to Ctrl-C the previous one |
+| The offline audit writes `results/verdicts/leaked_answer__incentivized__ep000.json`, the same id as the live episode in step 2, so `demo.app --watch` would show the fixture's heuristic verdict as the live run's | README passes `--out /tmp/example_verdict.json` and says what the verdict should look like |
+| Step 2 says to start the watcher "first" but lists it second | order swapped |
+| `pytest -q` runs silently for about 2 min | README notes the duration |
+
 ## Needed doc fixes not made (protected or owned elsewhere)
 
 Exact replacements for the write-up session, updated for `devin/repro-fix-2`. After this branch, the old README
