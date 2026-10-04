@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 _CACHE = pytest.StashKey[tempfile.TemporaryDirectory]()
 _BEFORE = pytest.StashKey[dict]()
 _BYTECODE = pytest.StashKey[tuple]()
+# Interpreter/tool caches are not repository artifacts; CI checkouts start without them.
+_CACHE_DIRS = {"__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache"}
 
 # This also prevents bytecode writes in offline CLI subprocesses.
 _original_bytecode = sys.dont_write_bytecode
@@ -25,6 +27,8 @@ def _snapshot(root):
         if Path(directory) == root:
             dirs[:] = [name for name in dirs if name not in {".git", ".venv"}]
             files = [name for name in files if name != ".git"]
+        dirs[:] = [name for name in dirs if name not in _CACHE_DIRS]
+        files = [name for name in files if not name.endswith((".pyc", ".pyo"))]
         for name in dirs + files:
             path = Path(directory) / name
             mode = path.lstat().st_mode
