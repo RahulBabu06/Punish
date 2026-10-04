@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="640" viewBox="0 0 1080 640" role="img" aria-labelledby="title desc">
+<title id="title">Auditor policies: cost vs recall</title><desc id="desc">240 trajectories, `corrected` label, full_trace. Dots: swept thresholds with FPR &lt;= 10%; line: cheapest frontier; rings: default operating points (FPR in label).</desc>
+<style>text{font-family:Inter,Arial,Helvetica,sans-serif} line,path{vector-effect:non-scaling-stroke}</style>
+<rect x="0.00" y="0.00" width="1080.00" height="640.00" rx="0" fill="#FFFFFF"/>
+<rect x="0.00" y="0.00" width="1080.00" height="98.00" rx="0" fill="#F3F7FA"/>
+<text x="36.00" y="39.00" font-size="25" fill="#14263D" text-anchor="start" font-weight="700">Auditor policies: cost vs recall</text>
+<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">240 trajectories, `corrected` label, full_trace. Dots: swept thresholds with FPR &lt;= 10%; line: cheapest frontier; rings: default operating points (FPR in label).</text>
+<line x1="110.00" y1="540.00" x2="770.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="98.00" y="544.00" font-size="13" fill="#536579" text-anchor="end" font-weight="400">0%</text>
+<line x1="110.00" y1="140.00" x2="110.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="110.00" y="563.00" font-size="13" fill="#536579" text-anchor="middle" font-weight="400">$0.000</text>
+<line x1="110.00" y1="460.00" x2="770.00" y2="460.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="98.00" y="464.00" font-size="13" fill="#536579" text-anchor="end" font-weight="400">20%</text>
+<line x1="242.00" y1="140.00" x2="242.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="242.00" y="563.00" font-size="13" fill="#536579" text-anchor="middle" font-weight="400">$0.015</text>
+<line x1="110.00" y1="380.00" x2="770.00" y2="380.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="98.00" y="384.00" font-size="13" fill="#536579" text-anchor="end" font-weight="400">40%</text>
+<line x1="374.00" y1="140.00" x2="374.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="374.00" y="563.00" font-size="13" fill="#536579" text-anchor="middle" font-weight="400">$0.030</text>
+<line x1="110.00" y1="300.00" x2="770.00" y2="300.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="98.00" y="304.00" font-size="13" fill="#536579" text-anchor="end" font-weight="400">60%</text>
+<line x1="506.00" y1="140.00" x2="506.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="506.00" y="563.00" font-size="13" fill="#536579" text-anchor="middle" font-weight="400">$0.045</text>
+<line x1="110.00" y1="220.00" x2="770.00" y2="220.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="98.00" y="224.00" font-size="13" fill="#536579" text-anchor="end" font-weight="400">80%</text>
+<line x1="638.00" y1="140.00" x2="638.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="638.00" y="563.00" font-size="13" fill="#536579" text-anchor="middle" font-weight="400">$0.060</text>
+<line x1="110.00" y1="140.00" x2="770.00" y2="140.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="98.00" y="144.00" font-size="13" fill="#536579" text-anchor="end" font-weight="400">100%</text>
+<line x1="770.00" y1="140.00" x2="770.00" y2="540.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="770.00" y="563.00" font-size="13" fill="#536579" text-anchor="middle" font-weight="400">$0.075</text>
+<text x="440.00" y="590.00" font-size="13" fill="#14263D" text-anchor="middle" font-weight="600">estimated audit cost per trajectory (USD)</text>
+<text x="40.00" y="340.00" font-size="13" fill="#14263D" text-anchor="middle" font-weight="600" transform="rotate(-90 40 340.0)">recall</text>
+<circle cx="110.00" cy="218.57" r="8" fill="none" stroke="#0072B2" stroke-width="3"/>
+<text x="121.00" y="209.57" font-size="12" fill="#0072B2" text-anchor="start" font-weight="600">heuristic (FPR 67.4%)</text>
+<circle cx="380.07" cy="204.29" r="8" fill="none" stroke="#D55E00" stroke-width="3"/>
+<text x="391.07" y="195.29" font-size="12" fill="#D55E00" text-anchor="start" font-weight="600">sonnet (FPR 34.2%)</text>
+<circle cx="560.41" cy="232.86" r="8" fill="none" stroke="#009E73" stroke-width="3"/>
+<text x="549.41" y="220.86" font-size="12" fill="#009E73" text-anchor="end" font-weight="600">opus (FPR 22.3%)</text>
+<circle cx="333.44" cy="218.57" r="8" fill="none" stroke="#CC79A7" stroke-width="3"/>
+<text x="344.44" y="209.57" font-size="12" fill="#CC79A7" text-anchor="start" font-weight="600">h-&gt;sonnet (FPR 34.2%)</text>
+<circle cx="611.10" cy="240.00" r="8" fill="none" stroke="#E69F00" stroke-width="3"/>
+<text x="622.10" y="264.00" font-size="12" fill="#E69F00" text-anchor="start" font-weight="600">sonnet-&gt;opus (FPR 22.3%)</text>
+<circle cx="806.00" cy="150.00" r="5" fill="#0072B2"/>
+<text x="818.00" y="155.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="400">(a) heuristic only</text>
+<circle cx="806.00" cy="176.00" r="5" fill="#D55E00"/>
+<text x="818.00" y="181.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="400">(b) Sonnet only</text>
+<circle cx="806.00" cy="202.00" r="5" fill="#009E73"/>
+<text x="818.00" y="207.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="400">(c) Opus only</text>
+<circle cx="806.00" cy="228.00" r="5" fill="#CC79A7"/>
+<text x="818.00" y="233.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="400">(d) heuristic -&gt; Sonnet</text>
+<circle cx="806.00" cy="254.00" r="5" fill="#E69F00"/>
+<text x="818.00" y="259.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="400">(e) Sonnet -&gt; Opus</text>
+<line x1="800.00" y1="280.00" x2="814.00" y2="280.00" stroke="#14263D" stroke-width="2"/>
+<text x="818.00" y="285.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="400">frontier (FPR &lt;= 10%)</text>
+</svg>
