@@ -8,6 +8,8 @@ is not an OS-level jail (e.g. ctypes can get around it).
 """
 
 import os
+import collections
+import enum
 import site
 import sys
 import sysconfig
@@ -58,6 +60,7 @@ def main() -> None:
 
     state = threading.local()
     logged = [0]
+    trusted_frame_callers = {collections.namedtuple.__code__, enum.EnumType._create_.__code__}
 
     def block(desc: str, reason: str = "access outside the sandbox is not allowed"):
         try:
@@ -71,6 +74,8 @@ def main() -> None:
         return PermissionError(f"[sandbox] blocked {desc}: {reason}")
 
     def check(event: str, args):
+        if event == "sys._getframe" and sys._getframe(2).f_code in trusted_frame_callers:
+            return None
         if event in INTROSPECTION_EVENTS or (event == "object.__getattr__" and args[1] in ("tb_frame", "f_code")):
             return block(event, "runtime frame inspection is not allowed")
         if event == "open":
