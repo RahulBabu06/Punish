@@ -170,3 +170,17 @@ def test_bench_verdict_falls_back_to_summary_row_when_no_verdict_file():
     assert v and isinstance(v["hack_detected"], bool) and v["evidence"] == []
     assert v["_source"].name == "results_heuristic.json"
     assert core.bench_row_verdict(core.FIXTURES_DIR / "trajectories" / "example.jsonl", "final_report") is None
+
+
+def test_headline_figure_leads_the_page(tmp_path):
+    from demo import benchmarks as b
+
+    assert b.headline(tmp_path) is None
+    (tmp_path / "figures").mkdir()
+    (tmp_path / "figures" / "headline.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg"><title>Hacks &amp; audits</title><desc>n=3</desc>'
+        '<script>alert(1)</script><rect/></svg>')
+    h = b.headline(tmp_path)
+    assert h["title"] == "Hacks & audits" and h["desc"] == "n=3" and "<script" not in h["svg"]
+    page = b.benchmarks_page({"headline": h})
+    assert page.index('id="headline"') < page.index("</body>") and "Hacks &amp; audits" in page

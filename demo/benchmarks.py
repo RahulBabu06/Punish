@@ -7,6 +7,7 @@ the replay (/view) and mode-comparison (/compare) pages, which find their verdic
 
 from __future__ import annotations
 
+import html
 import json
 import re
 from pathlib import Path
@@ -320,9 +321,18 @@ def generic_docs(results_dir: Path) -> list[dict]:
     return [d for p, d in docs.items() if bases[p] not in docs]
 
 
+def headline(results_dir: Path) -> dict | None:
+    p = results_dir / "figures" / "headline.svg"
+    svg = inline_svg(p) if p.is_file() else ""
+    if not svg:
+        return None
+    tag = lambda t: html.unescape(m.group(1).strip()) if (m := re.search(rf"<{t}[^>]*>(.*?)</{t}>", svg, re.DOTALL)) else ""
+    return {"svg": svg, "title": tag("title") or "Headline", "desc": tag("desc"), "sources": [_rel(p)]}
+
+
 def benchmarks(results_dir: Path = RESULTS_DIR, fixtures_dir: Path = FIXTURES_DIR) -> dict:
     results_dir, fixtures_dir = Path(results_dir), Path(fixtures_dir)
-    return {"hard_cases": hard_cases(results_dir, fixtures_dir),
+    return {"headline": headline(results_dir), "hard_cases": hard_cases(results_dir, fixtures_dir),
             "monitor_attacks": monitor_attacks(results_dir, fixtures_dir),
             "relabel": relabel(results_dir), "obfuscation": obfuscation(results_dir), "bestofn": bestofn(results_dir),
             "cost": cost(results_dir),
@@ -380,6 +390,11 @@ def _section(sid: str, title: str, sources: list[str], body: str, lede: str = ""
     return (f'<section class="bench" id="{sid}"><h2>{esc(title)}</h2>'
             + (f'<p class="lede">{lede}</p>' if lede else "") + body
             + f'<p class="src">Source: {src}</p></section>')
+
+
+def render_headline(sec: dict) -> str:
+    return _section("headline", sec["title"], sec["sources"], f'<div class="fig headline">{sec["svg"]}</div>',
+                    esc(sec["desc"]))
 
 
 def render_hard_cases(sec: dict) -> str:
@@ -661,6 +676,7 @@ BENCH_CSS = """
 .bench .figs{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin:12px 0}
 .bench .figs>.chart{flex:0 1 760px}.bench .fig{flex:1 1 560px;max-width:980px;background:#fff;border-radius:12px;padding:6px}
 .bench .fig svg{width:100%;height:auto;display:block}
+.bench .fig.headline{max-width:1080px}
 .bench .scroll{overflow-x:auto}.bench .scroll td,.bench .scroll th{padding-left:6px;padding-right:6px}
 .bench details.variant{border:1px solid var(--line);border-radius:10px;padding:2px 14px;margin:16px 0}
 .bench details.variant>summary{color:var(--text)}
@@ -684,7 +700,7 @@ def benchmarks_page(data: dict, available: set[str] | None = None) -> str:
 
 def _benchmarks_page(data: dict) -> str:
     sections = []
-    for name, fn, title in (("hard_cases", render_hard_cases, "Hard cases"),
+    for name, fn, title in (("headline", render_headline, "Headline"), ("hard_cases", render_hard_cases, "Hard cases"),
                             ("monitor_attacks", render_monitor_attacks, "Monitor attacks"),
                             ("relabel", render_relabel, "Relabelling"),
                             ("obfuscation", render_obfuscation, "Reasoning disclosure"),
