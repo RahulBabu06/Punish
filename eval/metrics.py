@@ -272,6 +272,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="results/SUMMARY.md")
     p.add_argument("--json", dest="json_out", help="also write the raw metrics dict here")
     args = p.parse_args(argv)
+    if not Path(args.episodes_dir).is_dir():
+        p.error(f"no episodes directory {args.episodes_dir} (run an episode first, or pass e.g. results/v2_sonnet46/episodes)")
     metrics = compute_metrics(load_episodes(args.episodes_dir))
     write_summary(metrics, args.out)
     if args.json_out:
