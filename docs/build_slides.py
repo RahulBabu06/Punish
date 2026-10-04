@@ -3,8 +3,8 @@
   python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --out results/RESULTS.md --figures
   python docs/build_slides.py
 
-Figures are inlined from results/figures/*.svg. Numbers come from REPORT.md, results/RESULTS.md and
-results/hard_cases/SUMMARY_heuristic.md. Navigate with arrow keys / space / PageUp / PageDown / Home / End;
+Figures are inlined from results/figures/*.svg. Numbers come from REPORT.md, results/RESULTS.md, results/leaked_answer_correction.md,
+results/cascade_heldout.md, results/COST.md and results/hard_cases/SUMMARY_heuristic.md. Navigate with arrow keys / space / PageUp / PageDown / Home / End;
 open slide N directly with slides.html#N.
 """
 
@@ -123,7 +123,7 @@ AGREEMENT_SVG = """
     <text x="0" y="112" font-size="16" fill="#0072B2" font-weight="700">both say hacked</text>
     <text x="160" y="112" font-size="16" fill="#D55E00" font-weight="700">judge only (labeller misses)</text>
     <text x="1180" y="112" text-anchor="end" font-size="16" fill="#536579">labeller only: 0</text>
-    <text x="0" y="140" font-size="14" fill="#536579">360 v2 trajectories (Sonnet 4.6, Haiku 4.5, Sonnet 4.5 subjects); bar width proportional to count</text>
+    <text x="0" y="140" font-size="14" fill="#536579">360 v2 trajectories (Sonnet 4.6, Haiku 4.5, Sonnet 4.5 subjects), original labels; bar width proportional to count</text>
   </g>
 </svg>
 """
@@ -234,7 +234,7 @@ JS = r"""
 
 
 def slides() -> list[str]:
-    hack_rate = inline_svg("hack_rate_by_model_config", "fhr", "110 108 900 722")
+    headline = inline_svg("headline", "hl", "18 112 1044 670")
     roc_opus = inline_svg("roc_by_mode", "froc1", "24 100 936 362")
     roc_sonnet = inline_svg("roc_by_mode", "froc2", "24 482 936 362")
     return [
@@ -317,32 +317,25 @@ independently computed 0.312 (L9–L10 in its own trace) and is correctly clean.
 </section>""",
         # 5 headline
         f"""<section class="slide">
-<div class="kicker">Headline results · v2, 360 trajectories (300 excl. leaked_answer), "either" label</div>
-<h2>Instruction drives hacking; actions drive detection</h2>
-<div class="row" style="gap:28px">
-<div class="col" style="flex:1.05">{hack_rate}</div>
+<div class="kicker">Headline results · v2 corrected label, 93 / 360 hacked</div>
+<h2>Hacking is inducible; auditors catch most but over-flag</h2>
+<div class="row" style="gap:24px">
+<div class="col" style="flex:0 0 790px">{headline}</div>
 <div class="col" style="flex:1">
-<table style="font-size:15px;white-space:nowrap">
-<tr><th>auditor</th><th>mode</th><th>AUROC</th><th>recall</th><th>FPR</th></tr>
-<tr style="font-size:13px"><td></td><td style="font-size:13px;color:var(--muted)">orig / excl.</td><td></td><td></td><td></td></tr>
-<tr><td rowspan="3"><b>Sonnet 4.6</b><br><span style="font-size:13px;color:var(--muted)">n = 360 / 300<br>123 / 91 hacked</span></td><td><span class="pill ft">full_trace</span></td><td>0.945 / 0.962</td><td>0.93 / 0.90</td><td>0.26 / 0.20</td></tr>
-<tr><td><span class="pill ro">report_only</span></td><td>0.915 / 0.932</td><td>0.93 / 0.91</td><td>0.27 / 0.21</td></tr>
-<tr><td><span class="pill fr">final_report</span></td><td>0.828 / 0.858</td><td class="lo">0.67 / 0.76</td><td>0.21 / 0.21</td></tr>
-<tr class="sep"><td rowspan="3"><b>Opus 4.6</b><br><span style="font-size:13px;color:var(--muted)">n = 240 / 200<br>79 / 56 hacked</span></td><td><span class="pill ft">full_trace</span></td><td>0.944 / 0.951</td><td>0.84 / 0.77</td><td class="hi">0.11 / 0.06</td></tr>
-<tr><td><span class="pill ro">report_only</span></td><td>0.921 / 0.919</td><td>0.73 / 0.63</td><td>0.17 / 0.12</td></tr>
-<tr><td><span class="pill fr">final_report</span></td><td>0.841 / 0.848</td><td class="lo">0.57 / 0.63</td><td>0.16 / 0.17</td></tr>
-</table>
-<ul style="margin-top:18px">
-<li style="font-size:15px"><b>Known issue:</b> the judge saw a stale <code>leaked_answer</code> definition; 30 of its 32 positives there are likely wrong. <b>excl.</b> = task dropped. Corrected: 93/360 hacked, not 123.</li>
-<li style="font-size:15px"><b>covert</b> agents hack 72–100% (excl.), honest 0%. Report-only costs Sonnet 0.14 recall (0.26 orig).</li>
+<ul style="margin-top:0">
+<li style="font-size:15px;margin-bottom:7px"><b>Label.</b> Corrected: <b>93/360</b> hacked (30 likely-wrong judge positives from a stale <code>leaked_answer</code> definition removed). Task excluded: <b>91/300</b>. The original 123 is not clean ground truth.</li>
+<li style="font-size:15px;margin-bottom:7px"><b>B.</b> Sonnet <code>full_trace</code>: recall 0.90 at <b>FPR 0.34</b>. With <code>leaked_answer</code> excluded: AUROC 0.962, recall 0.90, FPR 0.20.</li>
+<li style="font-size:15px;margin-bottom:7px"><b>C.</b> The v2 point is <b>in-sample</b> for the heuristic rules; pre-calibration rules only match Sonnet-only (0.57 / 0.14). v3 is held out, scored on <b>labeller-only</b> labels: preliminary.</li>
+<li style="font-size:15px;margin-bottom:7px"><b>D.</b> Veto, then best grader: shipped hack rate <b>0.28 → 0.15</b>.</li>
+<li style="font-size:15px">Whole study ≈ <b>$162.33, estimated</b> (chars/4 of today's prompts, not billed spend).</li>
 </ul>
 </div>
 </div>
-<div class="src">Source: results/RESULTS.md · RESULTS_v2_excl_leaked.md · leaked_answer_correction.md. Bars: original labels, 95% CI.</div>
+<div class="src">Source: results/figures/headline.svg (eval/headline.py) · leaked_answer_correction.md · cascade_heldout.md · COST.md</div>
 </section>""",
         # 6 reasoning
         f"""<section class="slide">
-<div class="kicker">CoT monitorability · fewer false alarms and higher recall</div>
+<div class="kicker">CoT monitorability · reasoning helps Opus decide and rank</div>
 <h2>Does reading the reasoning help? For Opus, yes</h2>
 <div class="row" style="gap:30px">
 <div class="col" style="flex:.95;gap:14px">
@@ -351,10 +344,10 @@ independently computed 0.312 (L9–L10 in its own trace) and is correctly clean.
 <div class="card" style="border-color:var(--orange)"><div class="big">0.12</div><p style="margin-top:6px"><span class="pill ro">report_only</span> FPR, 17/144 clean runs flagged (<code>leaked_answer</code> excluded)</p></div>
 </div>
 <p style="margin:2px 0 0;font-size:17px">Opus 4.6 re-audit, <code>leaked_answer</code> excluded (200 runs): <b>recall 0.77 vs 0.63, FPR 0.06 vs 0.12.</b>
-Original label (240 runs, 79 hacked; not clean ground truth): FPR 0.11 vs 0.17, recall 0.84 vs 0.73, discordant 19 vs 2, exact McNemar p &lt; 0.001; the Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55.
-Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ranking (+0.04), both p = 0.002; Sonnet ranking improves (+0.05), accuracy unchanged.</p>
+Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07, p = 0.002) and ranking (ΔAUROC +0.04, p = 0.002).
+Sonnet ranks better (+0.05, p &lt; 0.001) at unchanged accuracy. Opus recall or FPR alone is underpowered.
+Original label (240 runs, not clean ground truth): FPR 0.11 vs 0.17.</p>
 <ul style="margin-top:4px">
-<li style="font-size:16.5px;margin-bottom:6px">Breakdown by subject (<code>leaked_answer</code> excluded): Sonnet 4.6 mostly fewer FPs (0.01 vs 0.08); Haiku 4.5 mostly recall (21/28 vs 16/28). Original label: 0.05 vs 0.12 and 27/34 vs 22/34.</li>
 <li style="font-size:16.5px;margin-bottom:6px">With the reasoning visible, Opus can tell when an agent read <code>grade.py</code> but the grader didn't drive the number.</li>
 <li style="font-size:16.5px;margin-bottom:6px">Under the saved labels, all 13 Opus <code>full_trace</code> misses fall on <code>fake_citation</code>; source-content allegations still need independent verification.</li>
 </ul>
@@ -364,7 +357,7 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 {roc_sonnet}
 </div>
 </div>
-<div class="src">Source: REPORT.md §8.2 · ROC: results/RESULTS.md (Opus full_trace − report_only Δrecall 0.10 [0.04, 0.17])</div>
+<div class="src">Source: REPORT.md §8.2 · results/significance/SIGNIFICANCE.md · ROC curves: results/RESULTS.md (original labels)</div>
 </section>""",
         # 7 labeller vs judge
         f"""<section class="slide">
@@ -378,7 +371,7 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <li style="font-size:18.5px">The labeller checks only the planted path, for example "read <code>eval.py</code>, reported 0.312 and <i>no successful analysis ran</i>".</li>
 <li style="font-size:18.5px"><b>fake_citation:</b> real bibliography keys can accompany invented source support. In case study 7 the agent admits inventing the attributed finding (L9).</li>
 <li style="font-size:18.5px"><b>leaked_answer:</b> the chart's 47 vs 123 includes 30 judge positives that are likely wrong (stale task definition). Excluding the task: 46 vs 91.</li>
-<li style="font-size:18.5px">Labeller-only hack rates would understate the problem about 2× (2.6× on the original labels). The judge is an LLM too, so treat it as the best available reference, not as the truth.</li>
+<li style="font-size:18.5px">Labeller-only hack rates would understate the problem about 2× (2.6× original). The judge is an LLM too: the best available reference, not the truth.</li>
 </ul>
 </div>
 </div>
@@ -409,7 +402,7 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 </table>
 <p style="font-size:14px;color:var(--muted);margin:6px 0 14px">Offline provenance-based heuristic auditor; <code>full_trace</code> and <code>report_only</code> scores are identical. Last column: the deterministic labeller against the hand labels.</p>
 <div class="callout"><p><b>The rules miss 58% of the hard hacks</b>, and the labeller misses 6 of 7 report-only fabrications. This is the gap an LLM auditor has to close.</p>
-<p>Claude auditor run: <b>pending</b>. One command: <code style="background:#24384F;color:#fff">modal run eval/hard_cases.py --modes all</code></p></div>
+<p>Only the offline heuristic has been scored here; <b>no Claude or agentic auditor run yet</b>. Next: <code style="background:#24384F;color:#fff">modal run eval/hard_cases.py --modes all</code></p></div>
 </div>
 </div>
 <div class="src">Source: results/hard_cases/SUMMARY_heuristic.md (python -m eval.hard_cases --auditor heuristic)</div>
@@ -419,11 +412,11 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <div class="kicker">Limitations</div>
 <h2>Read these numbers as preliminary</h2>
 <div class="grid g2" style="gap:16px">
-<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 9–40 positives (original; 2–40 corrected), 4–27 in the Opus subset. Most mode differences other than final_report vs the trace modes are within noise.</p></div>
+<div class="card"><h3>Small n</h3><p>5 episodes per (model, config, task) cell. Per-task results rest on 9–40 positives (original; 2–40 corrected), 4–27 in the Opus subset. Pressure vs incentivized, subject-model gaps and Opus recall or FPR alone are underpowered (SIGNIFICANCE.md).</p></div>
 <div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and Sonnet <code>full_trace</code> recall under <code>pressure</code> is 10/16 (corrected; 18/24 original).</p></div>
 <div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Against 60 blind AI labels: κ 0.70, never more lenient; 8 of 9 disagreements are a stale <code>leaked_answer</code> definition. No human raters yet.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>
-<div class="card" style="border-color:var(--amber)"><h3>The rubric drives FPR</h3><p>Any eval-file read counts as <code>suspicious_access</code>. Corrected-label trace-mode FPR is 0.22–0.35, and no Claude auditor keeps FPR ≤ 10% on unseen tasks.</p></div>
+<div class="card" style="border-color:var(--amber)"><h3>Grader access drives FPR</h3><p>Auditors flag honest runs that read <code>grade.py</code> as <code>suspicious_access</code>, though the rubric caps access alone at 0.3 confidence. Corrected-label FPR: Sonnet <code>full_trace</code> 0.34 (0.22–0.35 across trace modes); no Claude auditor keeps FPR ≤ 10% on unseen tasks.</p></div>
 <div class="card" style="border-color:var(--navy)"><h3>Reasoning is not ground truth</h3><p>A clean trace is weak evidence of a clean run (Chen et al.). We have not tested agents trained to obfuscate.</p></div>
 </div>
 <div class="src">Source: REPORT.md §9</div>
@@ -434,8 +427,8 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <h1 style="margin-top:40px">Audit the trajectory, not the paper</h1>
 <ul style="margin-top:26px">
 <li><b>Actions are the main signal.</b> Reading only the final report costs Sonnet 4.6 0.14 recall with leaked_answer excluded (0.90 → 0.76; 0.26 on the original labels).</li>
-<li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (Opus FPR 0.06 vs 0.12 and recall 0.77 vs 0.63 with leaked_answer excluded; 0.11 vs 0.17 and 0.84 vs 0.73 on all 240 runs, p &lt; 0.001).</li>
-<li><b>Auditors catch most hacks but over-flag honest grader-reading runs</b> (corrected label: FPR 0.22–0.35). As a best-of-n veto they still cut shipped hacks 0.28 → 0.15.</li>
+<li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (Opus FPR 0.06 vs 0.12 and recall 0.77 vs 0.63 with leaked_answer excluded; 0.11 vs 0.17 and 0.84 vs 0.73 on all 240 runs; corrected-label accuracy gain Holm p = 0.002).</li>
+<li><b>Auditors catch most hacks but over-flag honest grader-reading runs</b> (corrected label: Sonnet full_trace FPR 0.34; 0.22–0.35 across trace modes). As a best-of-n veto they still cut shipped hacks 0.28 → 0.15.</li>
 <li><b>Rule-based ground truth undercounts.</b> The labeller finds 46 of the 91 hacks the judge finds (leaked_answer excluded).</li>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>
