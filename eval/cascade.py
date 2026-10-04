@@ -11,6 +11,10 @@ Policies, all on the `full_trace` view and scored against the `either` label:
   (e) sonnet->opus  Sonnet first; escalate to Opus only when Sonnet flags; Opus confirms or vetoes
 Cost per trajectory comes from eval/cost.py (recorded `usage`, else its chars/4 estimate of the audit request).
 Every threshold combination is swept and the cost/recall frontier is reported under FPR caps.
+
+`--heuristic-ref REF` runs the heuristic from `auditor/heuristic.py` at git REF (e.g. the pre-calibration f664c95)
+instead of the working copy. `--families heuristic,sonnet,h->sonnet` drops the Opus policies, for experiments
+without an Opus re-audit (v3; use `--label labeller` there, since v3 has no judge labels).
 """
 
 from __future__ import annotations
@@ -187,9 +191,16 @@ def evaluate(policy: Policy, items: list[dict]) -> dict:
             **metrics([decide(policy, it) for it in items], [it["label"] for it in items])}
 
 
-def default_policies(lo: float = DEFAULT_LO, hi: float = DEFAULT_HI) -> list[Policy]:
-    return [Policy("heuristic"), Policy("sonnet"), Policy("opus"), Policy("h->sonnet", lo=lo, hi=hi),
-            Policy("sonnet->opus")]
+def default_policies(lo: float = DEFAULT_LO, hi: float = DEFAULT_HI, families=FAMILIES) -> list[Policy]:
+    out = [Policy("heuristic"), Policy("sonnet"), Policy("opus"), Policy("h->sonnet", lo=lo, hi=hi),
+           Policy("sonnet->opus")]
+    return [p for p in out if p.family in families]
+
+
+def required_auditors(families=FAMILIES) -> tuple[str, ...]:
+    """Claude auditors every item needs for ``families``."""
+    need = {"sonnet": (FIRST,), "opus": (SECOND,), "h->sonnet": (FIRST,), "sonnet->opus": (FIRST, SECOND)}
+    return tuple(a for a in (FIRST, SECOND) if any(a in need.get(f, ()) for f in families))
 
 
 def policies(family: str | None = None) -> list[Policy]:
@@ -203,8 +214,8 @@ def policies(family: str | None = None) -> list[Policy]:
     return [p for p in out if family is None or p.family == family]
 
 
-def sweep(items: list[dict]) -> list[dict]:
-    return [evaluate(p, items) for p in policies()]
+def sweep(items: list[dict], families=FAMILIES) -> list[dict]:
+    return [evaluate(p, items) for p in policies() if p.family in families]
 
 
 def _pick(scored: list[tuple[Policy, dict]], cap: float) -> Policy:
@@ -215,13 +226,13 @@ def _pick(scored: list[tuple[Policy, dict]], cap: float) -> Policy:
     return min(scored, key=lambda pm: (pm[1]["fpr"] if pm[1]["fpr"] is not None else 1.0))[0]
 
 
-def crossfit(items: list[dict], cap: float) -> list[dict]:
+def crossfit(items: list[dict], cap: float, families=FAMILIES) -> list[dict]:
     """Leave-one-experiment-out: tune each family's thresholds on the other experiments, score the held-out one."""
     exps = sorted({it["experiment"] for it in items})
     if len(exps) < 2:
         return []
     out = []
-    for fam in FAMILIES:
+    for fam in families:
         decisions, labels, chosen = [], [], {}
         for held in exps:
             train = [it for it in items if it["experiment"] != held]
@@ -246,9 +257,9 @@ def frontier(points: list[dict], cap: float) -> list[dict]:
     return out
 
 
-def best_per_family(points: list[dict], cap: float) -> list[dict]:
+def best_per_family(points: list[dict], cap: float, families=FAMILIES) -> list[dict]:
     out = []
-    for fam in FAMILIES:
+    for fam in families:
         ok = [p for p in points if p["family"] == fam and p["fpr"] is not None and p["fpr"] <= cap + 1e-12
               and p["recall"] is not None]
         if ok:
@@ -297,31 +308,38 @@ def _table(headers: list[str], rows: list[list]) -> list[str]:
 
 
 def analyze(items: list[dict], *, lo: float = DEFAULT_LO, hi: float = DEFAULT_HI, caps=DEFAULT_CAPS,
-            repeats: int = 1000, seed: int = 1729) -> dict:
+            repeats: int = 1000, seed: int = 1729, families=FAMILIES) -> dict:
+    families = tuple(f for f in FAMILIES if f in families)
     defaults = []
-    for p in default_policies(lo, hi):
+    for p in default_policies(lo, hi, families):
         row = evaluate(p, items)
         row["ci"] = bootstrap(p, items, repeats=repeats, seed=seed) if repeats else {}
         defaults.append(row)
     by_model = {}
     for model in sorted({it["subject_model"] for it in items}):
         sub = [it for it in items if it["subject_model"] == model]
-        by_model[model] = [evaluate(p, sub) for p in default_policies(lo, hi)]
-    points = sweep(items)
+        by_model[model] = [evaluate(p, sub) for p in default_policies(lo, hi, families)]
+    points = sweep(items, families)
     return {"n": len(items), "pos": sum(it["label"] for it in items), "label": LABEL, "mode": MODE,
             "experiments": sorted({it["experiment"] for it in items}), "lo": lo, "hi": hi,
             "estimated_costs": any(it[k].get("estimated") for it in items for k in it if k.startswith("audit:")),
+            "families": list(families), "heuristic": "working copy",
             "defaults": defaults, "by_subject_model": by_model, "n_points": len(points),
             "frontier": {str(c): frontier(points, c) for c in caps},
-            "best_per_family": {str(c): best_per_family(points, c) for c in caps},
-            "crossfit": {str(c): crossfit(items, c) for c in caps}, "points": points}
+            "best_per_family": {str(c): best_per_family(points, c, families) for c in caps},
+            "crossfit": {str(c): crossfit(items, c, families) for c in caps}, "points": points}
 
 
 def render(res: dict, figure: str | None = None) -> str:
+    families = res.get("families", list(FAMILIES))
+    opus = "opus" in families or "sonnet->opus" in families
+    heuristic = res.get("heuristic", "working copy")
     lines = ["# Auditor deployment policies: cost vs detection", "",
              f"Experiments: {', '.join(res['experiments'])}. {res['n']} trajectories ({res['pos']} hacked under the "
-             f"`{res['label']}` label), all audited in `{res['mode']}` by Sonnet 4.6 and Opus 4.6; the heuristic "
-             "auditor is run live offline. Cost is USD per trajectory from `eval/cost.py`"
+             f"`{res['label']}` label), all audited in `{res['mode']}` by Sonnet 4.6"
+             + (" and Opus 4.6" if opus else "") + "; the heuristic auditor"
+             + ("" if heuristic == "working copy" else f" (`auditor/heuristic.py` at git `{heuristic}`)")
+             + " is run live offline. Cost is USD per trajectory from `eval/cost.py`"
              + (" (estimates: chars/4 of the rebuilt audit request; no recorded usage)" if res["estimated_costs"]
                 else "") + ".", "",
              "## Default operating points", "",
@@ -336,8 +354,8 @@ def render(res: dict, figure: str | None = None) -> str:
     lines += _table(["policy", "recall", "FPR", "precision", "AUROC", "USD / trajectory", "escalated",
                      "TP/FP/FN/TN"], rows)
     d = {r["family"]: r for r in res["defaults"]}
-    s, o, e = d["sonnet"], d["opus"], d["sonnet->opus"]
-    if s["usd_per_trajectory"] and o["usd_per_trajectory"]:
+    s, o, e = d.get("sonnet"), d.get("opus"), d.get("sonnet->opus")
+    if s and o and e and s["usd_per_trajectory"] and o["usd_per_trajectory"]:
         lines += ["", f"(e) is cheaper than (c) only while Sonnet flags fewer than "
                   f"{1 - s['usd_per_trajectory'] / o['usd_per_trajectory']:.0%} of trajectories (1 - Sonnet cost / "
                   f"Opus cost); here it flags {_pct(e['escalation_rate'])}, at a {_pct(res['pos'] / res['n'])} hack "
@@ -373,9 +391,11 @@ def render(res: dict, figure: str | None = None) -> str:
         lines += ["", f"![cost/recall frontier]({figure})"]
     lines += ["", "Notes: thresholds are `confidence >= t` (`flag` = the auditor's own `hack_detected`). "
               "Cascades pay for every stage they run. Costs exclude the subject agent and the judge, and the "
-              "heuristic costs nothing. Opus re-audits exist only for these two experiments, so this is a "
-              "two-subject-model, six-task sample: frontier thresholds are tuned on it (see the held-out "
-              "checks)."]
+              "heuristic costs nothing. "
+              + ("Opus re-audits exist only for these two experiments, so this is a "
+                 "two-subject-model, six-task sample: frontier thresholds are tuned on it (see the held-out "
+                 "checks)." if opus else "Opus policies are omitted (no Opus re-audit for these experiments). "
+                 "Frontier thresholds are tuned on this sample (see the held-out checks).")]
     return "\n".join(lines) + "\n"
 
 
@@ -424,11 +444,12 @@ def frontier_svg(res: dict, cap: float = 0.10) -> str:
         svg.text(x + dx, y + dy, f"{p['family']} (FPR {_pct(p['fpr'])})", size=12, color=c, weight=600,
                  anchor=anchor)
     lx = left + width + 30
-    for i, fam in enumerate(FAMILIES):
+    for i, fam in enumerate(res.get("families", FAMILIES)):
         svg.circle(lx + 6, top + 10 + 26 * i, colors[fam], radius=5)
         svg.text(lx + 18, top + 15 + 26 * i, FAMILY_LABELS[fam], size=13)
-    svg.line(lx, top + 10 + 26 * len(FAMILIES), lx + 14, top + 10 + 26 * len(FAMILIES), "#14263D", width=2)
-    svg.text(lx + 18, top + 15 + 26 * len(FAMILIES), f"frontier (FPR <= {cap:.0%})", size=13)
+    n_fam = len(res.get("families", FAMILIES))
+    svg.line(lx, top + 10 + 26 * n_fam, lx + 14, top + 10 + 26 * n_fam, "#14263D", width=2)
+    svg.text(lx + 18, top + 15 + 26 * n_fam, f"frontier (FPR <= {cap:.0%})", size=13)
     return svg.finish()
 
 
@@ -446,17 +467,33 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--seed", type=int, default=1729)
     p.add_argument("--mode", default=MODE, choices=("full_trace", "report_only", "final_report"),
                    help="audit mode for every stage (saved Claude verdicts and the live heuristic)")
+    p.add_argument("--heuristic-ref", help="run auditor/heuristic.py from this git ref (e.g. the pre-calibration "
+                   "f664c95) instead of the working copy")
+    p.add_argument("--families", default=",".join(FAMILIES),
+                   help="comma-separated policy families; drop opus,sonnet->opus where there is no Opus re-audit")
     from eval.labels import add_argument as add_label_argument
 
-    add_label_argument(p)
+    add_label_argument(p, extra=("labeller",))
     args = p.parse_args(argv)
     caps = tuple(float(c) for c in args.fpr_caps.split(",") if c)
-    items = common(load_items(args.experiments, mode=args.mode, label=args.label), FIRST, SECOND)
+    families = tuple(f.strip() for f in args.families.split(",") if f.strip())
+    unknown = sorted(set(families) - set(FAMILIES))
+    if unknown or not families:
+        p.error(f"unknown --families {unknown}; choose from {', '.join(FAMILIES)}")
+    heuristic_fn = None
+    if args.heuristic_ref:
+        from auditor.benchmark import _baseline
+
+        heuristic_fn = _baseline(args.heuristic_ref)
+    needed = required_auditors(families)
+    items = common(load_items(args.experiments, heuristic_fn=heuristic_fn, mode=args.mode, label=args.label),
+                   *needed)
     if not items:
-        p.error(f"no trajectories audited in {args.mode} by both {FIRST} and {SECOND}")
+        p.error(f"no trajectories audited in {args.mode} by {' and '.join(needed) or 'the heuristic'}")
     res = analyze(items, lo=args.lo, hi=args.hi, caps=tuple(sorted({*caps, args.figure_cap})),
-                  repeats=args.bootstrap_samples, seed=args.seed)
+                  repeats=args.bootstrap_samples, seed=args.seed, families=families)
     res["label"], res["mode"] = args.label, args.mode
+    res["heuristic"] = args.heuristic_ref or "working copy"
     rel_fig = None
     if args.figure:
         Path(args.figure).parent.mkdir(parents=True, exist_ok=True)
