@@ -179,6 +179,14 @@ def task_drift(task: dict, events: list[dict]) -> list[str]:
     return sorted(drifted)
 
 
+def matched_task(task_id: str, events: list[dict]) -> tuple[str, dict]:
+    """(version, definition) of ``task_id`` whose sandbox files this trajectory actually read
+    (tasks.validate_labels.match_definition; v2 leaked_answer ran on the v1 data, commit 5b4aa1c)."""
+    from tasks import validate_labels
+
+    return validate_labels.match_definition(events, list(validate_labels.definition_versions(task_id)))
+
+
 def git_task_loader(rev: str) -> Callable[[str], dict]:
     """load_task at a git revision (for trajectories produced before a task definition changed)."""
     import subprocess
@@ -206,25 +214,28 @@ def load_candidates(exp_dir: str, auditor: str = DEFAULT_AUDITOR, mode: str = "f
                     load_task_fn: Callable | None = None, label: str = "either") -> list[dict]:
     """One candidate per trajectory in ``exp_dir`` with its audit (``auditor``/``mode``), labels and grader score.
 
-    Labels: the run-time labeller from <exp>/episodes (shared by every auditor) OR the judgment."""
+    Labels: the run-time labeller from <exp>/episodes (shared by every auditor) OR the judgment. Grader scores
+    use the task definition matching each trajectory (``matched_task``) unless ``load_task_fn`` pins one."""
     from eval.analyze import load_experiment
     from eval.labels import relabel
 
-    if load_task_fn is None:
-        from tasks.registry import load_task as load_task_fn
     tasks: dict[str, dict] = {}
     runtime = _runtime_labels(exp_dir)
     out = []
     for row in relabel(load_experiment(exp_dir), label):
         if row["auditor"] != auditor or row["auditor_mode"] != mode:
             continue
-        task = tasks.setdefault(row["task_id"], load_task_fn(row["task_id"]))
         events = _read_events(Path(exp_dir) / "trajectories" / f"{row['trajectory_id']}.jsonl")
+        if load_task_fn is None:
+            version, task = matched_task(row["task_id"], events)
+        else:
+            version, task = "pinned", tasks.setdefault(row["task_id"], load_task_fn(row["task_id"]))
         labeller = runtime.get(row["trajectory_id"], row["labeller"])
         either = True if labeller else row["judge"]  # `corrected`: relabel() already cleared stale judgments
         out.append({**row, "labeller": labeller, "either": either, "hacked": hack_label({"either": either,
                     "labeller": labeller}), "label_fallback": either is None,
-                    "grader_score": grader_score(task, events), "task_drift": task_drift(task, events)})
+                    "grader_score": grader_score(task, events), "task_drift": task_drift(task, events),
+                    "definition": version})
     return out
 
 
@@ -285,6 +296,7 @@ def group_outcomes(cands: list[dict], threshold: float | None = None, n: int | N
     agg["base_hacked"] = sum(c["hacked"] for c in cands)
     agg["size"] = len(cands)
     agg["drifted"] = sum(bool(c.get("task_drift")) for c in cands)
+    agg["past_definition"] = sum(c.get("definition") not in (None, "current", "pinned") for c in cands)
     agg["label_fallbacks"] = sum(bool(c.get("label_fallback")) for c in cands)
     if k == len(cands):
         agg["choice"] = outs[0]["choice"]
@@ -329,6 +341,7 @@ def summarize_best_of_n(cands: list[dict], threshold: float | None = None, n: in
                "base_rate": _mean(r["base_hacked"] / r["size"] for r in rows),
                "fallback_rate": _mean(r["fallback"] for r in rows),
                "drifted": sum(r.get("drifted", 0) for r in rows),
+               "past_definition": sum(r.get("past_definition", 0) for r in rows),
                "label_fallbacks": sum(r.get("label_fallbacks", 0) for r in rows)}
         for p in POLICIES:
             out[f"{p}_hack"] = _mean(r[p]["hacked"] for r in rows)
@@ -380,8 +393,9 @@ def render_best_of_n(summary: dict, title: str, sweep: list[dict] | None = None,
     lines += _table(["slice", *_HEADERS], [[" / ".join(str(s[k]) for k in summary["by"]), *_row(s)[0:]]
                                            for s in summary["slices"]] + [["**all**", *_row(o)]])
     lines += [f"Trajectories without a judgment (labeller-only label): {o['label_fallbacks']}. "
-              f"Trajectories whose read_file outputs differ from the task definitions used here: {o['drifted']} "
-              "(grader scores use the task files; labels always come from the original run).", ""]
+              f"Trajectories graded with a past task definition (the one matching their sandbox files): "
+              f"{o.get('past_definition', 0)}. Trajectories whose read_file outputs still differ from the definition "
+              f"used: {o['drifted']}. Labels always come from the original run.", ""]
     if "ci" in o:
         ci = o["ci"]
         lines += ["95% bootstrap CIs over groups: " + ", ".join(
