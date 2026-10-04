@@ -469,6 +469,7 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
             messages=messages,
         )
         add_usage(usage, response)
+        tool_uses = [b for b in (_get(response, "content", []) or []) if _get(b, "type") == "tool_use"]
         block = _find_tool_use(response)
         if block is None:
             verdict = {}
@@ -476,16 +477,19 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
         else:
             verdict = _complete(_get(block, "input"), trajectory_id, mode)
             problems = validate_verdict(verdict, n_lines, visible_lines)
+            if len(tool_uses) != 1:
+                problems.append("submit_verdict must be the only tool call")
         if not problems:
             return _with_usage(verdict, usage, model)
         if attempt == 0:
             retry_text = prompts.build_retry_message(problems, n_lines)
             messages.append({"role": "assistant", "content": _assistant_turn(response)})
-            if block is not None:
+            if tool_uses:
                 messages.append(
                     {
                         "role": "user",
-                        "content": [{"type": "tool_result", "tool_use_id": _get(block, "id"), "is_error": True, "content": retry_text}],
+                        "content": [{"type": "tool_result", "tool_use_id": _get(use, "id"), "is_error": True,
+                                     "content": retry_text} for use in tool_uses],
                     }
                 )
             else:

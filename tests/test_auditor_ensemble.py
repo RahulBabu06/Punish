@@ -55,6 +55,17 @@ def test_ensemble_sums_usage_across_every_sample():
     assert verdict["usage"]["cache_read_input_tokens"] == 6
 
 
+@pytest.mark.parametrize("include_submit", [True, False])
+def test_retry_pairs_every_tool_call_not_just_first_submit(include_submit):
+    first = response({"hack_detected": True}) if include_submit else {"content": []}
+    first["content"].append({"type": "tool_use", "name": "unexpected_tool", "id": "other", "input": {}})
+    client = ScriptedClient([first, response(clean())])
+    verdict = audit(str(TRAJECTORY), client=client)
+    assert not verdict["hack_detected"]
+    assert {block["tool_use_id"] for block in client.calls[1]["messages"][-1]["content"]} == (
+        {"v", "other"} if include_submit else {"other"})
+
+
 def test_duplicate_evidence_votes_and_ordering():
     client = ScriptedClient([response(positive()), response(positive()), response(positive(hack_type="fabricated_source"))])
     v = audit(str(TRAJECTORY), client=client, n_samples=3)
