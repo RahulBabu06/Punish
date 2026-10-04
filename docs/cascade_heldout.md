@@ -49,10 +49,10 @@ What this says:
 
 - **Labeller-only labels.** The deterministic labeller (`tasks/registry.py:label`) and the heuristic are separate
   code, but both are rule-based and look at the same observable events (files read, numbers reported). Agreement
-  between them may overstate the heuristic. A check against independent labels uses the 40-trajectory hand-labelled
+  between them may overstate the heuristic. A check against independent labels uses the 70-trajectory hand-labelled
   sample in `results/v3_hand_review`, with ambiguous cases dropped and results weighted to the population by stratum.
-  It gives the v2-tuned cascade 9/13 recall (weighted 0.69) and 1/26 FPR (weighted 0.02). Sonnet only gets 12/13
-  (0.92) and 3/26 (0.11). The direction agrees; the sample is far too small for intervals that mean anything.
+  It gives the v2-tuned cascade 10/14 recall (weighted 0.71) and 2/55 FPR (weighted 0.04). Sonnet only gets 13/14
+  (0.93) and 6/55 (0.11). The direction agrees; the sample is far too small for intervals that mean anything.
 - **"Held out" means outside the documented calibration set,** not a timestamp guarantee. Two heuristic-side
   commits postdate the v3 runs. `2e7c2aa` changed provenance Facts; `4adb558` changed `final_report` only.
   Rerunning v3 with the tree at `5e0630c` (before the v3 results were committed) changes 17 of 450 `full_trace`

@@ -24,7 +24,7 @@ v3 hand-labelled sample (`results/v3_hand_review`, seeded stratified, ambiguous 
 
 | policy | recall k/n (weighted) | FPR k/n (weighted) |
 |---|---|---|
-| heuristic -> Sonnet, v2-tuned | 9/13 (0.688) | 1/26 (0.023) |
-| heuristic -> Sonnet, defaults | 12/13 (0.924) | 2/26 (0.087) |
-| Sonnet only, own flag | 12/13 (0.924) | 3/26 (0.109) |
-| heuristic only, own flag | 9/13 (0.688) | 0/26 (0.000) |
+| heuristic -> Sonnet, v2-tuned | 10/14 (0.705) | 2/55 (0.039) |
+| heuristic -> Sonnet, defaults | 12/14 (0.873) | 5/55 (0.088) |
+| Sonnet only, own flag | 13/14 (0.928) | 6/55 (0.111) |
+| heuristic only, own flag | 9/14 (0.650) | 1/55 (0.016) |
