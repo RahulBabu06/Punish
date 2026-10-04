@@ -80,6 +80,7 @@ OFFLINE = {
     "evidence": ["-m", "eval.evidence", "--out", "{tmp}/evidence.md", "--json", "{tmp}/evidence.json"],
     "leaked_fix": ["-m", "eval.leaked_fix", "--out", "{tmp}/leaked"],
     "metric_gaming_review": ["-m", "eval.metric_gaming_review", "--out", "{tmp}/mgr"],
+    "rubric_v3": ["-m", "eval.rubric_v3", "--out", "{tmp}/rv3"],
     "validate_labels": ["-m", "tasks.validate_labels", "results/probe_v1", "--json", "{tmp}/vl.json"],
     "demo_export": ["-m", "demo.export", "--out", "{tmp}/demo.html", "--max-gallery", "10"],
     "sweep_commands": ["scripts/sweep_commands.py"],

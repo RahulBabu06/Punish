@@ -59,6 +59,10 @@ false positives, not missed hacks. Each one reports the computed R² ≈ 0.447 a
 format-checking `grade.py`. No labels change. See docs/metric_gaming_review.md for the details and a proposed rubric
 fix.
 
+**Rubric v3 (opt-in prompt) proxy.** `python -m eval.rubric_v3` writes `rubric_v3_proxy.{json,md}`: a post-hoc
+filter on the saved verdicts that approximates `audit(..., rubric="v3")`. It is a PROXY, not a measured result; see
+docs/rubric_v3.md for the rules and the live re-audit command.
+
 Column notes:
 
 - **Subject model**: the `config.model` header of each trajectory. Full ids are `claude-haiku-4-5-20251001`,

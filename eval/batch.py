@@ -3,6 +3,8 @@
   modal run eval/batch.py --results-dir results/v2_sonnet46 --job judge
   modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit --auditor-model claude-opus-4-6 \
       --auditor-modes full_trace,report_only,final_report --out-dir results/v2_sonnet46/reaudit_claude-opus-4-6
+  modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit --rubric v3 \
+      --out-dir results/v2_sonnet46/reaudit_rubric_v3            # opt-in prompt, docs/rubric_v3.md
   python -m eval.batch --local --results-dir ... --job judge
 
 judge   -> <results-dir>/judgments/<trajectory_id>.json (privileged ground truth, eval/judge.py)
@@ -60,11 +62,13 @@ def _judge_text(trajectory_text: str, model: str | None, task: dict | None = Non
 
 
 def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], model: str | None,
-                  auditor: str = "claude", n_samples: int = 1) -> list[dict]:
+                  auditor: str = "claude", n_samples: int = 1, rubric: str = "default") -> list[dict]:
     from auditor.audit import _check_samples, audit
+    from auditor.prompts import system_prompt
     from eval.run_episode import audit_existing
 
     _check_samples(n_samples)
+    system_prompt(rubric)
     if auditor not in ("claude", "agentic"):
         raise ValueError("auditor must be claude or agentic")
     backend = audit
@@ -72,7 +76,8 @@ def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], 
         from auditor.agentic import audit_agentic
 
         backend = audit_agentic
-    audit_fn = partial(backend, n_samples=n_samples) if auditor == "agentic" or n_samples != 1 else None
+    extra = {} if rubric == "default" else {"rubric": rubric}
+    audit_fn = partial(backend, n_samples=n_samples, **extra) if auditor == "agentic" or n_samples != 1 or extra else None
     out = []
     with tempfile.TemporaryDirectory() as work:
         path = os.path.join(work, os.path.basename(trajectory_path))
@@ -82,6 +87,8 @@ def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], 
             ep["trajectory_path"] = trajectory_path
             ep["auditor_backend"] = auditor
             ep["auditor_model"] = model
+            if extra:
+                ep["auditor_rubric"] = rubric
             out.append(ep)
     return out
 
@@ -95,8 +102,8 @@ def judge_job(trajectory_text: str, model: str | None = None, task: dict | None 
 @app.function(image=image, secrets=[modal.Secret.from_name("anthropic")], timeout=1800,
               retries=modal.Retries(max_retries=2, initial_delay=5.0))
 def reaudit_job(trajectory_text: str, trajectory_path: str, modes: list[str], model: str | None = None,
-                auditor: str = "claude", n_samples: int = 1) -> list[dict]:
-    return _reaudit_text(trajectory_text, trajectory_path, modes, model, auditor, n_samples)
+                auditor: str = "claude", n_samples: int = 1, rubric: str = "default") -> list[dict]:
+    return _reaudit_text(trajectory_text, trajectory_path, modes, model, auditor, n_samples, rubric)
 
 
 def _trajectories(results_dir: str) -> list[Path]:
@@ -163,11 +170,13 @@ def _pending(results_dir: str, paths: list[Path], job: str, skip_existing: bool)
 @app.local_entrypoint()
 def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_model: str = "",
          auditor_modes: str = "full_trace,report_only,final_report", out_dir: str = "", skip_existing: bool = True,
-         auditor: str = "claude", n_samples: int = 1):
+         auditor: str = "claude", n_samples: int = 1, rubric: str = "default"):
     if job == "reaudit":
         from auditor.audit import _check_samples
+        from auditor.prompts import system_prompt
 
         _check_samples(n_samples)
+        system_prompt(rubric)
         if auditor not in ("claude", "agentic"):
             raise ValueError("auditor must be claude or agentic")
     paths = _pending(results_dir, _trajectories(results_dir), job, skip_existing)
@@ -179,7 +188,8 @@ def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_mo
         failed = _save_judgments(results_dir, paths, list(res))
     elif job == "reaudit":
         modes = [m for m in auditor_modes.split(",") if m]
-        res = reaudit_job.starmap([(t, str(p), modes, auditor_model or None, auditor, n_samples) for t, p in zip(texts, paths)],
+        res = reaudit_job.starmap([(t, str(p), modes, auditor_model or None, auditor, n_samples, rubric)
+                                   for t, p in zip(texts, paths)],
                                   return_exceptions=True)
         failed = _save_reaudits(out_dir or os.path.join(results_dir, "reaudit"), paths, list(res))
     else:
@@ -196,6 +206,7 @@ def _cli(argv: list[str] | None = None) -> int:
     p.add_argument("--auditor-model", default=None)
     p.add_argument("--auditor", choices=["claude", "agentic"], default="claude")
     p.add_argument("--n-samples", type=int, default=1)
+    p.add_argument("--rubric", choices=["default", "v3"], default="default", help="auditor prompt version (reaudit)")
     p.add_argument("--auditor-modes", default="full_trace,report_only,final_report")
     p.add_argument("--out-dir", default="")
     p.add_argument("--workers", type=int, default=8)
@@ -223,7 +234,8 @@ def _cli(argv: list[str] | None = None) -> int:
             _save_judgments(args.results_dir, paths, res)
         else:
             modes = args.auditor_modes.split(",")
-            res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), modes, args.auditor_model, args.auditor, args.n_samples),
+            res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), modes, args.auditor_model, args.auditor,
+                                                      args.n_samples, args.rubric),
                                 zip(texts, paths)))
             _save_reaudits(args.out_dir or os.path.join(args.results_dir, "reaudit"), paths, res)
     return 0
