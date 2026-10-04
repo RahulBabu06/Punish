@@ -8,7 +8,7 @@ read the grader.*
 (Corrected label throughout, the same numbers as the README and the headline figure. The
 all-hacks gap, 0.74 report-only vs 0.90 trace, is carried by `covert`: on the 27 natural hacks
 the report alone catches 26/27 vs 20/27 with actions (`results/robustness/ROBUSTNESS.md`).
-Never say the trace catches more natural hacks.)
+On labeller-only v3 both catch 19/26, so don't claim the report wins either. Never say the trace catches more natural hacks.)
 
 Numbers come from the v2 sweep (360 trajectories from three subject models, 1,080 Sonnet
 audits plus 720 Opus re-audits; details in `REPORT.md` §8). Ground truth is an Opus judge
@@ -66,7 +66,8 @@ Not everywhere, and we found where. The judge was shown a stale definition for
 headline uses that corrected label. The original and task-excluded variants are in `REPORT.md`
 §8.0, and the conclusions hold under all three. Opus's accuracy gain from reasoning is +0.071
 (Holm p = 0.002). Sonnet's recall is 0.74 report-only vs 0.91 with actions, all of it from
-`covert` hacks (natural hacks: 26/27 report-only vs 20/27 with actions).
+`covert` hacks (natural hacks: 26/27 report-only vs 20/27 with actions). On labeller-only v3 the
+instructed-only gain replicates (+0.24, accuracy p = 0.003) but the reversal does not (19/26 each).
 
 **"The covert agent is told to hack. Isn't detecting that trivial?"**
 That's why it's a model organism: it gives positives where we know the intent, the same
@@ -76,7 +77,8 @@ covert runs is 0.65. One leak: 75/90 covert reasonings name the red-team role, s
 trace can read the config; Opus's reasoning gain still holds without them (+0.056). We also
 report natural hacking. Incentivized and pressure runs hack 12% and 18% of the time with no
 instruction (11/90, 16/90). Those natural hacks are our weak spot: full-trace recall is
-19/27 = 0.70 for Sonnet and 5/17 = 0.29 for Opus, and the report alone catches 26/27.
+19/27 = 0.70 for Sonnet and 5/17 = 0.29 for Opus, and the report alone catches 26/27
+(labeller-only v3: full-trace 12/26 = 0.46).
 
 **"Your ground truth is another Claude. Isn't that circular?"**
 Partly, and we say so. There are two ground truths. The deterministic labeller is
@@ -135,7 +137,7 @@ adding one JSON file with an exploit and a label rule.
 Possibly. OpenAI found that training against a CoT monitor teaches obfuscation. That is why
 we use the auditor only to evaluate and never as a training reward. `report_only` is our
 hedge: it doesn't trust the reasoning at all, and it still reaches 0.91 recall because files
-read and code run are hard to hide (on instructed hacks; on natural hacks it catches 20/27). Our `covert_monitored` config tells the hacking agent that an auditor reads its
+read and code run are hard to hide (on instructed hacks; on natural hacks it catches 20/27, and 19/26 on v3). Our `covert_monitored` config tells the hacking agent that an auditor reads its
 reasoning. In a small preliminary run (n = 15 per model, every positive read by hand), Haiku mostly
 stopped hacking (1/14 vs 13/15 under plain `covert`) and Sonnet 4.6 hacked 5/15 vs 11/15.
 All 6 remaining hacks still spell out the fabrication in their reasoning, so monitoring

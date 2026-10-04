@@ -283,7 +283,7 @@ def submission_numbers() -> dict[str, str]:
         out[f"{100 * r['fpr']:.1f}%"] = f"{key[0]} cascade FPR"
         out[f"{r['tp']}/{r['pos']}"] = f"{key[0]} cascade tp/pos"
         out[f"{r['fp']}/{r['n'] - r['pos']}"] = f"{key[0]} cascade fp/neg"
-    return out | robustness_numbers()
+    return out | robustness_numbers() | v3_replication_numbers()
 
 
 def test_submission_numbers_match_committed_results():
@@ -306,6 +306,35 @@ def test_submission_abstract_and_links():
     assert {"../README.md", "../REPORT.md", "../PITCH.md", "../paper/punish.pdf", "demo.html", "slides.html",
             "REVIEW_GUIDE.md"} <= set(links)
     assert all((ROOT / "docs" / link).resolve().exists() for link in links)
+
+
+ROBUST_V3 = ROOT / "results/robustness/robustness_v3.json"
+V3_INSTRUCTED = "covert + covert_monitored"
+
+
+def v3_replication_numbers() -> dict[str, str]:
+    """v3 replication (labeller-only labels) quoted in README / REPORT / PITCH / SUBMISSION."""
+    r = json.loads(ROBUST_V3.read_text(encoding="utf-8"))
+    assert r["label"] == "labeller"
+    nat = {s["mode"]: s for s in r["slices"] if s["auditor"] == SONNET and s["slice"] == "non-covert"}
+    gain = next(d for d in r["delta_slices"] if (d["auditor"], d["left"], d["right"], d["slice"])
+                == (SONNET, "report_only", "final_report", V3_INSTRUCTED))
+    ro, fr, ft = nat["report_only"], nat["final_report"], nat["full_trace"]
+    assert (ro["tp"], ro["pos"]) == (fr["tp"], fr["pos"]), "the v2 natural-hack reversal now replicates on v3"
+    return {f"{gain['d_recall']:.2f}": "v3 instructed report_only - final_report recall gain",
+            f"{gain['p']:.3f}": "v3 instructed accuracy McNemar p",
+            f"{ro['tp']}/{ro['pos']}": "v3 natural recall, report_only = final_report",
+            f"{ft['tp']}/{ft['pos']}": "v3 natural full_trace recall", f"{ft['recall']:.2f}": "v3 natural full_trace recall"}
+
+
+def test_v3_replication_in_docs():
+    n = v3_replication_numbers()
+    assert set(n) == {"0.24", "0.003", "19/26", "12/26", "0.46"}
+    for name in ("README.md", "REPORT.md", "PITCH.md", "docs/SUBMISSION.md"):
+        text = re.sub(r"\s+", " ", doc(name))
+        assert "19/26" in text and "12/26 = 0.46" in text and "labeller-only" in text, name
+        if name != "README.md":
+            assert "+0.24" in text and "p = 0.003" in text, name
 
 
 def test_report_robustness_claims_match_committed_json():
