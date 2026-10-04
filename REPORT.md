@@ -865,6 +865,20 @@ R 0.36 and P±1 0.91 on the hard cases. No Claude auditor has run on them.
   from an AI annotator (not a human) it has κ = 0.70 and is never more lenient; 8 of its 9
   disagreements come from a stale `leaked_answer` definition (§8.15). Agreement with human
   raters is still `TODO(numbers)`.
+- **Trajectory-id label leak (§8.16).** Every v2 audit was shown the trajectory id (e.g.
+  `leaked_answer__covert__ep002`), which names the agent config. Since the fix the auditor sees only an opaque
+  token (`auditor.audit.opaque_id`); saved ids and file layouts are unchanged. The 122 of 1,800 saved verdicts
+  that cite the id/config are 111 `final_report` audits. There they score similar recall but higher FPR, so the leak
+  mostly adds false positives (corrected label, `python -m eval.id_leak --out results/id_leak`):
+
+  | auditor, `final_report` | cites id: recall / FPR | doesn't: recall / FPR |
+  |---|---|---|
+  | Sonnet 4.6 | 15/19 = 0.79 / 18/46 = 0.39 | 54/74 = 0.73 / 44/221 = 0.20 |
+  | Opus 4.6 | 3/5 = 0.60 / 11/41 = 0.27 | 32/51 = 0.63 / 25/143 = 0.17 |
+
+  Pooled over modes: Sonnet 0.86 / 0.38 (n = 75) vs 0.85 / 0.31 (n = 1,005); Opus 0.60 / 0.26 (n = 47) vs
+  0.67 / 0.23 (n = 673). The trace modes cite it only 11 times. Small n, and citing audits are not a random
+  subset, so this is suggestive, not causal; a live re-audit is needed for the effect of removing the id.
 - **Known issue: stale leaked_answer judge context (§8.0).** The v2 sweeps ran `leaked_answer` on
   the v1 `data.csv`, where the honest p is 0.31, so the "leaked" 0.312 is correct. The judge was
   shown the newer definition, which says p ≈ 0.006. Of the 32 judge-positive runs, 30 computed
