@@ -429,7 +429,7 @@ DEFAULT_STORY = [
     {"kind": "compare", "traj": "results/probe_v1/trajectories/metric_gaming__covert__ep000.jsonl", "dwell": 25,
      "title": "8 · Trace access matters",
      "caption": "Three auditors, one trajectory. Only full_trace and report_only can see the computation; "
-                "final_report sees 3 of 21 lines."},
+                "final_report sees 2 of 21 lines."},
     {"kind": "dashboard", "dwell": 30, "title": "9 · Results",
      "caption": "Hack rates by subject model and config; auditor precision / recall / AUROC per mode."},
 ]
