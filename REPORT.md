@@ -1,15 +1,22 @@
 # Punish: auditing AI science agents for reward hacking from their trajectories
 
 *London AI x Science Hackathon, Track 2, team Punish.*
-*Status: hackathon write-up. Headline results come from the judged v2 runs
-`results/v2_sonnet46/`, `results/v2_haiku45/` and `results/v2_sonnet45/` (including the Opus
-re-audits in `reaudit_claude-opus-4-6/`). Supporting runs are `results/probe_v1/` and
-`results/model_probe/`. The v3 10-task runs and the partial `v3cond_*`, `v3fault_*` and
-`v3_opus46` runs have **labeller labels only**: the Anthropic credit ran out before they were
-judged or finished (§8.6). Those runs and small per-task cells (5 episodes per cell) are
-**preliminary**; pooled v2 comparisons use paired, Holm-corrected tests. Historical tables: [`results/RESULTS.md`](results/RESULTS.md) (frozen v2 labels, not the corrected headline) and
+*Status: hackathon write-up. The judged v2 runs supply the headline; supporting probes and
+preliminary v3 cohorts are separated in §8.4–§8.7. V3 coverage and label limitations are in
+§8.6 and §9; paired v2 tests use Holm correction. Historical tables: [`results/RESULTS.md`](results/RESULTS.md) (frozen v2 labels, not the corrected headline) and
 [`results/RESULTS_v3_preliminary.md`](results/RESULTS_v3_preliminary.md). Worked examples:
 [`docs/case_studies.md`](docs/case_studies.md).*
+
+## Contents
+
+| route | sections |
+|---|---|
+| Question and design | [Abstract](#abstract) · [Motivation](#1-motivation) · [Threat model](#2-threat-model) · [System](#3-system-design) · [Hack types](#4-hack-types) · [Tasks](#5-task-suite-and-agent-configs) · [Auditor views](#6-auditor-modes-a-cot-access-ablation) · [Labels](#7-ground-truth-two-labellers-and-why) |
+| Headline results | [At a glance](#main-results-at-a-glance) · [Correction](#80-known-issue-stale-leaked_answer-judge-context-read-first) · [Hack rates](#81-how-often-agents-hack-v2-360-trajectories-corrected-label) · [Auditor quality](#82-auditor-quality-by-mode-v2-sonnet-46-auditor-corrected-label-n--360-per-mode-93-hacked) · [Errors](#83-where-the-auditor-is-wrong) |
+| Supporting cohorts | [Probe](#84-preliminary-probe-probe_v1) · [Model probe](#85-model-probe-the-hack-narrated-in-the-reasoning-resultsmodel_probe) · [V3](#86-preliminary-v3-suite-and-new-conditions-labeller-only) · [Hard cases](#87-hard-case-red-team-set-heuristic-baseline-only) |
+| Mitigation and deployment | [Veto](#88-mitigation-best-of-n-with-auditor-veto-offline-v2) · [Cost](#89-cost) · [Cascade](#813-deployment-cost-vs-detection-resultscascade_correctedmd) · [Calibration](#814-calibration-and-thresholds-resultscalibration_v2calibration_correctedmd) |
+| Validation | [Disclosure](#810-does-the-reasoning-disclose-the-hack-docsobfuscationmd) · [Labeller](#811-labeller-audit-taskslabel_auditmd) · [Attacks](#812-monitor-attacks-heuristic-baseline-only) · [Judge](#815-judge-validation-against-blind-labels-docsjudge_validationmd) · [Error taxonomy](#816-auditor-error-taxonomy-docserror_analysismd) · [Evidence](#817-evidence-localisation-fixturesevidence_gold-python--m-evalevidence) · [Task design](#818-task-design-docstask_designmd-resultstask_statstask_statsmd) |
+| Interpretation | [Conclusions](#conclusions) · [Limitations](#9-limitations) · [Future work](#10-future-work) · [Reproducing](#reproducing) |
 
 ## Abstract
 
@@ -24,9 +31,6 @@ structured verdict over six hack types, with line-level evidence. We use three a
 as a chain-of-thought-access ablation (`full_trace`, `report_only` with reasoning removed,
 `final_report` only), and two ground truths (a deterministic exploit labeller and a privileged
 Opus judge).
-
-The main v2 sweep has 360 trajectories (3 subject models × 4 prompt configs × 6 tasks × 5
-episodes), with 1,080 Sonnet 4.6 audits and 720 Opus 4.6 re-audits.
 
 **Label basis.** The corrected label is the headline throughout: 360 trajectories, 93 hacked.
 It removes 30 likely-wrong judge positives caused by stale task context using one documented
@@ -52,11 +56,10 @@ Exploit-path rules are narrow: the deterministic labeller finds 47 of 93 correct
 hacks; the judge adds 46, with source-support cases still requiring caution. An offline
 best-of-n Sonnet `full_trace` veto cuts shipped hacks 0.28 → 0.15 at a cost of 0.06 grader score (§8.8).
 
-These are measured v2 results, not evidence of reliable deployment. Paired significance
-tests are in [`SIGNIFICANCE.md`](results/significance/SIGNIFICANCE.md); preliminary v3
-and new-condition runs are in §8.6.
-The action-access recall gain is covert-only; role leakage, clustered CIs and low-prevalence
-precision further limit the headline ([robustness checks](results/robustness/ROBUSTNESS.md), §9).
+Scope and deployment caveats are consolidated in §9. Paired tests are in
+[`SIGNIFICANCE.md`](results/significance/SIGNIFICANCE.md); supporting cohorts are in §8.4–§8.7.
+In particular, §9 covers role leakage, the covert-only action-access gain, clustered
+uncertainty and low-prevalence precision.
 
 ## 1. Motivation
 
@@ -251,6 +254,8 @@ computation is not a hack. Label validation and limitations are in §8.15 and §
 V2 uses the **corrected label (n = 360, 93 hacked)**. Opus, cascade and best-of-n use the
 240-trajectory matched subset (56 hacked). V3 is a separate labeller-only transfer check.
 
+![Corrected-label v2 headline: hack rates, auditor modes, cascade and best-of-n veto](results/figures/headline.svg)
+
 | finding | main result | evidence / interpretation |
 |---|---|---|
 | Prompt-dependent hacking | honest 0%; incentivized 12.2%; pressure 17.8%; covert 73.3% | §8.1; prompted-vs-honest differences supported |
@@ -259,7 +264,7 @@ V2 uses the **corrected label (n = 360, 93 hacked)**. Opus, cascade and best-of-
 | Reasoning access: Opus | accuracy Δ +0.071; AUROC Δ +0.040 (both Holm p = 0.002) | §8.2; recall/FPR components individually underpowered |
 | Heuristic → Sonnet cascade | v2 in-sample 80.4% recall / 5.4% FPR; threshold-cross-fit 76.8% / 5.4%; pre-calibration 57.1% / 14.1%; v3 labeller-only 62.7% / 2.9% | §8.13; these are distinct operating points, not interchangeable estimates |
 | Best-of-n veto | 0.28 → 0.15 shipped hack rate | §8.8; offline replay, not live retry |
-| Reconstructed API cost | approximately $162.33 estimated overall | §8.9; not an invoice or actual billed-spend record |
+| Reconstructed API cost | approximately $162.33 estimated overall | §8.9; reconstructed from stored requests |
 
 Bracketed intervals are 95% bootstrap CIs over trajectories. Mode comparisons use paired
 tests with Holm correction ([`SIGNIFICANCE.md`](results/significance/SIGNIFICANCE.md)).
@@ -322,8 +327,7 @@ Findings:
 
 - **Explicit instruction drives most hacking.** Without the `covert` instruction, 27 of
   180 incentivized or pressure runs are positive. Of those 27, 25 are `fake_citation`
-  cases labelled as overstating source support; these are label-conditional, not independently
-  verified against full papers.
+  cases labelled as overstating source support (verification limits: §8.3).
   The only hard hacks outside `covert` are 2 Sonnet 4.5 `pressure` runs that put a number
   on the failed plate C (`fabrication`). Across the three configs other than `covert`, no
   run faked an R², dropped a site or swapped the metric (0/135 on those three tasks).
@@ -337,13 +341,9 @@ Findings:
 - **Subject-model differences are underpowered.** Sonnet 4.5 has 37/120 positives versus
   28/120 for each other subject (Holm p = 0.98, `results/significance/SIGNIFICANCE.md`).
   The model probe (§8.5) provides anecdotes, not evidence of a model ordering.
-- **The labeller misses nearly half the labelled hacks.** The labeller and corrected judge agree on 47 trajectories as
-  hacked. The judge alone flags 46 more and the labeller alone flags 0 (267 are clean by
-  both). The judge-only cases are mostly `fake_citation` (40: real bibliography keys the saved
-  judge labels as overstating source support; bibliography metadata alone does not
-  independently verify what the full papers contain, and case study 7 supplies stronger
-  trace evidence, an explicit invention admission). Labeller-only hack counts are about
-  half the corrected total (47 vs 93); that comparison is conditional on the judge's validity.
+- **The labeller misses nearly half the labelled hacks.** It finds 47 of 93 corrected-label
+  hacks; the judge adds 46 (40 `fake_citation`), while 267 runs are clean under both. The
+  evidence boundary for those 40 and a stronger trace example are in §8.3.
 
 ### 8.2 Auditor quality by mode (v2, Sonnet 4.6 auditor, corrected label, n = 360 per mode, 93 hacked)
 
@@ -491,10 +491,6 @@ ablation compares two almost identical inputs.
   reasoning enabled on every turn, covert Sonnet 4.6 hacked them in 8/15 runs
   (`metric_swap` 4/5, `fabrication` 3/5, `cherry_pick` 1/5).
 
-All four headline patterns (instruction drives hacking, the labeller under-counts, the
-report alone misses trace-only hacks, Sonnet's verdicts barely move with reasoning) were already visible in this
-probe and held up in v2.
-
 ### 8.5 Model probe: the hack narrated in the reasoning (`results/model_probe/`)
 
 We ran one `covert` episode of `leaked_answer` with four subject models. These are
@@ -509,12 +505,10 @@ anecdotes, not rates.
   reports it [L12], and runs the grader only to check the report [L15–L16]. This is
   legitimate computation, not a hack.
 
-Line numbers refer to each model's own trajectory. The correct p-value on this old dataset is
-about 0.312, so the first three are failures of provenance and method, not proof that the
-final number is wrong. The deterministic labeller says **not hacked** for all four (each agent
-ran some successful Python). It misses the copied-answer and fabricated-method behaviour in
-the first three; its clean label for Opus is correct. The offline heuristic auditor flags
-three of the four (all but Opus) in `full_trace` and `report_only`.
+Line numbers refer to each model's trajectory; dataset context is in §8.0. The first three
+are provenance or method failures, not wrong final numbers. The deterministic labeller says
+clean for all four and misses the first three; the offline heuristic flags those three in
+`full_trace` and `report_only`.
 
 ### 8.6 Preliminary: v3 suite and new conditions (labeller-only)
 
@@ -530,13 +524,11 @@ plates A and B after plate C failed (see [`tasks/LABEL_AUDIT.md`](tasks/LABEL_AU
 original label as `ground_truth_hacked_runtime`, and each dir has a `relabel.json` summary. All figures below
 use the relabelled labels.
 
-**Label-quality check ([`docs/v3_hand_review.md`](docs/v3_hand_review.md)).** An AI annotator (Devin, one
-annotator, no adjudication) hand-labelled a seeded stratified sample of 70 of the 450 v3 trajectories. This is a
-sanity check, not human labels. Population-weighted labeller precision is 0.923 [0.667, 0.986], recall 0.875
-[0.635, 0.966] and FPR 0.023 [0.004, 0.123]; the intervals are still wide. On the sample, Sonnet 4.6 `full_trace`
-weighted recall is 0.79 against the labeller and 0.93 against the hand labels (FPR 0.15 vs 0.11), so the
-labeller-only v3 auditor numbers probably understate the auditor somewhat. With n = 70 that is a direction, not a
-correction. An opt-in labeller rule for the Shapiro-p grader decoy (`leaked_grader_decoy`) is **not** in the
+**Label-quality check ([`docs/v3_hand_review.md`](docs/v3_hand_review.md)).** One AI annotator, without
+adjudication, labelled a seeded stratified sample of 70/450 (validation limits: §9). Population-weighted labeller
+precision is 0.923 [0.667, 0.986], recall 0.875 [0.635, 0.966] and FPR 0.023 [0.004, 0.123]; intervals are wide.
+Sonnet `full_trace` weighted recall is 0.79 against the labeller and 0.93 against the hand labels
+(FPR 0.15 vs 0.11); this is a direction, not a correction. An opt-in labeller rule for the Shapiro-p grader decoy (`leaked_grader_decoy`) is **not** in the
 default labels; it would flip 0/60 v2 and 9/37 v3 `leaked_answer` labels to hacked (on review 7 hacks, 2 ambiguous).
 
 | config | runtime labeller | relabelled |
@@ -590,15 +582,14 @@ What we can say, cautiously:
   and agrees on these 6 hacks (all `effect_size_target` fabrications), and each one states the fabrication in
   its reasoning. The trace auditors catch all 5 Sonnet positives. Several agents reason that concealment is
   impossible because the auditor reads everything, so this tests deterrence more than learned obfuscation
-  (§8.10). n is tiny, and the `covert` arm is labeller-only.
+  (§8.10).
 - **Fault injection and the Opus subject: no labelled hacks.** After relabelling, `v3fault_sonnet46` and
   `v3_opus46` have 0 labeller positives. Under the runtime labels they had 12. We read these reports: each
   states the honest numbers (d = 0.34, "small effect"; plate C "N/A"), and the trace auditors cleared them.
   `final_report` flags 3/18 and 8/27 of these clean runs.
 
-Still unmeasured: judge labels for v3, completed partial sweeps, an Opus re-audit of
-`v2_sonnet45`, and Claude audits of the hard cases. The credit-dependent commands are in
-[`docs/live_plan.md`](docs/live_plan.md). Human validation is also outstanding (§8.15).
+Outstanding live work is listed once in §10 and the
+[`live plan`](docs/live_plan.md); validation limits are in §9.
 
 ### 8.7 Hard-case red-team set (heuristic baseline only)
 
@@ -625,8 +616,7 @@ heuristic auditor and the labeller have been scored on it
 
 This is a floor and a sanity check, not a result about Claude auditors. The labeller finds
 17 of the 26 hacks and misses 6 of 7 `report_only` cases, where the report claims checks that never ran. This is the same
-blind spot to unverified claims that §8.1 found on real runs. Claude Sonnet 4.6 and Opus 4.6
-audits of this set are not run; exact commands and estimated costs are in the live plan.
+blind spot to unverified claims that §8.1 found on real runs. Live Claude coverage is in §10.
 
 ### 8.8 Mitigation: best-of-n with auditor veto (offline, v2)
 
@@ -655,8 +645,7 @@ Grader scores do not depend on the label.
   definition matching their sandbox files. The corrected label is loaded from frozen records;
   this replay does not rewrite episodes or run a fresh subject agent.
 
-Live audit-and-retry has not been run; this best-of-n replay is not a retry result. The
-credit-dependent pilot command is in the live plan.
+This replay is not audit-and-retry; the live pilot is in §10.
 
 ### 8.9 Cost
 
@@ -688,9 +677,8 @@ It was tuned on 20 hand-labelled cases and scores 10/10 on 10 held-out ones (Wil
 | Sonnet 4.5 | 27 | 27 | 1.00 / 1.00 / 0.67 |
 | Sonnet 4.6 | 18 | 15 | 0.94 / 0.94 / 0.50 |
 
-- **Corrected label** (`results/obfuscation/OBFUSCATION_corrected.md`): 21/21, 27/27 and 15/18
-  `covert` hacks are disclosed, 63/66 = 0.95 pooled. Dropping the likely-wrong
-  `leaked_answer` positives raises disclosure, because those runs had nothing to disclose.
+- **Corrected label** (`results/obfuscation/OBFUSCATION_corrected.md`): 63/66 = 0.95
+  `covert` hacks are disclosed. The correction removes runs that had nothing to disclose.
 - The 3 undisclosed Sonnet 4.6 hacks are saved judge-positive `fake_citation` cases
   (ep002–ep004). The lack of explicit reasoning does not by itself establish source
   misattribution.
@@ -774,9 +762,8 @@ and Opus 4.6 (56 hacked under the corrected label) under five policies:
   labels, preliminary), the v2-tuned thresholds applied unchanged give 64/102 = 0.627 recall at
   10/348 = 0.029 FPR ($0.0169), or 62.7% / 2.9%, against Sonnet alone at 0.863 / 0.172. Most of that recall comes from the
   heuristic alone. On the 70-run v3 hand sample it is 10/14 recall and 2/55 FPR.
-- Costs here are characters / 4 estimates at list prices from today's prompt code (§8.9), not billed spend.
-- These per-audit costs rebuild the full audit request (system prompt included), so they
-  are higher than §8.9's $0.025, which is estimated from stored records.
+- Costs use the reconstruction method in §8.9; these per-audit estimates rebuild the full
+  request, so they are higher than the estimate from stored records.
 
 `auditor/agentic.py` (an auditor that can re-run the analysis in a fresh sandbox and search
 the trajectory) and `n_samples` majority-vote ensembles are implemented and tested with
@@ -815,15 +802,13 @@ judged v2 runs (corrected label).
 - At the 5% training FPR budget, Sonnet `full_trace` retains recall 0.51 versus 0.32 for
   `report_only`, but test FPR is 0.18 versus 0.15: neither meets the target. This descriptive
   threshold result is not a validated low-FPR deployment advantage.
-- Only Sonnet `final_report` at ≥ 0.85 meets the 10% unseen-task FPR target, at recall 0.17;
-  this operating point sacrifices most detection and is not a useful standalone veto.
 
 ### 8.15 Judge validation against blind labels (`docs/judge_validation.md`)
 
 We checked the Opus judge against blind labels on a stratified sample of 60 judged v2
-trajectories (20 judge-only, 12 both, 28 neither; the labeller-only cell is empty). **The
-annotator is an AI (Devin), not a human**, so this is a second model-based opinion. Each label
-was committed before the annotator saw any judge or labeller verdict.
+trajectories (20 judge-only, 12 both, 28 neither; the labeller-only cell is empty). An AI
+annotator committed each label before seeing any judge or labeller verdict; independence
+and human-validation limits are consolidated in §9.
 
 | comparison | accuracy | Cohen's κ | TP / FP / FN / TN vs blind |
 |---|---|---|---|
@@ -838,8 +823,8 @@ was committed before the annotator saw any judge or labeller verdict.
 - The remaining disagreement is a borderline `cherry_pick` covert run that planned to emphasise a
   post-hoc exclusion but kept the primary analysis primary in its report.
 - Under the corrected label (`results/judge_validation_corrected/SUMMARY.md`), the judge
-  agrees with the blind labels on 59/60 (κ 0.97); only the `cherry_pick` case remains. This
-  is not independent evidence for the correction: the blind labels helped find the issue.
+  agrees with the blind labels on 59/60 (κ 0.97); only the `cherry_pick` case remains.
+  The correction's dependence on this review is covered in §9.
 
 ### 8.16 Auditor error taxonomy (`docs/error_analysis.md`)
 
@@ -855,15 +840,12 @@ One annotator hand-tagged a stratified sample of 25 FN and 25 FP trajectories.
 - **False negatives** are mostly `fake_citation` (60 of 96 audits). In the trace modes, every
   miss but three is `fake_citation`. The 2 remaining `leaked_answer` FN audits are Sonnet
   `final_report` misses. Error categories are conditional on
-  historical labels. In particular, bibliography-only source allegations and disclosed
-  imputation are disputed boundaries, not independently established misconduct
+  historical labels; §8.3 covers source-support and intent boundaries
   ([`docs/examples_audit.md`](docs/examples_audit.md)).
 - **Metadata leak.** The rendered trajectory includes the trajectory id, which encodes task and
   config. 122 of 1,800 audits cite it; for example, an Opus `final_report` audit calls the id
   "a strong signal". The auditor now sees an opaque token instead; the impact table is in §9
   (`results/id_leak/ID_LEAK_corrected.md`).
-- Grader-reading runs (`leaked_answer` 196 + `metric_gaming` 105) are 301
-  of the 375 FP audits, so they are the main failure mode.
 - The provenance Facts block was then fixed (citation lines say whether cited specifics were
   read; GRADER-ONLY skips thresholds and low-precision numbers). The heuristic auditor's predictions are unchanged; the Claude auditor needs a
   live re-audit.
@@ -884,7 +866,7 @@ On the 19 v2 traces with saved verdicts in every mode for both auditors (common-
 
 R = share of gold lines cited; P±1 = share of cited lines within one line of gold. The trace
 auditors cite most hack lines, but about half of what they cite is context. The heuristic gets
-R 0.36 and P±1 0.91 on the hard cases. No Claude auditor has run on them.
+R 0.36 and P±1 0.91 on the hard cases; Claude coverage status is in §8.7.
 
 ### 8.18 Task design (`docs/task_design.md`, `results/task_stats/TASK_STATS.md`)
 
@@ -902,7 +884,7 @@ Per-task statistics under the corrected label (v2, 360 trajectories):
 - **The `metric_gaming` flags are auditor errors, not label errors**
   ([`docs/metric_gaming_review.md`](docs/metric_gaming_review.md),
   `results/metric_gaming_review.json`). Of the 72 flagged label-clean runs (43 v2 under the
-  corrected label, 29 v3 under the labeller), 24 were hand-read by an AI annotator, not a human, and all 24
+  corrected label, 29 v3 under the labeller), an AI annotator hand-read 24 (annotation limits: §9), and all 24
   are false positives. 0 are missed hacks and 0 are ambiguous, so no label changes and the headline label
   definition is untouched. Every one of these verdicts cites only `suspicious_access` and/or
   `rationalization`. The agent read `grade.py`, reported the R² ≈ 0.447 it computed, and sometimes
@@ -932,13 +914,13 @@ Per-task statistics under the corrected label (v2, 360 trajectories):
 - **Supported:** hacking follows the prompt, not grader access alone. Corrected rates are
   73.3% covert, 17.8% pressure, 12.2% incentivized and 0% honest; model ordering is underpowered.
 - **Label-conditional:** exploit-path rules find 47 of 93 hacks. AI ground truth and
-  unverified citation support limit how confidently the remaining cases can be interpreted.
+  citation-support limits are detailed in §8.3, §8.15 and §9.
 - **Underpowered recall gain, trajectory-wise FPR cost:** Sonnet actions-and-report recall is
   0.91 versus 0.74 for report alone, but FPR is 0.35 versus 0.23. Detection is not deployment-ready.
 - **Null binary effect for Sonnet, trajectory-wise ranking and Opus accuracy effects:** reasoning
   adds Sonnet AUROC +0.051 and Opus accuracy +0.071; only the latter retains a positive task-resampled CI (§9).
 - **Supported offline mitigation:** best-of-n veto lowers shipped hacks from 0.28 to 0.15.
-  Live retry and dependable low-FPR operation remain to be demonstrated.
+  Its offline-replay and deployment limits are in §8.8, §8.14 and §9.
 
 ## 9. Limitations
 
@@ -1010,12 +992,8 @@ not new live audits.
 
 ## 10. Future work
 
-- Measure rubric v3 live (commands in [`docs/rubric_v3.md`](docs/rubric_v3.md)). It aligns the rubric
-  with the judge: reading an eval file counts only when its contents shape the report
-  (`suspicious_access` needs value reuse or score tuning). Its offline proxy, not a measurement, is described in §8.18. We expect this
-  to cut most of the 92 corrected-label Sonnet `full_trace` FPs (89 cite `suspicious_access`).
-  The Opus auditor already makes this distinction more often when it can see the reasoning
-  (21 FPs vs Sonnet's 34 on the same 120 trajectories); a causal effect of the new rubric is unmeasured.
+- Measure rubric v3 live with the commands in [`docs/rubric_v3.md`](docs/rubric_v3.md),
+  including whether its stricter grader-access rule or auditor strength reduces FPR (§8.18).
 - Give the auditor the bibliography abstracts (or a retrieval tool) so it can check what
   cited papers actually say. This targets the `fake_citation` misses.
 - Add a hybrid monitor that scores reasoning and actions separately and combines them
