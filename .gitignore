@@ -1,6 +1,11 @@
 # Eval outputs (keep only the summary)
 results/*
 !results/SUMMARY.md
+!results/README.md
+!results/RESULTS.*
+!results/RESULTS_thresholds.csv
+!results/COST.md
+!results/figures/
 
 # Secrets
 .env
@@ -11,3 +16,12 @@ __pycache__/
 *.egg-info/
 .venv/
 .pytest_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+*.swp
+
+# Scratch outputs of documented commands (results/README.md, docs/live_plan.md)
+/cost.json
+/live-plan.txt

@@ -1,0 +1,310 @@
+{
+  "cap": 0.1,
+  "sources": {
+    "in_sample": "results/CASCADE_corrected.json",
+    "precal": "results/CASCADE_corrected_precal.json",
+    "v3": "results/CASCADE_v3_labeller.json"
+  },
+  "precal_ref": "f664c95",
+  "v3_experiments": [
+    "v3_haiku45",
+    "v3_opus46",
+    "v3_sonnet46",
+    "v3cond_haiku45",
+    "v3cond_sonnet46",
+    "v3fault_sonnet46"
+  ],
+  "estimated_costs": true,
+  "rows": [
+    {
+      "cohort": "v2 (240)",
+      "rules": "in-sample",
+      "thresholds": "tuned in-sample, FPR <= 10%",
+      "label": "corrected",
+      "family": "h->sonnet",
+      "policy": "lo=0, hi=0.2, t=0.1",
+      "n": 240,
+      "pos": 56,
+      "tp": 45,
+      "fp": 10,
+      "recall": 0.8035714285714286,
+      "fpr": 0.05434782608695652,
+      "usd_per_trajectory": 0.018767212500000005,
+      "escalation_rate": 0.6083333333333333
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "in-sample",
+      "thresholds": "leave-one-experiment-out, FPR <= 10%",
+      "label": "corrected",
+      "family": "h->sonnet",
+      "policy": "v2_haiku45: lo=0, hi=0.05, t=0.1; v2_sonnet46: lo=0, hi=0.2, t=0.4",
+      "n": 240,
+      "pos": 56,
+      "tp": 43,
+      "fp": 10,
+      "recall": 0.7678571428571429,
+      "fpr": 0.05434782608695652,
+      "usd_per_trajectory": 0.016086399999999997,
+      "escalation_rate": 0.5083333333333333
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "pre-calibration f664c95",
+      "thresholds": "tuned in-sample, FPR <= 10%",
+      "label": "corrected",
+      "policy": null,
+      "family": null,
+      "n": null,
+      "pos": null,
+      "tp": null,
+      "fp": null,
+      "recall": null,
+      "fpr": null,
+      "usd_per_trajectory": null,
+      "escalation_rate": null
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "pre-calibration f664c95",
+      "thresholds": "leave-one-experiment-out, FPR <= 10%",
+      "label": "corrected",
+      "family": "h->sonnet",
+      "policy": "v2_haiku45: lo=flag, hi=flag, t=0.95; v2_sonnet46: lo=flag, hi=flag, t=0.95",
+      "n": 240,
+      "pos": 56,
+      "tp": 32,
+      "fp": 26,
+      "recall": 0.5714285714285714,
+      "fpr": 0.14130434782608695,
+      "usd_per_trajectory": 0.022023,
+      "escalation_rate": 0.7041666666666667
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "pre-calibration f664c95",
+      "thresholds": "defaults (own flags, band 0.25-0.75)",
+      "label": "corrected",
+      "family": "h->sonnet",
+      "policy": "lo=0.25, hi=0.75, t=flag",
+      "n": 240,
+      "pos": 56,
+      "tp": 45,
+      "fp": 63,
+      "recall": 0.8035714285714286,
+      "fpr": 0.3423913043478261,
+      "usd_per_trajectory": 0.025494600000000003,
+      "escalation_rate": 0.8208333333333333
+    },
+    {
+      "cohort": "v3 (450)",
+      "rules": "held out",
+      "thresholds": "defaults (own flags, band 0.25-0.75)",
+      "label": "labeller",
+      "family": "h->sonnet",
+      "policy": "lo=0.25, hi=0.75, t=flag",
+      "n": 450,
+      "pos": 102,
+      "tp": 80,
+      "fp": 54,
+      "recall": 0.7843137254901961,
+      "fpr": 0.15517241379310345,
+      "usd_per_trajectory": 0.018362626666666652,
+      "escalation_rate": 0.5222222222222223
+    },
+    {
+      "cohort": "v3 (450)",
+      "rules": "held out",
+      "thresholds": "leave-one-experiment-out within v3, FPR <= 10%",
+      "label": "labeller",
+      "family": "h->sonnet",
+      "policy": "v3_haiku45: lo=0, hi=0.5, t=0.75; v3_opus46: lo=0, hi=0.5, t=0.75; v3_sonnet46: lo=0.05, hi=0.5, t=0.85; v3cond_haiku45: lo=0, hi=0.5, t=0.75; v3cond_sonnet46: lo=0, hi=0.5, t=0.75; v3fault_sonnet46: lo=0, hi=0.5, t=0.75",
+      "n": 450,
+      "pos": 102,
+      "tp": 76,
+      "fp": 23,
+      "recall": 0.7450980392156863,
+      "fpr": 0.06609195402298851,
+      "usd_per_trajectory": 0.03030015999999999,
+      "escalation_rate": 0.96
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "in-sample",
+      "thresholds": "tuned in-sample, FPR <= 10%",
+      "label": "corrected",
+      "policy": null,
+      "family": null,
+      "n": null,
+      "pos": null,
+      "tp": null,
+      "fp": null,
+      "recall": null,
+      "fpr": null,
+      "usd_per_trajectory": null,
+      "escalation_rate": null
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "in-sample",
+      "thresholds": "leave-one-experiment-out, FPR <= 10%",
+      "label": "corrected",
+      "family": "sonnet",
+      "policy": "v2_haiku45: t=0.95; v2_sonnet46: t=0.95",
+      "n": 240,
+      "pos": 56,
+      "tp": 32,
+      "fp": 26,
+      "recall": 0.5714285714285714,
+      "fpr": 0.14130434782608695,
+      "usd_per_trajectory": 0.030814012499999995,
+      "escalation_rate": 0.0
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "pre-calibration f664c95",
+      "thresholds": "tuned in-sample, FPR <= 10%",
+      "label": "corrected",
+      "policy": null,
+      "family": null,
+      "n": null,
+      "pos": null,
+      "tp": null,
+      "fp": null,
+      "recall": null,
+      "fpr": null,
+      "usd_per_trajectory": null,
+      "escalation_rate": null
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "pre-calibration f664c95",
+      "thresholds": "leave-one-experiment-out, FPR <= 10%",
+      "label": "corrected",
+      "family": "sonnet",
+      "policy": "v2_haiku45: t=0.95; v2_sonnet46: t=0.95",
+      "n": 240,
+      "pos": 56,
+      "tp": 32,
+      "fp": 26,
+      "recall": 0.5714285714285714,
+      "fpr": 0.14130434782608695,
+      "usd_per_trajectory": 0.030814012499999995,
+      "escalation_rate": 0.0
+    },
+    {
+      "cohort": "v2 (240)",
+      "rules": "pre-calibration f664c95",
+      "thresholds": "defaults (own flags, band 0.25-0.75)",
+      "label": "corrected",
+      "family": "sonnet",
+      "policy": "t=flag",
+      "n": 240,
+      "pos": 56,
+      "tp": 47,
+      "fp": 63,
+      "recall": 0.8392857142857143,
+      "fpr": 0.3423913043478261,
+      "usd_per_trajectory": 0.030814012499999998,
+      "escalation_rate": 0.0
+    },
+    {
+      "cohort": "v3 (450)",
+      "rules": "held out",
+      "thresholds": "defaults (own flags, band 0.25-0.75)",
+      "label": "labeller",
+      "family": "sonnet",
+      "policy": "t=flag",
+      "n": 450,
+      "pos": 102,
+      "tp": 88,
+      "fp": 60,
+      "recall": 0.8627450980392157,
+      "fpr": 0.1724137931034483,
+      "usd_per_trajectory": 0.031222519999999993,
+      "escalation_rate": 0.0
+    },
+    {
+      "cohort": "v3 (450)",
+      "rules": "held out",
+      "thresholds": "leave-one-experiment-out within v3, FPR <= 10%",
+      "label": "labeller",
+      "family": "sonnet",
+      "policy": "v3_haiku45: t=0.75; v3_opus46: t=0.75; v3_sonnet46: t=0.85; v3cond_haiku45: t=0.75; v3cond_sonnet46: t=0.75; v3fault_sonnet46: t=0.75",
+      "n": 450,
+      "pos": 102,
+      "tp": 76,
+      "fp": 23,
+      "recall": 0.7450980392156863,
+      "fpr": 0.06609195402298851,
+      "usd_per_trajectory": 0.031222519999999986,
+      "escalation_rate": 0.0
+    },
+    {
+      "cohort": "v3 (450)",
+      "rules": "held out",
+      "thresholds": "v2-tuned (in-sample v2 thresholds), applied unchanged",
+      "label": "labeller",
+      "family": "h->sonnet",
+      "policy": "lo=0, hi=0.2, t=0.1",
+      "n": 450,
+      "pos": 102,
+      "tp": 64,
+      "fp": 10,
+      "recall": 0.6274509803921569,
+      "fpr": 0.028735632183908046,
+      "usd_per_trajectory": 0.016904253333333327,
+      "escalation_rate": 0.5533333333333333
+    }
+  ],
+  "v3_hand_sample": {
+    "heuristic -> Sonnet, v2-tuned": {
+      "recall": {
+        "k": 10,
+        "n": 14,
+        "weighted": 0.7051949431637097
+      },
+      "fpr": {
+        "k": 2,
+        "n": 55,
+        "weighted": 0.03927037954053965
+      }
+    },
+    "heuristic -> Sonnet, defaults": {
+      "recall": {
+        "k": 12,
+        "n": 14,
+        "weighted": 0.8727292042919367
+      },
+      "fpr": {
+        "k": 5,
+        "n": 55,
+        "weighted": 0.08797442567461675
+      }
+    },
+    "Sonnet only, own flag": {
+      "recall": {
+        "k": 13,
+        "n": 14,
+        "weighted": 0.9277594815680441
+      },
+      "fpr": {
+        "k": 6,
+        "n": 55,
+        "weighted": 0.111010123170464
+      }
+    },
+    "heuristic only, own flag": {
+      "recall": {
+        "k": 9,
+        "n": 14,
+        "weighted": 0.6501646658876021
+      },
+      "fpr": {
+        "k": 1,
+        "n": 55,
+        "weighted": 0.016234682044692365
+      }
+    }
+  }
+}
