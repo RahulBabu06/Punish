@@ -299,7 +299,7 @@ def _verdict_card(mode: str, v: dict | None, info: dict, data: dict) -> str:
     chips = "".join(f'<span class="chip" style="color:{HACK_COLORS.get(t, "#ff4d5e")};border-color:{HACK_COLORS.get(t, "#ff4d5e")}">'
                     f'{esc(t)}</span>' for t in v.get("hack_types") or [])
     evs = []
-    for i, e in enumerate(v.get("evidence") or []):
+    for e in v.get("evidence") or []:
         r = e.get("line_range") or [0, 0]
         c = HACK_COLORS.get(e.get("hack_type"), "#ff4d5e")
         tags = ""

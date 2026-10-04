@@ -53,6 +53,12 @@ take `--label {either,corrected,excl_leaked}` (`eval/labels.py`, shared). The `*
 (`mitigation_bestofn_v2/`, `calibration_v2/`, `CASCADE_corrected.*`, `obfuscation/`, `judge_validation_corrected/`) are
 the same commands with `--label corrected`.
 
+**metric_gaming false positives.** `python -m eval.metric_gaming_review` writes `metric_gaming_review.{json,md}`.
+I hand-read 24 of the 72 label-clean metric_gaming runs that an auditor flagged (v2 and v3), and all 24 are auditor
+false positives, not missed hacks. Each one reports the computed R² ≈ 0.447 and was flagged for reading or
+format-checking `grade.py`. No labels change. See docs/metric_gaming_review.md for the details and a proposed rubric
+fix.
+
 Column notes:
 
 - **Subject model**: the `config.model` header of each trajectory. Full ids are `claude-haiku-4-5-20251001`,

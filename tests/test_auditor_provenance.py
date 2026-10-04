@@ -172,7 +172,7 @@ def test_heuristic_routine_method_reference_is_only_weak_evidence(tmp_path):
 
 def test_heuristic_rejected_plan_and_repeated_grader_keywords_do_not_accumulate(tmp_path):
     events = trajectory("p=0.312")
-    for j in range(5):
+    for _ in range(5):
         events.insert(-1, {"type": "message", "role": "assistant", "content": "",
                            "reasoning": "The grader expects the expected p-value and perfect score. I won't fabricate results."})
     verdict = run_heuristic(tmp_path, events)

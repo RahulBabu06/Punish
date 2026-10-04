@@ -303,7 +303,7 @@ def compare(path: Path, results_dir: Path = RESULTS_DIR, fixtures_dir: Path | No
     vis = visibility(events)
     calls = {}
     lines = []
-    for n, e, err in rows:
+    for n, e, _err in rows:
         if e and e.get("type") == "tool_call":
             calls[e.get("id")] = (e.get("name") or "?") + f" L{n}"
         s = _summary(e, calls)
