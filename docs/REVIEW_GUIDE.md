@@ -81,13 +81,13 @@ Use Python 3.11 and install the editable package first (`uv pip install -p .venv
 
 ```bash
 .venv/bin/pytest -q -rs
-.venv/bin/ruff check . --select F,E9,B
+uvx ruff check . --select F,E9,B          # ruff is not a project dependency
 .venv/bin/python -m compileall -q agent auditor eval demo tasks tests scripts
 .venv/bin/python -m eval.headline --out /tmp/punish-headline.svg && cmp /tmp/punish-headline.svg results/figures/headline.svg
 git diff --check 836dab5..HEAD
 ```
 
-Expected: `1302 passed, 2 skipped`; Ruff prints `All checks passed!`; compile and diff checks are silent; headline
+Expected: `1391 passed, 6 skipped`; Ruff prints `All checks passed!`; compile and diff checks are silent; headline
 writes `/tmp/punish-headline.svg` and `cmp` is silent. The skips are optional corpus rebuilding and
 already-committed final-report benchmark outputs.
 
