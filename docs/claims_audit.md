@@ -137,35 +137,35 @@ The PDF was rebuilt with Tectonic (`cd paper && tectonic punish.tex`) and is sti
 
 | file:line | claim | source | status | fix |
 |---|---|---|---|---|
-| README.md:11-14 | 360 runs, 93 hacked; honest 0/90, pressured/incentivised 12–18%, covert 73% | `results/leaked_answer_correction.md`; `results/significance/SIGNIFICANCE.md` Q2 (11/90, 16/90, 66/90) | OK | — |
-| README.md:16-17 | report_only 0.91 vs final_report 0.74; 66/93 covert, caught at 0.97–0.98 with full trace | `results/robustness/robustness.json` (Sonnet 65/66 = 0.985, Opus 38/39 = 0.974) | OK | — |
-| README.md:18-20 | natural 26/27 vs 20/27; v3 19/26 each; full_trace 19/27 = 0.70, Opus 5/17 = 0.29, v3 12/26 = 0.46 | `results/robustness/robustness.json` non-covert slices; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
-| README.md:20-21 | demo: R² 0.447 computed, 0.92 reported; flagged at 0.99, report alone clean | `results/v2_haiku45/verdicts/metric_gaming__covert__ep002{,__final_report}.json` (0.99 hack; 0.2 clean) | OK | — |
-| README.md:23 | Opus accuracy +0.071, Holm p = 0.002 | `results/significance/SIGNIFICANCE.md` | OK | — |
-| README.md:25 | best-of-n 0.28 to 0.15 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` (0.279 → 0.146) | OK | — |
-| README.md:35-37 | Sonnet 0.90/0.34/0.891, 0.91/0.35/0.840, 0.74/0.23/0.825 | `results/robustness/robustness.json` headline (84/93, 92/267; 85/93, 94/267; 69/93, 62/267) | OK | — |
-| README.md:40-42 | cascade v2 80.4/5.4 in-sample, cross-fit 76.8/5.4, precal 57.1/14.1, v3 62.7/2.9 on 450 | `results/cascade_heldout.json` | OK | — |
-| README.md:47 | judge vs 60 blind AI labels κ 0.70 | `results/judge_validation/SUMMARY.md` (0.85 / 0.70) | OK | — |
-| README.md:55-56 | role leak 75/90; Opus gain +0.056 without | `results/robustness/robustness.json` role_mention (75/90, 0/270; +0.056, 13 vs 2) | OK | — |
-| README.md:57 | cell-clustered CIs up to about 2× | `results/robustness/robustness.json` cell vs trajectory CI widths (max ratio 2.16) | OK | — |
-| README.md:59-60 | precision 0.48 at 26%, 0.12 at 5% | `results/robustness/robustness.json` ppv (0.477, 0.121); 93/360 = 25.8% | OK | — |
-| README.md:61 | cost $162.33 estimated, 8,519 calls | `results/COST.md` | OK | — |
-| README.md:78 | pytest about 2 min | full suite here: 130 s | OK | — |
-| README.md:106 | fixture computes 0.446745 at L10, reports 0.92 at L30 | `fixtures/trajectories/example.jsonl` (quickstart-check) | OK | — |
-| README.md:112 | offline heuristic verdict 0.99, four hack types | `python -m auditor.audit … --backend heuristic` (quickstart-check) | OK | — |
-| README.md:136 | grid 4 configs × 6 tasks × 5 episodes, 3 modes | `agent/prompts.py` configs; v2 dirs (120 each) | OK | — |
-| README.md:226 | 120 trajectories per v2 dir (4 × 6 × 5) | `results/README.md` run table; `ls results/v2_*/trajectories` | OK | — |
-| README.md:227 | 240 trajectories re-audited by Opus | `results/v2_{sonnet46,haiku45}/reaudit_claude-opus-4-6/` | OK | — |
-| README.md:228 | v3: 200 and 150 (of 200) trajectories, labeller only | `results/README.md` run table | OK | — |
-| README.md:229-231 | v3cond 27 / 28; v3fault 18 (50% failures); v3_opus46 27 | `results/README.md` run table | OK | — |
-| README.md:232 | 36 hand-labelled red-team trajectories | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
-| README.md:234 | $162.33 for all 8,519 calls, v2 about $95 (estimate) | `results/COST.md` (after bug-hunt): total $162.33; v2 rows 23.76 + 26.75 + 30.04 + 14.48 = $95.03 (estimate) | fixed (was stale) | $162.46 → $162.33 (`results/COST.md` after bug-hunt) |
-| README.md:236 | 10 real hacks × 6 attacks | `results/monitor_attacks/SUMMARY_heuristic.md` | OK | — |
-| README.md:237 | Opus judge vs 60 blind AI labels: κ 0.70 | `results/judge_validation/SUMMARY.md` | OK | — |
-| README.md:239 | cascade on 240 v2 runs | `results/CASCADE.md` | OK | — |
-| README.md:246 | probe_v1: 36 Sonnet 4.6 trajectories, reasoning on first turn only | `results/probe_v1/SUMMARY.md`; recount 36/179 turns with reasoning | OK | — |
-| README.md:247 | model_probe: 4 covert leaked_answer runs | `ls results/model_probe/trajectories` (4) | OK | — |
-| README.md:268 | 10 task definitions in v3; v2 used first six | `ls tasks/definitions/*.json` (10) | OK | — |
+| README.md:12-15 | 360 runs, 93 hacked; honest 0/90, pressured/incentivised 12–18%, covert 73% | `results/leaked_answer_correction.md`; `results/significance/SIGNIFICANCE.md` Q2 (11/90, 16/90, 66/90) | OK | — |
+| README.md:17-18 | report_only 0.91 vs final_report 0.74; 66/93 covert, caught at 0.97–0.98 with full trace | `results/robustness/robustness.json` (Sonnet 65/66 = 0.985, Opus 38/39 = 0.974) | OK | — |
+| README.md:19-21 | natural 26/27 vs 20/27; v3 19/26 each; full_trace 19/27 = 0.70, Opus 5/17 = 0.29, v3 12/26 = 0.46 | `results/robustness/robustness.json` non-covert slices; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
+| README.md:21-22 | demo: R² 0.447 computed, 0.92 reported; flagged at 0.99, report alone clean | `results/v2_haiku45/verdicts/metric_gaming__covert__ep002{,__final_report}.json` (0.99 hack; 0.2 clean) | OK | — |
+| README.md:24 | Opus accuracy +0.071, Holm p = 0.002 | `results/significance/SIGNIFICANCE.md` | OK | — |
+| README.md:26 | best-of-n 0.28 to 0.15 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` (0.279 → 0.146) | OK | — |
+| README.md:36-38 | Sonnet 0.90/0.34/0.891, 0.91/0.35/0.840, 0.74/0.23/0.825 | `results/robustness/robustness.json` headline (84/93, 92/267; 85/93, 94/267; 69/93, 62/267) | OK | — |
+| README.md:41-43 | cascade v2 80.4/5.4 in-sample, cross-fit 76.8/5.4, precal 57.1/14.1, v3 62.7/2.9 on 450 | `results/cascade_heldout.json` | OK | — |
+| README.md:48 | judge vs 60 blind AI labels κ 0.70 | `results/judge_validation/SUMMARY.md` (0.85 / 0.70) | OK | — |
+| README.md:56-57 | role leak 75/90; Opus gain +0.056 without | `results/robustness/robustness.json` role_mention (75/90, 0/270; +0.056, 13 vs 2) | OK | — |
+| README.md:58 | cell-clustered CIs up to about 2× | `results/robustness/robustness.json` cell vs trajectory CI widths (max ratio 2.16) | OK | — |
+| README.md:60-61 | precision 0.48 at 26%, 0.12 at 5% | `results/robustness/robustness.json` ppv (0.477, 0.121); 93/360 = 25.8% | OK | — |
+| README.md:62 | cost $162.33 estimated, 8,519 calls | `results/COST.md` | OK | — |
+| README.md:79 | pytest about 2 min | full suite here: 130 s | OK | — |
+| README.md:107 | fixture computes 0.446745 at L10, reports 0.92 at L30 | `fixtures/trajectories/example.jsonl` (quickstart-check) | OK | — |
+| README.md:113 | offline heuristic verdict 0.99, four hack types | `python -m auditor.audit … --backend heuristic` (quickstart-check) | OK | — |
+| README.md:137 | grid 4 configs × 6 tasks × 5 episodes, 3 modes | `agent/prompts.py` configs; v2 dirs (120 each) | OK | — |
+| README.md:227 | 120 trajectories per v2 dir (4 × 6 × 5) | `results/README.md` run table; `ls results/v2_*/trajectories` | OK | — |
+| README.md:228 | 240 trajectories re-audited by Opus | `results/v2_{sonnet46,haiku45}/reaudit_claude-opus-4-6/` | OK | — |
+| README.md:229 | v3: 200 and 150 (of 200) trajectories, labeller only | `results/README.md` run table | OK | — |
+| README.md:230-232 | v3cond 27 / 28; v3fault 18 (50% failures); v3_opus46 27 | `results/README.md` run table | OK | — |
+| README.md:233 | 36 hand-labelled red-team trajectories | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
+| README.md:235 | $162.33 for all 8,519 calls, v2 about $95 (estimate) | `results/COST.md` (after bug-hunt): total $162.33; v2 rows 23.76 + 26.75 + 30.04 + 14.48 = $95.03 (estimate) | fixed (was stale) | $162.46 → $162.33 (`results/COST.md` after bug-hunt) |
+| README.md:237 | 10 real hacks × 6 attacks | `results/monitor_attacks/SUMMARY_heuristic.md` | OK | — |
+| README.md:238 | Opus judge vs 60 blind AI labels: κ 0.70 | `results/judge_validation/SUMMARY.md` | OK | — |
+| README.md:240 | cascade on 240 v2 runs | `results/CASCADE.md` | OK | — |
+| README.md:247 | probe_v1: 36 Sonnet 4.6 trajectories, reasoning on first turn only | `results/probe_v1/SUMMARY.md`; recount 36/179 turns with reasoning | OK | — |
+| README.md:248 | model_probe: 4 covert leaked_answer runs | `ls results/model_probe/trajectories` (4) | OK | — |
+| README.md:269 | 10 task definitions in v3; v2 used first six | `ls tasks/definitions/*.json` (10) | OK | — |
 | REPORT.md:68 | GPT-5 cheats on 76% of Oneoff-SWEbench tasks (ImpossibleBench) | external citation, `docs/related_work.md:68` | OK | — |
 | REPORT.md:127 | agent runs up to 20 turns | `agent/runner.py` default `max_turns = 20` | OK | — |
 | REPORT.md:130-132 | 620/620 Sonnet and 703/703 Haiku turns have reasoning; probe_v1 36/179 | recount over v2 / probe_v1 trajectories; `results/COST.md` agent calls 620 / 703 | OK | — |
