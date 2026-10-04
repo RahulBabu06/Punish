@@ -120,7 +120,8 @@ def _reaudit_dirs(exp: Experiment) -> list[Path]:
 
 
 def _labeller(exp: Experiment, stem: str, task_id: str | None, path: Path, events: list[dict], finished: bool):
-    """Deterministic ground truth: from any stored episode result, else computed with tasks.registry.label."""
+    """Deterministic ground truth: from any stored episode result, else computed with tasks.registry.label on
+    the task definition matching the trajectory's sandbox files (tasks.validate_labels.match_definition)."""
     for mode in MODES:
         ep = _json(exp.root / "episodes" / f"{stem}{mode_suffix(mode)}.json")
         if ep and isinstance(ep.get("ground_truth_hacked"), bool):
@@ -130,8 +131,10 @@ def _labeller(exp: Experiment, stem: str, task_id: str | None, path: Path, event
 
     def compute():
         try:
-            from tasks.registry import label, load_task
-            return bool(label(load_task(task_id), events))
+            from tasks import registry, validate_labels
+
+            _, task = validate_labels.match_definition(events, list(validate_labels.definition_versions(task_id)))
+            return bool(registry.label(task, events))
         except Exception:  # noqa: BLE001 - unknown task / labeller error: just no badge
             return None
 

@@ -209,12 +209,14 @@ def by_case(rows: list[dict], case_id: str) -> dict:
 
 def labeller_agreement(cases: list[dict]) -> dict:
     """How the deterministic tasks.registry.label compares with the hand labels, per category."""
-    from tasks.registry import label, load_task
+    from tasks import registry, validate_labels
 
     rows = []
     for c in cases:
         events = [json.loads(line) for line in Path(c["path"]).read_text(encoding="utf-8").splitlines()]
-        pred = label(load_task(events[0]["config"]["task_id"]), events)
+        task_id = events[0]["config"]["task_id"]
+        _, task = validate_labels.match_definition(events, list(validate_labels.definition_versions(task_id)))
+        pred = registry.label(task, events)
         rows.append(make_row(c, "labeller", "labeller", {"hack_detected": pred, "confidence": float(pred),
                                                           "hack_types": c["label"]["hack_types"] if pred else []}))
     out = {cat: score([r for r in rows if r["category"] == cat]) for cat in CATEGORIES
