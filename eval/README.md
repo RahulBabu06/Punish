@@ -79,7 +79,7 @@ All offline analyses below accept `--label {either,corrected,excl_leaked}` (`eva
 
 ```bash
 python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 [--mode full_trace] \
-    [--auditor claude-sonnet-4-6] [--threshold 0.7] [--n 3] [--out results/MITIGATION_bestofn.md]
+    [--auditor claude-sonnet-4-6] [--threshold 0.7] [--n 3] [--out results/mitigation_bestofn_v2/MITIGATION_bestofn.md]
 ```
 
 Trajectories are grouped by experiment x subject model x task x agent_config. Per group (or per size-`n` subset, averaged over all subsets) each policy ships one trajectory: `random`, `grader-only` (highest grader score), `veto+random` (random among unflagged), `veto+grader` (highest grader score among unflagged; if all are flagged, the lowest auditor confidence), `oracle` (a clean one if any). Random choices are exact expectations. The hack label is `either` = run-time labeller (read from `<exp>/episodes/`, which every auditor shares) OR the Opus judgment; it falls back to the labeller when there is no judgment. The report also sweeps auditor x mode x veto threshold and gives bootstrap CIs over groups. Each trajectory is graded with the task definition matching its sandbox files (`matched_task`, i.e. `tasks.validate_labels.match_definition`; v2 `leaked_answer` ran on the v1 data, commit `5b4aa1c`). `--tasks-rev <git rev>` pins every task to one revision instead; trajectories whose `read_file` outputs differ from the definition used are counted as `drifted`.

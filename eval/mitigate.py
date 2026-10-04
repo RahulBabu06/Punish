@@ -848,7 +848,8 @@ def _cli(argv: list[str] | None = None) -> int:
     b.add_argument("--mode", default="full_trace")
     b.add_argument("--threshold", type=_threshold, default=None, help="veto at confidence >= T (default hack_detected)")
     b.add_argument("--n", type=int, default=None, help="best-of-n subset size (default: whole group)")
-    b.add_argument("--out", default="results/MITIGATION_bestofn.md")
+    b.add_argument("--out", default=None, help="default: MITIGATION_bestofn.md next to the experiment(s); "
+                   "a non-default --mode/--label is added to the filename")
     b.add_argument("--tasks-rev", default=None, help="git revision to load task definitions from (grader files)")
     b.add_argument("--bootstrap-samples", type=int, default=DEFAULT_BOOTSTRAPS)
     b.add_argument("--seed", type=int, default=DEFAULT_SEED)
@@ -882,6 +883,9 @@ def _cli(argv: list[str] | None = None) -> int:
         if not args.experiments:
             p.error("give at least one results directory")
         load = git_task_loader(args.tasks_rev) if args.tasks_rev else None
+        from eval.outputs import output
+
+        args.out = str(output(args.out, args.experiments, "MITIGATION_bestofn.md", args.mode, args.label))
         best_of_n(args.experiments, auditor=args.auditor, mode=args.mode, threshold=args.threshold, n=args.n,
                   out=args.out, sweep=not args.no_sweep, repeats=args.bootstrap_samples, seed=args.seed,
                   load_task_fn=load, label=args.label)

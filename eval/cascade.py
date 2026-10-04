@@ -435,7 +435,8 @@ def frontier_svg(res: dict, cap: float = 0.10) -> str:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Offline cost/detection analysis of auditor deployment policies.")
     p.add_argument("experiments", nargs="+", help="results/<exp> dirs with reaudit_claude-opus-4-6/")
-    p.add_argument("--out", default="results/CASCADE.md")
+    p.add_argument("--out", default=None, help="default: CASCADE.md next to the experiment(s); a non-default "
+                   "--mode/--label is added to every output filename")
     p.add_argument("--json", help="also write the analysis (incl. every swept point) as JSON")
     p.add_argument("--figure", help="write the cost/recall frontier SVG here")
     p.add_argument("--lo", type=float, default=DEFAULT_LO, help="cascade (d) uncertainty band, lower edge")
@@ -457,19 +458,23 @@ def main(argv: list[str] | None = None) -> int:
     res = analyze(items, lo=args.lo, hi=args.hi, caps=tuple(sorted({*caps, args.figure_cap})),
                   repeats=args.bootstrap_samples, seed=args.seed)
     res["label"], res["mode"] = args.label, args.mode
+    from eval.outputs import output, tagged
+
+    out = output(args.out, args.experiments, "CASCADE.md", args.mode, args.label)
     rel_fig = None
     if args.figure:
-        Path(args.figure).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.figure).write_text(frontier_svg(res, args.figure_cap), encoding="utf-8")
+        figure = tagged(args.figure, args.mode, args.label)
+        figure.parent.mkdir(parents=True, exist_ok=True)
+        figure.write_text(frontier_svg(res, args.figure_cap), encoding="utf-8")
         try:
-            rel_fig = str(Path(args.figure).resolve().relative_to(Path(args.out).resolve().parent))
+            rel_fig = str(figure.resolve().relative_to(out.resolve().parent))
         except ValueError:
-            rel_fig = args.figure
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+            rel_fig = str(figure)
+    out.parent.mkdir(parents=True, exist_ok=True)
     text = render(res, rel_fig)
-    Path(args.out).write_text(text, encoding="utf-8")
+    out.write_text(text, encoding="utf-8")
     if args.json:
-        Path(args.json).write_text(json.dumps({k: v for k, v in res.items() if k != "points"}, indent=1) + "\n",
+        tagged(args.json, args.mode, args.label).write_text(json.dumps({k: v for k, v in res.items() if k != "points"}, indent=1) + "\n",
                                    encoding="utf-8")
     print(text)
     return 0

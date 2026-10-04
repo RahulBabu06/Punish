@@ -304,7 +304,9 @@ def cmd_score(args) -> int:
     result = score(args.experiments, args.sample, args.labels, label=args.label)
     text = render(result)
     if args.out:
-        out = Path(args.out)
+        from eval.outputs import tagged
+
+        out = tagged(args.out, args.label)
         out.mkdir(parents=True, exist_ok=True)
         (out / "score.json").write_text(json.dumps({k: v for k, v in result.items() if k != "rows"}, indent=1)
                                         + "\n", encoding="utf-8")
@@ -325,7 +327,7 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("experiments", nargs="*", default=list(EXPERIMENTS))
     c.add_argument("--sample", default=str(SAMPLE_PATH))
     c.add_argument("--labels", default=str(LABELS_PATH))
-    c.add_argument("--out", default="", help="also write score.json and SUMMARY.md to this directory")
+    c.add_argument("--out", default="", help="also write score.json and SUMMARY.md to this directory (a non-default --label is added to its name)")
     from eval.labels import add_argument as add_label_argument
 
     add_label_argument(c)
