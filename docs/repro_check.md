@@ -109,6 +109,10 @@ eval.errors $V2 --tags docs/error_tags.json --correction results/leaked_answer_c
 6. **`.gitignore`:** `/cost.json` and `/live-plan.txt`, the scratch files that results/README and docs/live_plan.md
    tell you to write in the repo root.
 
+**Re-verified** on a second fresh clone of `devin/repro-check` with a new venv: A4, A7, A9, A11, S2 and all the
+corrected-label commands above (plus `eval.final_report_compare` and the random-fold calibration) are now
+byte-identical, E3 exits 2 with a clear message, and `pytest -q` gives 1122 passed, 1 skipped.
+
 ## Needed doc fixes not made (protected or owned elsewhere)
 
 **README.md**
