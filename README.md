@@ -65,7 +65,7 @@ rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.
 The cascade panel's "held-out" point holds out thresholds only. The heuristic stage was calibrated on
 these v2 runs, so the point is in-sample for the heuristic. With pre-calibration rules the held-out
 cascade equals Sonnet alone (0.57 recall / 0.14 FPR). On unseen v3 runs (labeller labels) the v2 thresholds
-give 0.63 recall at 0.029 FPR (REPORT §8.13, `results/cascade_heldout.md`).
+give 0.63 recall at 0.029 FPR (REPORT §8.13, [`results/cascade_heldout.md`](results/cascade_heldout.md)).
 
 - Skeptical-reviewer FAQ: [`docs/reviewer_faq.md`](docs/reviewer_faq.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)
@@ -175,8 +175,8 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.hard_cases --auditor heuristic
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
-# cost of every committed run -> results/COST.md; estimates rebuild requests from current
-# prompts, so they drift (~7%) above the committed figures
+# cost of every committed run (all 11 dirs) -> results/COST.md: a chars/4 estimate rebuilt from
+# today's prompts (docs/repro_check.md explains the drift from the older $151.54)
 scripts/reproduce.sh cost
 # REPORT §8.10–8.13: reasoning disclosure, labeller audit, monitor attacks (heuristic), cost vs detection
 .venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
@@ -230,7 +230,7 @@ scripts/reproduce.sh cost
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
 | `results/hard_cases/` | 36 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
 | `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
-| `results/COST.md` | estimated API cost of every committed run (`eval.cost`; v2 total about $88) |
+| `results/COST.md` | estimated API cost of every committed run (`eval.cost`; $162.46 for all 8,519 calls, v2 about $95; chars/4 estimate, not billed spend) |
 | `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
 | `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
 | `results/judge_validation/` | Opus judge vs 60 blind AI labels: κ 0.70, and the stale `leaked_answer` definition ([`docs/judge_validation.md`](docs/judge_validation.md)) |

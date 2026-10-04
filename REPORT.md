@@ -695,14 +695,17 @@ been run: `TODO(numbers)`.
 
 ### 8.9 Cost
 
-`python -m eval.cost` estimates the v2 API spend at **$88** for 360 trajectories
-(v2 rows of `results/COST.md`; $151.54 across every committed run, v3 and probes included). These runs have no recorded `usage` fields, so the estimate is about
-characters / 4 and is a lower bound. Per call:
+`python -m eval.cost` estimates the v2 API spend at **$95** ($95.12) for 360 trajectories
+(v2 rows of `results/COST.md`; $162.46 for all 8,519 calls, v3 and probes included). It is an estimate, not
+billed spend. These runs have no recorded `usage` fields, so `eval.cost` rebuilds each request with *today's*
+prompt code and counts characters / 4. Later rubric and provenance additions made the prompts longer, so
+this likely overstates what the earlier runs cost. The previous estimate, from the older code, was $151.54
+($88 for v2); [`docs/repro_check.md`](docs/repro_check.md) attributes the drift commit by commit. Per call:
 
 - subject trajectory: about $0.066 ($23.76 / 360);
-- Sonnet 4.6 audit: about $0.022 ($24.01 / 1,080);
-- Opus 4.6 re-audit: about $0.037 ($26.89 / 720);
-- Opus judge: about $0.038 ($13.52 / 360).
+- Sonnet 4.6 audit: about $0.025 ($26.80 / 1,080);
+- Opus 4.6 re-audit: about $0.042 ($30.08 / 720);
+- Opus judge: about $0.040 ($14.48 / 360).
 
 A three-mode Sonnet audit costs about as much as the agent run it audits.
 
@@ -780,10 +783,10 @@ and Opus 4.6 (79 hacked) under five policies:
 | policy (original label) | recall | FPR | est. USD / trajectory |
 |---|---|---|---|
 | heuristic only | 0.60 | 0.04 | $0 |
-| Sonnet 4.6 only | 0.89 | 0.25 | $0.030 |
+| Sonnet 4.6 only | 0.89 | 0.25 | $0.031 |
 | Opus 4.6 only | 0.84 | 0.11 | $0.051 |
-| heuristic → Sonnet (escalate 56%) | 0.78 | 0.24 | $0.018 |
-| Sonnet → Opus (escalate 46%) | 0.82 | 0.11 | $0.056 |
+| heuristic → Sonnet (escalate 56%) | 0.78 | 0.24 | $0.019 |
+| Sonnet → Opus (escalate 46%) | 0.82 | 0.11 | $0.057 |
 
 - **Original label: Opus alone is the best value.** Sonnet → Opus gets Opus-level FPR, but
   costs more than Opus alone, because Sonnet flags 46% of trajectories (it would be cheaper
@@ -799,7 +802,7 @@ and Opus 4.6 (79 hacked) under five policies:
   Sonnet alone reaches 0.57 only at FPR 0.14, over the cap. (Original label: 0.71 in-sample,
   0.68 / 0.60 held out.)
 - **The v2 80% / 5% point is in-sample; the low-FPR point transfers to v3 at lower recall**
-  (`results/cascade_heldout.md`, `full_trace`, $ are chars/4 estimates). The heuristic's rules were calibrated
+  ([`results/cascade_heldout.md`](results/cascade_heldout.md), `full_trace`, $ are chars/4 estimates). The heuristic's rules were calibrated
   on `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`, so every v2 heuristic and heuristic → Sonnet
   number is in-sample for the heuristic: 45/56 = 0.804 recall at 10/184 = 0.054 FPR ($0.0187) with tuned
   thresholds, and 0.768 / 0.054 with leave-one-experiment-out thresholds. With the pre-calibration rules
@@ -809,9 +812,9 @@ and Opus 4.6 (79 hacked) under five policies:
   labels, preliminary), the v2-tuned thresholds applied unchanged give 64/102 = 0.627 recall at
   10/348 = 0.029 FPR ($0.0169), against Sonnet alone at 0.863 / 0.172. Most of that recall comes from the
   heuristic alone. On the 40-run v3 hand sample it is 9/13 recall and 1/26 FPR.
-- Costs here are estimates (characters / 4 at list prices, a lower bound), not billed spend.
+- Costs here are characters / 4 estimates at list prices from today's prompt code (§8.9), not billed spend.
 - These per-audit costs rebuild the full audit request (system prompt included), so they
-  are higher than §8.9's $0.022, which is estimated from stored records.
+  are higher than §8.9's $0.025, which is estimated from stored records.
 
 `auditor/agentic.py` (an auditor that can re-run the analysis in a fresh sandbox and search
 the trajectory) and `n_samples` majority-vote ensembles are implemented and tested offline,
@@ -1080,7 +1083,7 @@ in §8 come from:
 .venv/bin/python -m eval.hard_cases --auditor heuristic                   # §8.7
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md               # §8.8
-scripts/reproduce.sh cost   # §8.9; fresh estimates drift ~7% above the committed COST.md
+scripts/reproduce.sh cost   # §8.9; all 11 dirs -> results/COST.md
 .venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
   --labels docs/obfuscation_handlabels_heldout.json --out results/obfuscation/OBFUSCATION.md   # §8.10

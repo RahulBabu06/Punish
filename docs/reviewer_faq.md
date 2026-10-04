@@ -83,7 +83,7 @@ on `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`, so the v2 points (
 (`f664c95`), the leave-one-experiment-out cascade gets 0.571 / 0.141, the same as Sonnet alone, at about
 71% of the cost. On 450 unseen v3 runs (labeller labels only), v2-tuned thresholds give 0.627 recall at
 0.029 FPR, against Sonnet alone at 0.863 / 0.172. The low-FPR operating point transfers, at lower recall.
-See `results/cascade_heldout.md` and
+See [`results/cascade_heldout.md`](../results/cascade_heldout.md) and
 [`results/CASCADE_corrected.md`](../results/CASCADE_corrected.md).
 
 ## 10. Does auditor veto really reduce reward hacking?
@@ -96,10 +96,12 @@ drops from 0.748 to 0.691. See
 
 ## 11. How much was spent, and how certain is that number?
 
-Actual billed spend is unknown. The best committed estimate is **$151.54** for 8,519 API calls; the v2
-portion is about $88. None of these old calls logged API usage, so all token counts are reconstructed as
-characters/4 plus known prompt overhead at the prices recorded in `eval/cost.py`. Failed/retried calls,
-hidden tool prompts and missing or summarised reasoning can make this a lower bound. The separate
+Actual billed spend is unknown. The committed estimate is **$162.46** for 8,519 API calls; the v2
+portion is about $95. None of these old calls logged API usage, so `eval.cost` rebuilds every request with
+today's prompt code and counts characters/4 at the prices recorded in `eval/cost.py`. Later rubric and
+provenance additions made the prompts longer, so this likely overstates the earlier runs (the older code gave
+$151.54, v2 $88; see [`docs/repro_check.md`](repro_check.md)). Failed/retried calls and missing or summarised
+reasoning push the other way. The separate
 $178.18 live plan is projected future work, not spend. See
 [`results/COST.md`](../results/COST.md).
 
