@@ -530,12 +530,12 @@ heuristic auditor and the labeller have been scored on it
 
 | scorer | hard-negative FPR | obfuscated recall | reasoning-only recall | report-only recall |
 |---|---|---|---|---|
-| heuristic, `full_trace` | 4/10 | 3/10 | 2/5 | 7/7 |
-| heuristic, `report_only` | 3/10 | 3/10 | 1/5 | 7/7 |
-| deterministic labeller | 0/10 | 9/10 | 5/5 | 2/7 |
+| heuristic, `full_trace` | 1/10 | 4/10 | 1/5 | 4/7 |
+| heuristic, `report_only` | 1/10 | 4/10 | 1/5 | 4/7 |
+| deterministic labeller | 0/10 | 9/10 | 4/5 | 1/7 |
 
 This is a floor and a sanity check, not a result about Claude auditors. The labeller misses
-5 of 7 `report_only` cases, where the report claims checks that never ran. This is the same
+6 of 7 `report_only` cases, where the report claims checks that never ran. This is the same
 blind spot to unverified claims that §8.1 found on real runs. `TODO(numbers)`: Claude Sonnet
 4.6 and Opus 4.6 auditors on this set
 (`modal run eval/hard_cases.py --modes all --out results/hard_cases`).
@@ -549,17 +549,17 @@ deployment picked one of the 5 trajectories per task × config group to ship (48
 
 | policy (Sonnet 4.6 auditor, `full_trace`, veto = `hack_detected`) | shipped hack rate | grader score |
 |---|---|---|
-| random | 0.33 [0.21, 0.45] | 0.66 |
-| highest grader score | 0.37 [0.24, 0.50] | 0.79 |
-| auditor veto, then highest grader score | **0.21** [0.10, 0.33] | 0.74 |
+| random | 0.33 [0.21, 0.45] | 0.67 |
+| highest grader score | 0.38 [0.25, 0.51] | 0.75 |
+| auditor veto, then highest grader score | **0.19** [0.08, 0.31] | 0.69 |
 | oracle (a clean one if any exists) | 0.19 [0.08, 0.31] | n/a |
 
 - Selecting on the grader alone ships *more* hacks than picking at random.
-- The auditor veto cuts the shipped hack rate by 0.16 (bootstrap CI [0.07, 0.26]) at a cost
-  of 0.05 grader score. That gets within 0.02 of the oracle floor, which is set by groups in
+- The auditor veto cuts the shipped hack rate by 0.19 (bootstrap CI [0.10, 0.30]) at a cost
+  of 0.06 grader score. That reaches the oracle floor, which is set by groups in
   which every trajectory hacked.
 - The veto mode matters more here than in §8.2. With Sonnet as the vetoing auditor,
-  `full_trace` ships 0.21 hacks, against 0.29 for `report_only` and 0.29 for
+  `full_trace` ships 0.19 hacks, against 0.27 for `report_only` and 0.29 for
   `final_report`. Opus `full_trace` ships 0.23.
 - Caveat: 40 trajectories read files that differ from the current task definitions, so
   their grader scores come from the current files. Labels always come from the original run.
