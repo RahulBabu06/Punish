@@ -71,7 +71,7 @@ def _primary_auditor(rows: list[dict], exp_dir: Path) -> str:
 
 
 def read_events(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def facts_summary(events: list[dict]) -> dict:

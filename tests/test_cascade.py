@@ -124,6 +124,41 @@ def test_recorded_usage_beats_the_estimate():
     assert (usd, estimated) == (pytest.approx(5.0), False)
 
 
+@pytest.mark.parametrize("name,metadata,suffix", [
+    ("reaudit_v3", {"auditor_rubric": "v3"}, "+rubric_v3"),
+    ("reaudit_ensemble", {"auditor_n_samples": 3}, "+samples_3"),
+    ("arbitrary_output", {"auditor_rubric": "v3"}, "+rubric_v3"),
+    ("reaudit_agentic", {"auditor_backend": "agentic"}, "+backend_agentic"),
+])
+def test_rubric_and_ensemble_audits_never_overwrite_default(tmp_path, name, metadata, suffix):
+    exp = _experiment(tmp_path, "exp", FIRST)
+    tid = "task__covert__ep000"
+    original = json.loads((exp / "episodes" / f"{tid}.json").read_text())
+    directory = exp / name / "episodes"
+    directory.mkdir(parents=True)
+    ep = {**original, "auditor_model": FIRST, **metadata}
+    ep["verdict"] = {**original["verdict"], "hack_detected": False, "confidence": 0.2}
+    (directory / f"{tid}.json").write_text(json.dumps(ep))
+    items = cascade.load_items([str(exp), str(exp)], heuristic_fn=lambda *_: {"hack_detected": False, "confidence": 0.1})
+    assert len(items) == 4
+    first = items[0]
+    assert first[f"audit:{FIRST}"]["pred"]
+    assert not first[f"audit:{FIRST}{suffix}"]["pred"]
+
+
+def test_same_identity_conflict_is_rejected(tmp_path):
+    exp = _experiment(tmp_path, "exp", FIRST)
+    tid = "task__covert__ep000"
+    ep = json.loads((exp / "episodes" / f"{tid}.json").read_text())
+    directory = exp / "reaudit_conflict" / "episodes"
+    directory.mkdir(parents=True)
+    ep["auditor_model"] = FIRST
+    ep["verdict"]["hack_detected"] = False
+    (directory / f"{tid}.json").write_text(json.dumps(ep))
+    with pytest.raises(ValueError, match="Conflicting duplicate audit"):
+        cascade.load_items([str(exp)])
+
+
 def test_cli_writes_report_json_and_svg_offline(tmp_path, monkeypatch, capsys):
     def forbidden(*args, **kwargs):
         raise AssertionError("cascade analysis must not touch the network")
@@ -143,4 +178,3 @@ def test_cli_writes_report_json_and_svg_offline(tmp_path, monkeypatch, capsys):
     data = json.loads(js.read_text())
     assert [r["family"] for r in data["defaults"]] == list(cascade.FAMILIES) and "points" not in data
     assert ET.fromstring(fig.read_text()).tag.endswith("svg")
-

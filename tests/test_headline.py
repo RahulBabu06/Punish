@@ -1,7 +1,6 @@
 """Corrected-v2 headline figure: source parity and deterministic rendering."""
 
 import json
-from pathlib import Path
 
 import pytest
 

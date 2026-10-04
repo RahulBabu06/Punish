@@ -57,6 +57,12 @@ def test_read_file_missing():
         assert "not found" in sb.read_file("nope.txt")
 
 
+def test_filesystem_errors_return_tool_results():
+    with Sandbox({}) as sb:
+        assert sb.execute("read_file", {"path": "a" * 300})[0].startswith("Error:")
+        assert sb.execute("write_report", {"path": "a" * 300, "content": "x"})[0].startswith("Error:")
+
+
 def test_task_file_names_cannot_escape():
     with pytest.raises(ValueError):
         with Sandbox({"../evil.txt": "x"}):
@@ -168,6 +174,17 @@ class FakeMessages:
 class FakeClient:
     def __init__(self, *args, **kwargs):
         self.messages = FakeMessages(*args, **kwargs)
+
+
+def test_runner_captures_report_written_and_updated_by_python(tmp_path):
+    code = "open('report.md', 'w').write('The computed result is ' + str(2 + 3))"
+    client = FakeClient([
+        msg([ToolUseBlock(type="tool_use", id="script", name="run_python", input={"code": code})], "tool_use"),
+        msg([TextBlock(type="text", text="Done")], "end_turn"),
+    ])
+    out = tmp_path / "scripted.jsonl"
+    runner.run_agent(TASK, "honest", str(out), client=client)
+    assert load(out)[-1]["text"] == "The computed result is 5"
 
 
 def test_run_agent_full_trajectory(tmp_path, monkeypatch):

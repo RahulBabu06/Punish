@@ -40,6 +40,120 @@ def check_any_config(events):
 
 # -- sandbox guard ---------------------------------------------------------------
 
+def test_guard_fails_closed_when_agent_closes_logging_fd(tmp_path):
+    canary = tmp_path / "private.txt"
+    canary.write_text("HOST_CANARY")
+    code = f"""import os
+for fd in range(3, 30):
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+print(open({str(canary)!r}).read())
+"""
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(code)
+    assert exit_code != 0
+    assert "HOST_CANARY" not in output
+    assert "PermissionError" in output
+
+
+@pytest.mark.parametrize("query", ["getaddrinfo('localhost', 80)", "gethostbyname('localhost')", "gethostbyaddr('127.0.0.1')"])
+def test_guard_blocks_dns_queries(query):
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("import socket\nprint(socket." + query + ")")
+    assert exit_code != 0
+    assert "network access is not allowed" in output
+
+
+def test_guard_allows_own_proc_status():
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("print(open('/proc/self/status').read().splitlines()[0])")
+    assert exit_code == 0
+    assert output.startswith("Name:")
+    assert BLOCKED_HEADER not in output
+
+
+@pytest.mark.parametrize("setup", [
+    "import __main__; __main__._under = lambda *args: True",
+])
+def test_agent_main_module_does_not_expose_guard(setup, tmp_path):
+    canary = tmp_path / "private.txt"
+    canary.write_text("HOST_CANARY")
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(setup + f"\nprint(open({str(canary)!r}).read())")
+    assert exit_code != 0
+    assert "HOST_CANARY" not in output
+
+
+def test_sandbox_allows_stdlib_frame_consumers():
+    code = """import logging, traceback
+from typing import NamedTuple
+class Row(NamedTuple):
+    x: int
+logging.warning('stdlib works')
+try:
+    1 / 0
+except ZeroDivisionError:
+    traceback.print_exc()
+print(Row(3).x)
+"""
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(code)
+    assert exit_code == 0
+    assert "stdlib works" in output and "ZeroDivisionError" in output and "3\n" in output
+    assert BLOCKED_HEADER not in output
+
+
+def test_sandbox_allows_numpy_import_and_computation():
+    pytest.importorskip("numpy")
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("import numpy as np\nprint(np.mean([1, 2, 3]))")
+    assert exit_code == 0
+    assert output == "2.0\n"
+
+
+@pytest.mark.parametrize("module", ["sysconfig", "threading", "enum", "traceback"])
+def test_task_files_cannot_shadow_bootstrap_imports(module):
+    with Sandbox({module + ".py": "print('UNGUARDED_IMPORT'); raise SystemExit(0)"}) as sandbox:
+        output, exit_code = sandbox.run_python("print('science')")
+    assert exit_code == 0
+    assert output == "science\n"
+
+
+@pytest.mark.parametrize("operation", ["os.fork()", "os.forkpty()"])
+def test_guard_blocks_forking(operation):
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(f"import os\n{operation}\nprint('FORKED')")
+    assert exit_code != 0
+    assert "FORKED" not in output
+    assert BLOCKED_HEADER in output
+
+
+def test_timeout_drain_is_bounded(monkeypatch):
+    import subprocess
+    from agent import tools
+
+    class Process:
+        pid = 123
+        stdin = stdout = stderr = None
+
+        def communicate(self, *args, timeout=None):
+            assert timeout is not None
+            raise subprocess.TimeoutExpired("python", timeout, output=b"partial")
+
+        def wait(self, timeout=None):
+            return -9
+
+    monkeypatch.setattr(tools.subprocess, "Popen", lambda *a, **k: Process())
+    monkeypatch.setattr(Sandbox, "_kill", staticmethod(lambda proc: None))
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("pass", timeout=0.1)
+    assert exit_code == TIMEOUT_EXIT_CODE
+    assert "partial" in output
+
+
+
 @pytest.mark.parametrize("code, needle", [
     ("print(open('/etc/passwd').read())", "open('/etc/passwd', 'r')"),
     ("import os; print(os.listdir('..'))", "os.listdir('..')"),

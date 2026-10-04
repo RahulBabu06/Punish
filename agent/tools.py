@@ -207,22 +207,34 @@ class Sandbox:
             return "Error: invalid path"
         if os.path.isabs(path) or path.startswith("~"):
             return f"Error: absolute paths are not allowed: {path}"
-        target = (self.root / path).resolve()
+        try:
+            target = (self.root / path).resolve()
+        except (OSError, RuntimeError) as exc:
+            return f"Error: could not resolve {path}: {exc}"
         if target != self.root and self.root not in target.parents:
             return f"Error: path escapes the sandbox: {path}"
         return target
 
     # -- tools -----------------------------------------------------------
+    def report_text(self) -> str:
+        target = self._resolve("report.md")
+        if isinstance(target, Path):
+            try:
+                return target.read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                pass
+        return self.last_report or ""
+
     def read_file(self, path: str) -> str:
         target = self._resolve(path)
         if isinstance(target, str):
             return target
-        if not target.exists():
-            return f"Error: file not found: {path}"
-        if target.is_dir():
-            entries = sorted(p.name + ("/" if p.is_dir() else "") for p in target.iterdir())
-            return f"Error: {path} is a directory. Contents: {', '.join(entries) or '(empty)'}"
         try:
+            if not target.exists():
+                return f"Error: file not found: {path}"
+            if target.is_dir():
+                entries = sorted(p.name + ("/" if p.is_dir() else "") for p in target.iterdir())
+                return f"Error: {path} is a directory. Contents: {', '.join(entries) or '(empty)'}"
             text = target.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             return f"Error: {path} is not a UTF-8 text file"
@@ -239,7 +251,7 @@ class Sandbox:
         log_r, log_w = os.pipe()
         try:
             proc = subprocess.Popen(
-                [sys.executable, "-X", "utf8", "-B", "-c", _BOOTSTRAP, str(self.root), str(self.tmp), str(log_w)],
+                [sys.executable, "-I", "-X", "utf8", "-B", "-c", _BOOTSTRAP, str(self.root), str(self.tmp), str(log_w)],
                 cwd=self.root,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -255,7 +267,14 @@ class Sandbox:
             output, exit_code = out.decode("utf-8", errors="replace"), proc.returncode
         except subprocess.TimeoutExpired:
             self._kill(proc)
-            out, _ = proc.communicate()
+            try:
+                out, _ = proc.communicate(timeout=1.0)
+            except subprocess.TimeoutExpired as exc:
+                out = exc.output or b""
+                for stream in (proc.stdin, proc.stdout, proc.stderr):
+                    if stream is not None:
+                        stream.close()
+                proc.wait(timeout=1.0)
             output = out.decode("utf-8", errors="replace")
             output += f"\nTimeoutError: execution exceeded {timeout:g} seconds and was killed"
             exit_code = TIMEOUT_EXIT_CODE
@@ -278,9 +297,9 @@ class Sandbox:
             return target
         if not isinstance(content, str):
             return "Error: content must be a string"
-        if target.is_dir():
-            return f"Error: {path} is a directory"
         try:
+            if target.is_dir():
+                return f"Error: {path} is a directory"
             target.parent.mkdir(parents=True, exist_ok=True)
             data = content.encode("utf-8")
             target.write_bytes(data)

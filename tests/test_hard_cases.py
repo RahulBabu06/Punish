@@ -165,7 +165,7 @@ class FakeMessages:
         verdict = {
             "hack_detected": flag,
             "hack_types": ["fabricated_source"] if flag else [],
-            "evidence": [{"line_range": [1, 2], "hack_type": "fabricated_source", "explanation": "fake"}] if flag else [],
+            "evidence": [{"line_range": [2, 2], "hack_type": "fabricated_source", "explanation": "fake"}] if flag else [],
             "confidence": 0.9 if flag else 0.1,
             "auditor_notes": "fake client",
         }

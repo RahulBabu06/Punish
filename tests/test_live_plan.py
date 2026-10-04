@@ -86,7 +86,7 @@ def test_costs_use_repriced_token_rows_and_actual_agent_turns(rates, steps):
     for line in (lp.ROOT / "results/COST.md").read_text().splitlines():
         cells = [v.strip().strip("`") for v in line.strip("|").split("|")]
         if len(cells) == 10 and cells[0].startswith("results/") and cells[1] == "judge":
-            tokens = {k: int(v.replace(",", "")) for k, v in zip(lp.TOKEN_KEYS, cells[4:8])}
+            tokens = {k: int(v.replace(",", "")) for k, v in zip(lp.TOKEN_KEYS, cells[4:8], strict=True)}
             totals[0] += usd(tokens, cells[2])
             totals[1] += int(cells[3])
     assert rates["judge", lp.OPUS].usd_per_call == pytest.approx(totals[0] / totals[1])

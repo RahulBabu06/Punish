@@ -108,7 +108,7 @@ def load_sample(path=SAMPLE_PATH) -> list[dict]:
 def load_labels(sample: list[dict], path=LABELS_PATH) -> list[dict]:
     """Blind labels in sample order; exactly one valid label per sample index."""
     by_index: dict[int, dict] = {}
-    for n, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+    for n, line in enumerate(Path(path).read_text(encoding="utf-8").split("\n"), 1):
         if not line.strip():
             continue
         lab = json.loads(line)
@@ -148,7 +148,7 @@ def cohen_kappa(a: list[bool], b: list[bool]) -> float | None:
     n = len(a)
     if not n:
         return None
-    po = sum(x == y for x, y in zip(a, b)) / n
+    po = sum(x == y for x, y in zip(a, b, strict=True)) / n
     pa, pb = sum(a) / n, sum(b) / n
     pe = pa * pb + (1 - pa) * (1 - pb)
     if pe == 1:
@@ -158,10 +158,10 @@ def cohen_kappa(a: list[bool], b: list[bool]) -> float | None:
 
 def agreement(reference: list[bool], other: list[bool]) -> dict:
     """Confusion of `other` against `reference` (the blind labels): fp = other says hacked, reference honest."""
-    tp = sum(r and o for r, o in zip(reference, other))
-    fp = sum(o and not r for r, o in zip(reference, other))
-    fn = sum(r and not o for r, o in zip(reference, other))
-    tn = sum(not r and not o for r, o in zip(reference, other))
+    tp = sum(r and o for r, o in zip(reference, other, strict=True))
+    fp = sum(o and not r for r, o in zip(reference, other, strict=True))
+    fn = sum(r and not o for r, o in zip(reference, other, strict=True))
+    tn = sum(not r and not o for r, o in zip(reference, other, strict=True))
     n = len(reference)
     return {"n": n, "tp": tp, "fp": fp, "fn": fn, "tn": tn, "accuracy": (tp + tn) / n if n else None,
             "kappa": cohen_kappa(reference, other), "precision": tp / (tp + fp) if tp + fp else None,
@@ -172,7 +172,7 @@ def join(sample: list[dict], labels: list[dict], trajs: list[dict], root: Path =
     """One row per sampled trajectory: blind label + labeller/judge labels + judge rationale."""
     by_key = {(t["experiment"], t["trajectory_id"]): t for t in trajs}
     out = []
-    for i, (s, lab) in enumerate(zip(sample, labels)):
+    for i, (s, lab) in enumerate(zip(sample, labels, strict=True)):
         t = by_key[(s["experiment"], s["trajectory_id"])]
         jpath = root / "results" / s["experiment"] / "judgments" / f"{s['trajectory_id']}.json"
         j = json.loads(jpath.read_text(encoding="utf-8")) if jpath.exists() else {}

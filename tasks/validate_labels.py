@@ -82,7 +82,7 @@ def match_definition(events: list[dict], versions: list[tuple[str, dict]]) -> tu
 
 
 def load_events(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    return [json.loads(line) for line in path.read_text().split("\n") if line.strip()]
 
 
 def collect(results_dirs: list[str], versions_for=definition_versions) -> list[dict]:

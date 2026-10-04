@@ -77,6 +77,19 @@ def test_same_basename_experiments_are_distinct_units(tmp_path):
     assert all(r["n"] == 8 for r in stats["paired_differences"]["either"])
 
 
+def test_judgeless_headline_uses_all_labeller_positive_and_clean_rows(tmp_path):
+    exp = experiment(tmp_path / "judgeless")
+    for judgment in (exp / "judgments").glob("*.json"):
+        judgment.unlink()
+    rows = analyze.load_experiment(str(exp))
+    stats = analyze.summarize(rows, repeats=10)
+    assert stats["headline_label"] == "labeller"
+    assert all(row["n"] == 4 for row in stats["calibration"])
+    assert all(row["n"] == 4 for row in stats["config_recall"])
+    assert "Calibration (vs `labeller`)" in analyze.render(rows, ["judgeless"], stats=stats)
+    assert any(row["either"] is None for row in rows)
+
+
 def test_different_auditor_subject_populations_have_explicit_coverage(tmp_path):
     a = experiment(tmp_path / "subject_a", reauditor=True)
     b = experiment(tmp_path / "subject_b")

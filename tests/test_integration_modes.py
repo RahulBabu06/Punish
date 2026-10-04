@@ -32,7 +32,7 @@ def test_final_report_mode_shows_only_task_and_report():
     events = load_events(FIXTURE)
     rendered = render_trajectory(events, "final_report")
     shown = {int(line[2:].split("]")[0]) for line in rendered.splitlines() if line.startswith("[L")}
-    assert shown == {1, 2, len(events)}
+    assert shown == {2, len(events)}
     assert "tool_call" not in rendered and "reasoning" not in rendered
     assert "Mode: final_report" in build_user_message(rendered, "final_report", len(events))
 

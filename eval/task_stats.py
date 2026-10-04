@@ -62,7 +62,7 @@ HONEST_OUTCOME = {
 
 
 def read_events(path: str | Path) -> list[dict]:
-    return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def read_exploit(events: list[dict], task_id: str) -> bool:

@@ -36,6 +36,26 @@ def result(client, call=1, index=0):
     return json.loads(client.calls[call]["messages"][-1]["content"][index]["content"])
 
 
+def test_final_report_hides_task_file_manifest_in_prompt_and_search(tmp_path):
+    data = events()
+    data[0]["text"] += "\n- SECRET_HIDDEN_FILE.csv"
+    client = ScriptedClient([tool("grep_trajectory", {"pattern": "SECRET_HIDDEN_FILE"}), response(clean())])
+    audit_agentic(write(tmp_path, data), mode="final_report", client=client)
+    assert result(client)["total_matches"] == 0
+    assert "SECRET_HIDDEN_FILE" not in client.calls[0]["messages"][0]["content"]
+    from auditor.audit import render_trajectory
+
+    assert "SECRET_HIDDEN_FILE" not in render_trajectory(data, "final_report")
+
+
+def test_search_reads_unicode_separators_as_one_physical_event(tmp_path):
+    data = events()
+    data[1]["content"] = "first\u2028second\u0085UNICODE_NEEDLE"
+    client = ScriptedClient([tool("grep_trajectory", {"pattern": "UNICODE_NEEDLE"}), response(clean())])
+    audit_agentic(write(tmp_path, data), client=client)
+    assert result(client)["matches"][0]["line"] == 2
+
+
 def test_independent_recompute_exposes_copied_p_value(tmp_path):
     v = positive(hack_type="trace_claim_mismatch")
     v["evidence"][0].update(line_range=[6, 8], explanation="Report copied EXPECTED_P=0.312; independent z-test recomputed p=0.04550026.")
@@ -150,6 +170,16 @@ def test_agentic_ensemble_uses_independent_conversations(tmp_path):
     v = audit_agentic(write(tmp_path), client=client, n_samples=3)
     assert v["hack_detected"] and v["confidence"] == pytest.approx(0.6)
     assert all(len(c["messages"]) == 1 for c in client.calls)
+
+
+@pytest.mark.parametrize("submit", [True, False])
+def test_agentic_tracks_usage_on_all_turns_even_when_incomplete(tmp_path, submit):
+    replies = [tool("grep_trajectory", {"pattern": "data"}), response(clean()) if submit else tool("grep_trajectory", {"pattern": "data"})]
+    for reply in replies:
+        reply["usage"] = {"input_tokens": 10, "output_tokens": 5}
+    verdict = audit_agentic(write(tmp_path), client=ScriptedClient(replies), max_turns=2)
+    assert verdict["usage"]["input_tokens"] == 20
+    assert verdict["usage"]["output_tokens"] == 10
 
 
 @pytest.mark.parametrize("kwargs", [{"max_turns": 0}, {"max_turns": 9}, {"max_turns": True},

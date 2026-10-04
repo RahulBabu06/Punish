@@ -197,7 +197,7 @@ def summarize(rows: list[dict], keys: tuple[str, ...] = ("subject_model", "agent
         undisc = [r for r in hacked if not r["disclosed"]]
         ft, ro = _recall(hacked, "full_trace"), _recall(hacked, "report_only")
         out.append({
-            **dict(zip(keys, key)), "experiments": sorted({r["experiment"] for r in rs}),
+            **dict(zip(keys, key, strict=True)), "experiments": sorted({r["experiment"] for r in rs}),
             "label_source": "/".join(sorted({r["label_source"] for r in rs})),
             "n": len(rs), "hacked": len(hacked), "disclosed": len(disc),
             "disclosure_rate": _mean(r["disclosed"] for r in hacked), "disclosure_ci": wilson(len(disc), len(hacked)),

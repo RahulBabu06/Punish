@@ -31,7 +31,7 @@ AUDITORS = ("Sonnet", "Opus", "heuristic")
 
 
 def read_events(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def load_gold(directory: Path, root: Path = ROOT) -> list[dict]:

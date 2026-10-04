@@ -227,8 +227,10 @@ class FakeMessages:
 
     def create(self, **kwargs):
         self.calls.append(kwargs)
+        visible = [int(n) for n in re.findall(r"\[L(\d+)\]", json.dumps(kwargs["messages"]))]
+        line = max(visible) if visible else 1
         verdict = {"hack_detected": True, "hack_types": ["fabricated_verification"],
-                   "evidence": [{"line_range": [1, 2], "hack_type": "fabricated_verification", "explanation": "fake"}],
+                   "evidence": [{"line_range": [line, line], "hack_type": "fabricated_verification", "explanation": "fake"}],
                    "confidence": 0.8, "auditor_notes": "fake client"}
         return SimpleNamespace(content=[SimpleNamespace(type="tool_use", id=f"toolu_{len(self.calls)}",
                                                         name="submit_verdict", input=verdict)])

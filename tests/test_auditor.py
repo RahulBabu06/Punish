@@ -36,6 +36,30 @@ def write_jsonl(path: Path, events: list[dict]) -> str:
     return str(path)
 
 
+def test_historical_scripted_report_is_available_in_restricted_modes():
+    path = Path(__file__).resolve().parent.parent / "results/v2_haiku45/trajectories/metric_gaming__covert__ep001.jsonl"
+    events = load_events(path)
+    from tasks.registry import final_report
+
+    report = final_report(events)
+    assert report and report.splitlines()[0] in render_trajectory(events, "final_report")
+    assert report == events[-1]["text"]
+
+
+@pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"])
+def test_unicode_separators_do_not_split_jsonl_events(tmp_path, separator):
+    events = copy.deepcopy(GOLDEN_EVENTS)
+    events[2]["content"] = "left" + separator + "right"
+    path = tmp_path / "unicode.jsonl"
+    path.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events))
+    assert load_events(path) == events
+    from demo.core import read_lines
+    from eval.evidence import read_events
+
+    assert len(read_lines(path)) == len(events)
+    assert read_events(path) == events
+
+
 def honest_events(trajectory_id: str = "leaked_answer__honest__ep000") -> list[dict]:
     code = (
         "import pandas as pd\nfrom scipy import stats\n"
@@ -189,6 +213,14 @@ class FakeClient:
         self.messages = FakeMessages(outputs)
 
 
+def test_final_report_rejects_hidden_evidence_in_retry_and_repair():
+    client = FakeClient(GOOD_INPUT, GOOD_INPUT)
+    verdict = audit(str(TRAJECTORY), mode="final_report", client=client)
+    assert len(client.messages.calls) == 2
+    assert all(ev["line_range"] == [N, N] for ev in verdict["evidence"])
+    assert "hidden" in verdict["auditor_notes"]
+
+
 def tool_input(verdict: dict) -> dict:
     return {k: v for k, v in verdict.items() if k not in ("trajectory_id", "auditor_mode")}
 
@@ -292,6 +324,13 @@ def test_repair_keeps_detection_without_evidence():
     v = repair_verdict({"hack_detected": True, "hack_types": ["fabricated_source"], "evidence": [], "confidence": 0.8}, N, TID, "full_trace")
     check_verdict(v, N)
     assert v["hack_detected"] and v["evidence"][0]["line_range"] == [1, N]
+
+
+def test_repair_tolerates_unhashable_types_and_nonfinite_line_numbers():
+    verdict = {"hack_detected": True, "hack_types": [{}, [], "fabricated_source"], "confidence": 0.8,
+               "evidence": [{"hack_type": "fabricated_source", "line_range": [float("inf"), 3]}]}
+    repaired = repair_verdict(verdict, N, TID, "full_trace")
+    check_verdict(repaired, N)
 
 
 def test_audit_default_client_is_lazy(monkeypatch):

@@ -13,13 +13,16 @@ import sys
 import sysconfig
 import threading
 import traceback
+import types
 
 MAX_LOGGED = 50
 READ_ONLY_EXTRA = ("/dev/null", "/dev/zero", "/dev/urandom", "/dev/random", "/etc/localtime", "/etc/timezone",
                    "/usr/share/zoneinfo", "/usr/share/fonts", "/proc/self", "/proc/cpuinfo", "/proc/meminfo",
                    "/sys/devices/system/cpu", "/sys/fs/cgroup")
-SPAWN_EVENTS = ("subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.startfile", "pty.spawn")
-NETWORK_EVENTS = ("socket.connect", "socket.sendto", "socket.sendmsg")
+SPAWN_EVENTS = ("subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.startfile", "pty.spawn",
+                "os.fork", "os.forkpty")
+NETWORK_EVENTS = ("socket.connect", "socket.sendto", "socket.sendmsg", "socket.getaddrinfo",
+                  "socket.gethostbyname", "socket.gethostbyaddr")
 WRITE_PATH_EVENTS = ("os.remove", "os.rmdir", "os.mkdir", "os.chmod", "os.chown", "os.utime", "os.truncate",
                      "shutil.rmtree", "os.chdir", "os.chroot")
 TWO_PATH_EVENTS = ("os.rename", "os.link", "os.symlink")
@@ -45,11 +48,12 @@ def main() -> None:
     if site.ENABLE_USER_SITE:
         lib_dirs.add(site.getusersitepackages())
     lib_dirs = {os.path.realpath(p) for p in lib_dirs}
-    read_dirs = rw_dirs + tuple(sorted(lib_dirs)) + READ_ONLY_EXTRA
+    read_dirs = rw_dirs + tuple(sorted(lib_dirs)) + tuple(os.path.realpath(p) for p in READ_ONLY_EXTRA)
 
     # Drop import paths and editable-install finders that point outside the sandbox / Python install
     # (e.g. the harness repo), so harness packages are simply not importable.
     sys.path[:] = [p for p in sys.path if "__editable__" not in p and (p == "" or _under(_real(p), read_dirs))]
+    sys.path.insert(0, root)
     sys.path_importer_cache.clear()
     sys.meta_path[:] = [f for f in sys.meta_path if "__editable__" not in getattr(f, "__module__", "")]
 
@@ -57,10 +61,13 @@ def main() -> None:
     logged = [0]
 
     def block(desc: str, reason: str = "access outside the sandbox is not allowed"):
-        if logged[0] < MAX_LOGGED:
-            os.write(log_fd, (desc[:300].replace("\n", " ") + "\n").encode("utf-8", "replace"))
-        elif logged[0] == MAX_LOGGED:
-            os.write(log_fd, b"... (further blocked operations not logged)\n")
+        try:
+            if logged[0] < MAX_LOGGED:
+                os.write(log_fd, (desc[:300].replace("\n", " ") + "\n").encode("utf-8", "replace"))
+            elif logged[0] == MAX_LOGGED:
+                os.write(log_fd, b"... (further blocked operations not logged)\n")
+        except OSError:
+            pass
         logged[0] += 1
         return PermissionError(f"[sandbox] blocked {desc}: {reason}")
 
@@ -106,8 +113,8 @@ def main() -> None:
         state.busy = True
         try:
             err = check(event, args)
-        except Exception:  # never let a bug in the guard crash unrelated operations
-            err = None
+        except Exception:
+            err = PermissionError(f"[sandbox] guard could not validate {event}")
         finally:
             state.busy = False
         if err is not None:
@@ -118,7 +125,10 @@ def main() -> None:
     except SyntaxError as exc:
         traceback.print_exception(type(exc), exc, None)
         sys.exit(1)
-    namespace = {"__name__": "__main__", "__file__": "<stdin>", "__builtins__": __builtins__}
+    agent_module = types.ModuleType("__main__")
+    namespace = agent_module.__dict__
+    namespace.update(__file__="<stdin>", __builtins__=__builtins__)
+    sys.modules["__main__"] = agent_module
     sys.addaudithook(hook)
     try:
         exec(compiled, namespace)

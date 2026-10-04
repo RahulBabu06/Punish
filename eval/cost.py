@@ -94,7 +94,7 @@ def _tokens_of(usage: dict) -> dict:
 
 
 def _read_jsonl(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def _read_json(path: Path) -> dict:
@@ -208,7 +208,7 @@ def _audit_items(d: Path) -> list[tuple[dict, dict]]:
     """(verdict, episode-or-{}) pairs for the Claude audits in ``d``; episodes/ preferred over verdicts/."""
     if (d / "episodes").is_dir():
         eps = [_read_json(p) for p in sorted((d / "episodes").glob("*.json"))]
-        return [(ep["verdict"], ep) for ep in eps if ep.get("auditor_backend", "claude") == "claude"]
+        return [(ep["verdict"], ep) for ep in eps if ep.get("auditor_backend", "claude") in ("claude", "agentic")]
     return [(_read_json(p), {}) for p in sorted((d / "verdicts").glob("*.json")) if "__heuristic" not in p.stem]
 
 

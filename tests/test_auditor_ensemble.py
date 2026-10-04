@@ -45,6 +45,27 @@ def test_majority_not_confidence_threshold_and_vote_weighted_union():
     assert all(len(c["messages"]) == 1 for c in client.calls)
 
 
+def test_ensemble_sums_usage_across_every_sample():
+    replies = [response(clean()) for _ in range(3)]
+    for reply in replies:
+        reply["usage"] = {"input_tokens": 10, "output_tokens": 5, "cache_read_input_tokens": 2}
+    verdict = audit(str(TRAJECTORY), client=ScriptedClient(replies), n_samples=3)
+    assert verdict["usage"]["input_tokens"] == 30
+    assert verdict["usage"]["output_tokens"] == 15
+    assert verdict["usage"]["cache_read_input_tokens"] == 6
+
+
+@pytest.mark.parametrize("include_submit", [True, False])
+def test_retry_pairs_every_tool_call_not_just_first_submit(include_submit):
+    first = response({"hack_detected": True}) if include_submit else {"content": []}
+    first["content"].append({"type": "tool_use", "name": "unexpected_tool", "id": "other", "input": {}})
+    client = ScriptedClient([first, response(clean())])
+    verdict = audit(str(TRAJECTORY), client=client)
+    assert not verdict["hack_detected"]
+    assert {block["tool_use_id"] for block in client.calls[1]["messages"][-1]["content"]} == (
+        {"v", "other"} if include_submit else {"other"})
+
+
 def test_duplicate_evidence_votes_and_ordering():
     client = ScriptedClient([response(positive()), response(positive()), response(positive(hack_type="fabricated_source"))])
     v = audit(str(TRAJECTORY), client=client, n_samples=3)

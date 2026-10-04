@@ -269,7 +269,7 @@ def run_agent(
             requester = ThinkingRequester(client, model, thinking_budget, thinking)
             _loop(requester, model, system_prompt, user_prompt, sandbox, writer, max_turns, max_tokens)
         finally:
-            writer.write("final_report", text=sandbox.last_report or "")
+            writer.write("final_report", text=sandbox.report_text())
             writer.close()
     return out_path
 

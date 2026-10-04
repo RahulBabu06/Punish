@@ -37,7 +37,7 @@ def parse_line(raw: str) -> tuple[dict | None, str | None]:
 def read_lines(path: str | os.PathLike) -> list[str]:
     """All non-empty lines of a finished trajectory file, in order."""
     text = Path(path).read_text(encoding="utf-8")
-    return [line for line in text.splitlines() if line.strip()]
+    return [line for line in text.split("\n") if line.strip()]
 
 
 def tail_lines(path: str | os.PathLike, poll: float = 0.25, start_line: int = 0) -> Iterator[tuple]:
