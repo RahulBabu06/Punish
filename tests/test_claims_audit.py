@@ -157,3 +157,36 @@ def test_cost_total():
     assert "**$162.33** for 8,519 API calls" in doc("docs/reviewer_faq.md")
     assert "(**$162.33** in total)" in doc("results/README.md")
     assert "| **total** | | | | | | 396 judged | 850 | | **$162.33** |" in doc("results/README.md")
+
+
+def evidence_common(auditor: str, mode: str) -> tuple[float, float]:
+    text = (ROOT / "results/bug_hunt/EVIDENCE.md").read_text(encoding="utf-8")
+    common = text.split("## Common v2 traces", 1)[1].split("\n## ", 1)[0]
+    for line in common.splitlines():
+        c = [x.strip() for x in line.strip("|").split("|")]
+        if c[:3] == ["v2", auditor, mode]:
+            assert c[3] == "19"
+            return float(c[8]), float(c[7])
+    raise AssertionError((auditor, mode))
+
+
+def test_evidence_localisation_matches_bug_hunt_rerun():
+    report, paper = doc("REPORT.md"), doc("paper/punish.tex")
+    assert "results/bug_hunt/EVIDENCE.md" in report and r"results/bug\_hunt/EVIDENCE.md" in paper
+    for auditor, name in (("Sonnet", "Sonnet 4.6"), ("Opus", "Opus 4.6")):
+        cells = [f"{r:.2f} / {p:.2f}" for r, p in
+                 (evidence_common(auditor, m) for m in ("full_trace", "report_only", "final_report"))]
+        assert f"| {name} | " + " | ".join(cells) + " |" in report
+    for mode in ("full_trace", "final_report"):
+        lo, hi = sorted(evidence_common(a, mode)[0] for a in ("Sonnet", "Opus"))
+        assert f"{lo:.2f}--{hi:.2f}" in paper
+
+
+def test_closed_label_basis_rows():
+    paper = doc("paper/punish.tex")
+    assert r"25 of the 27 judge-positive runs in these configs (\code{leaked\_answer} excluded)" in paper
+    assert "(25/30)" not in paper
+    assert "(exploratory; all 240 runs, original labels)" in paper
+    assert r"Of the 62 corrected-label \mode{final\_report} false positives, 38" in paper
+    assert r"corrected label 0--86\%, 3--7 hacks" in paper
+    assert "lower bound" not in doc("results/README.md")

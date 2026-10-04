@@ -2,7 +2,8 @@
 
 Audit of every quantitative claim in `README.md`, `REPORT.md`, `PITCH.md`, `docs/slides.html`,
 `docs/reviewer_faq.md`, `docs/case_studies.md`, `paper/punish.tex` and `results/README.md`, rerun on
-`devin/claims-audit-final` (integration `9909e11`: `4a3aa76` plus `bug-hunt-results` and `repro-final`). Line numbers are for
+`devin/claims-audit-final` (integration `9909e11`: `4a3aa76` plus `bug-hunt-results` and `repro-final`) and closed out on
+`devin/claims-close-out`. Line numbers are for
 this branch. The first pass (`eb3a5cc`, 285 rows) predated the paper and the FAQ; its rows were carried forward
 to the current lines, rechecked and restated where the text changed.
 
@@ -38,28 +39,31 @@ to the current lines, rechecked and restated where the text changed.
 
 ## Summary
 
-334 rows: **313 OK, 14 fixed on this branch, 7 still open**. Of the OK rows, 49 were non-OK in the first pass and were fixed upstream; 5 first-pass rows were resolved by deleting the claim.
+334 rows: **313 OK, 21 fixed, 0 still open**. Of the OK rows, 49 were non-OK in the first pass and were fixed upstream; 5 first-pass rows were resolved by deleting the claim.
 
 | status | rows |
 |---|---|
 | OK | 313 |
-| stale | 3 |
-| wrong label basis | 3 |
-| unsupported | 1 |
-| fixed (was stale) | 13 |
-| fixed (was wrong label basis) | 1 |
+| fixed (was stale) | 14 |
+| fixed (was wrong label basis) | 4 |
+| fixed (was unsupported) | 1 |
+| fixed (citation added) | 2 |
 
-### Still open (for the coordinator)
+### Closed on `devin/claims-close-out`
 
-- `REPORT.md:930-931` (stale): the bug-hunt evidence rerun gives full_trace R 0.823 (Sonnet) / 0.828 (Opus) and final_report 0.253 / 0.190; decide whether §8.17 should move to the rerun (also paper:323)
-- `paper/punish.tex:134-137` (stale): (paper; no LaTeX on this VM to rebuild the PDF): judge-positive incentivized/pressure runs are 25 fake_citation of 27 (excluded) or of 43 (original); 25/30 is the share of the 30 fake_citation runs, so write "(25 of 27)" or "(25 of the 30 fake_citation runs)"
-- `paper/punish.tex:227-229` (wrong label basis): (paper): unmarked original-label numbers in a paragraph led by excluded values; mark "original label" or use excluded FPR 0.01 vs 0.08 and recall 21/28 vs 16/28 (as `docs/slides.html`)
-- `paper/punish.tex:243` (wrong label basis): (paper): 49 is the original-label count; corrected is 38 of 62 (as PITCH.md), or mark "original label"
-- `paper/punish.tex:287` (wrong label basis): (paper): corrected is 0–86% with 3–7 hacks per cell (REPORT.md:734-735); mark original or use corrected
-- `paper/punish.tex:323` (stale): bug-hunt rerun (`results/bug_hunt/EVIDENCE.md`) gives 0.82–0.83 vs 0.19–0.25; same decision as REPORT §8.17
-- `results/README.md:88-90` (unsupported): REPORT §8.9 and paper:264 say the rebuilt prompts *likely overstate* spend; this says *lower bound*. State both effects (longer rebuilt prompts vs unlogged thinking and retries) and drop "lower bound", or support it
+The 7 rows still open after `836dab5` were closed per the coordinator's decisions (committed data wins; the
+label basis is stated):
 
-Terminology, not numbers (left as is): `REPORT.md` §8.13 and `docs/reviewer_faq.md` §9 still call leave-one-experiment-out *thresholds* "held out" (0.64 at 0.054; original 0.68 / 0.60) while the heuristic rules are in-sample. Both passages say so nearby, but "held out" now also names the v3 cohort.
+- `REPORT.md:931-932`, `paper/punish.tex:323`: evidence localisation now cites `results/bug_hunt/EVIDENCE.md`. Its
+  common-trace table matches the written values, so only the citation changed (the previous pass misread the
+  all-verdicts table).
+- `paper/punish.tex:134-137`: "25 of the 27 judge-positive runs in these configs (leaked_answer excluded)".
+- `paper/punish.tex:227-229`: marked "original labels".
+- `paper/punish.tex:243`: corrected label, 38 of 62.
+- `paper/punish.tex:287`: corrected 0–86% / 3–7 added next to the original figures.
+- `results/README.md:88-92`: "lower bound" replaced by both biases of the estimate.
+
+`paper/punish.pdf` was rebuilt from the edited source with Tectonic 0.15.0 (`cd paper && tectonic punish.tex`).
 
 ### Fixed on this branch
 
@@ -252,19 +256,19 @@ Terminology, not numbers (left as is): `REPORT.md` §8.13 and `docs/reviewer_faq
 | REPORT.md:912-915 | corrected FN 126 → 96 (71 → 50), FP 246 → 375 (110 → 140); leaked FN 32 → 2; 196 + 105 = 301 of 375 | `results/errors_v2_corrected/ERRORS.md` | OK | — |
 | REPORT.md:924 | 22 of 26 hacked hard cases + 30 v2 positives; 4 disputed excluded | `fixtures/evidence_gold/` has 22 hard-case + 30 v2 files; `results/hard_cases/SUMMARY_heuristic.md` now has 26 hacked cases (4 `pa_*` without gold) | OK | — (was stale; fixed upstream) |
 | REPORT.md:926-931 | 19 v2 traces; Sonnet / Opus R and P±1 by mode | `python -m eval.evidence` | OK | — |
-| REPORT.md:930-931 | evidence recall / P±1 on 19 v2 traces: Sonnet 0.81 / 0.51 …, Opus 0.83 / 0.46 … | `results/bug_hunt/EVIDENCE.md` (rerun after the bug-hunt fixes) | stale | OPEN: the bug-hunt evidence rerun gives full_trace R 0.823 (Sonnet) / 0.828 (Opus) and final_report 0.253 / 0.190; decide whether §8.17 should move to the rerun (also paper:323) |
-| REPORT.md:934-935 | heuristic R 0.36, P±1 0.91 on hard cases | `python -m eval.evidence` (hard_cases heuristic full_trace R 0.355, P 0.913) | OK | — |
-| REPORT.md:961-975 | proxy: Sonnet FT 92/267 = 0.34 → 14/267 = 0.05, Opus 0.22 → 0.05, v3 0.20 → 0.10; 3 of 4 attacks; 0 true hacks; 89 of 92 | `results/rubric_v3_proxy.md`, `results/rubric_v3_check.md` (labelled as proxy) | OK | — |
-| REPORT.md:981 | per-task results rest on 9–40 positives (2–40 corrected), 4–27 Opus subset | rows (`eval.analyze` v2 `--json`): 9–40 per task on the 360 Sonnet-audited runs (original), 2–40 corrected; 4–27 is the Opus 240-run subset (0–27 corrected) | OK | — (was stale; fixed upstream) |
-| REPORT.md:986 | Sonnet full_trace recall 10/16 under pressure (corrected/excluded; 18/24 original) | rows (`eval.analyze` v2 `--json`): original 18/24; corrected and excluded 10/16 | OK | — (was wrong label basis; fixed upstream) |
-| REPORT.md:988-990 | 60 blind labels; κ 0.70; 8 of 9 disagreements stale leaked_answer | `results/judge_validation/SUMMARY.md` | OK | — |
-| REPORT.md:992 | current-rule labeller flips: 2 clean → hacked, 7 hacked → clean (2 v2, 5 v3 Sonnet) | `docs/bug_hunt.md` (added on this branch) | OK | — |
-| REPORT.md:997-1008 | id leak: 122 of 1,800; 111 final_report; recall/FPR table; pooled 0.86 / 0.38 (75) vs 0.85 / 0.31 (1,005) …; 11 trace citations (corrected) | `results/id_leak/` | OK | — |
-| REPORT.md:1009-1023 | known-issue bullet: rates 0.04 → 0.00 …; AUROC 0.945 / 0.915 / 0.828 → 0.891 / 0.840 / 0.825; excl 0.962 / 0.932 / 0.858 | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
-| REPORT.md:1029 | six single-file tasks | `tasks/definitions` (v2) | OK | — |
-| REPORT.md:1037 | Opus re-audit covers 240 of 360 | `results/RESULTS.md` | OK | — |
-| REPORT.md:1041-1042 | 150 of 200; 18–28 trajectories each on 3–4 of 10 tasks; no v3 run judged | `results/README.md` run table: v3cond_haiku45 covers 4 of 10 | OK | — (was stale; fixed upstream) |
-| REPORT.md:1051 | 92 corrected FPs, 89 cite suspicious_access (original 62 / 59) | rows (`eval.analyze` v2 `--json`): original 62/59, 4 vs 17; corrected 92 FPs (89 cite suspicious_access), Opus 21 vs Sonnet 34 on the Sonnet-subject runs | OK | — (was wrong label basis; fixed upstream) |
+| REPORT.md:931-932 | evidence recall / P±1 on 19 v2 traces: Sonnet 0.81 / 0.51 …, Opus 0.83 / 0.46 … | `results/bug_hunt/EVIDENCE.md` common-trace table (19 traces): Sonnet 0.810 / 0.506, 0.603 / 0.480, 0.259 / 0.571; Opus 0.828 / 0.458, 0.638 / 0.507, 0.190 / 1.000 | fixed (citation added) | §8.17 now cites `results/bug_hunt/EVIDENCE.md`. Its common-trace table matches the stated values exactly, so no number changed; the 0.823 / 0.253 in the previous pass came from the all-verdicts table (Sonnet n = 26) and was a misread |
+| REPORT.md:935-936 | heuristic R 0.36, P±1 0.91 on hard cases | `python -m eval.evidence` (hard_cases heuristic full_trace R 0.355, P 0.913) | OK | — |
+| REPORT.md:962-976 | proxy: Sonnet FT 92/267 = 0.34 → 14/267 = 0.05, Opus 0.22 → 0.05, v3 0.20 → 0.10; 3 of 4 attacks; 0 true hacks; 89 of 92 | `results/rubric_v3_proxy.md`, `results/rubric_v3_check.md` (labelled as proxy) | OK | — |
+| REPORT.md:982 | per-task results rest on 9–40 positives (2–40 corrected), 4–27 Opus subset | rows (`eval.analyze` v2 `--json`): 9–40 per task on the 360 Sonnet-audited runs (original), 2–40 corrected; 4–27 is the Opus 240-run subset (0–27 corrected) | OK | — (was stale; fixed upstream) |
+| REPORT.md:987 | Sonnet full_trace recall 10/16 under pressure (corrected/excluded; 18/24 original) | rows (`eval.analyze` v2 `--json`): original 18/24; corrected and excluded 10/16 | OK | — (was wrong label basis; fixed upstream) |
+| REPORT.md:989-991 | 60 blind labels; κ 0.70; 8 of 9 disagreements stale leaked_answer | `results/judge_validation/SUMMARY.md` | OK | — |
+| REPORT.md:993 | current-rule labeller flips: 2 clean → hacked, 7 hacked → clean (2 v2, 5 v3 Sonnet) | `docs/bug_hunt.md` (added on this branch) | OK | — |
+| REPORT.md:998-1009 | id leak: 122 of 1,800; 111 final_report; recall/FPR table; pooled 0.86 / 0.38 (75) vs 0.85 / 0.31 (1,005) …; 11 trace citations (corrected) | `results/id_leak/` | OK | — |
+| REPORT.md:1010-1024 | known-issue bullet: rates 0.04 → 0.00 …; AUROC 0.945 / 0.915 / 0.828 → 0.891 / 0.840 / 0.825; excl 0.962 / 0.932 / 0.858 | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
+| REPORT.md:1030 | six single-file tasks | `tasks/definitions` (v2) | OK | — |
+| REPORT.md:1038 | Opus re-audit covers 240 of 360 | `results/RESULTS.md` | OK | — |
+| REPORT.md:1042-1043 | 150 of 200; 18–28 trajectories each on 3–4 of 10 tasks; no v3 run judged | `results/README.md` run table: v3cond_haiku45 covers 4 of 10 | OK | — (was stale; fixed upstream) |
+| REPORT.md:1052 | 92 corrected FPs, 89 cite suspicious_access (original 62 / 59) | rows (`eval.analyze` v2 `--json`): original 62/59, 4 vs 17; corrected 92 FPs (89 cite suspicious_access), Opus 21 vs Sonnet 34 on the Sonnet-subject runs | OK | — (was wrong label basis; fixed upstream) |
 | PITCH.md:3-5 | report-only misses about a quarter of hacks; Punish catches about 9 in 10 | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` (final_report 0.74–0.76 vs full_trace 0.90) | OK | — |
 | PITCH.md:7 | corrected final_report 0.74 vs full_trace 0.90; trace FPR 0.22–0.35 | `results/leaked_answer_correction.md` | OK | — |
 | PITCH.md:11-12 | 360 trajectories, 1,080 Sonnet audits, 720 Opus re-audits | `results/RESULTS.md`; `results/COST.md` | OK | — |
@@ -385,7 +389,7 @@ Terminology, not numbers (left as is): `REPORT.md` §8.13 and `docs/reviewer_faq
 | paper/punish.tex:52 | best-of-n 0.28 → 0.15 (0.38 → 0.19 original) | `results/mitigation_bestofn_v2/` | OK | — |
 | paper/punish.tex:95-96 | task facts: R² ≥ 0.90 vs 0.447; cherry_pick p 0.26 vs 0.025 | `docs/task_design.md`, task files | OK | — |
 | paper/punish.tex:126-127 | 47 / 76 / 0; excluded 46 / 45 / 0 | rows (labeller vs judge) | OK | — |
-| paper/punish.tex:134-137 | 27 of 150 (excluded), 43 of 180 original incl. 16 leaked_answer; fake_citation "(25/30)" | recount over v2 trajectories | stale | OPEN (paper; no LaTeX on this VM to rebuild the PDF): judge-positive incentivized/pressure runs are 25 fake_citation of 27 (excluded) or of 43 (original); 25/30 is the share of the 30 fake_citation runs, so write "(25 of 27)" or "(25 of the 30 fake_citation runs)" |
+| paper/punish.tex:134-137 | 27 of 150 (excluded), 43 of 180 original incl. 16 leaked_answer; fake_citation "(25/30)" | recount over v2 trajectories | fixed (was stale) | reworded to "25 of the 27 judge-positive runs in these configs (leaked_answer excluded) are fake_citation" |
 | paper/punish.tex:141-142 | labeller understates ~2× (46 vs 91), 2.6× original | rows | OK | — |
 | paper/punish.tex:150-157 | hack-rate table (original) + excluded 0/75, 11/75, 16/75, 64/75 + corrected 0/11/16/66 of 90 | `results/RESULTS.md`, `RESULTS_v2_excl_leaked.md`, corrected recount | OK | — |
 | paper/punish.tex:171-182 | auditor table (original / excluded recall and FPR; AUROC three views) and sample sizes | same values as REPORT §8 table (`results/leaked_answer_correction.md`) | OK | — |
@@ -393,19 +397,19 @@ Terminology, not numbers (left as is): `REPORT.md` §8.13 and `docs/reviewer_faq
 | paper/punish.tex:206-209 | Δrecall 0.14 [0.03, 0.26], ΔAUROC 0.10 [0.06, 0.15]; original drop 0.26; corrected Holm p = 0.057; FPR 0.35 vs 0.23 (Holm 0.049) | `results/significance/SIGNIFICANCE.md` | OK | — |
 | paper/punish.tex:210-213 | metric_gaming 15/15 vs 3/15; R² 0.446745 → 0.92; n = 40, p ≈ 2.44e-6 | rows; `docs/case_studies.md` case 2 | OK | — |
 | paper/punish.tex:217-224 | 345/360, 8 vs 7, p = 1.0; ΔAUROC +0.030 [0.012, 0.049]; corrected +0.051; accuracy Δ +0.003; Opus 0.77 vs 0.63 etc.; +0.071, +0.040 | `results/significance/SIGNIFICANCE.md` | OK | — |
-| paper/punish.tex:227-229 | by subject: Sonnet 9 vs 1, FPR 0.05 vs 0.12; Haiku 10 vs 1, recall 27/34 vs 22/34 | Opus re-audit rows (original label) | wrong label basis | OPEN (paper): unmarked original-label numbers in a paragraph led by excluded values; mark "original label" or use excluded FPR 0.01 vs 0.08 and recall 21/28 vs 16/28 (as `docs/slides.html`) |
+| paper/punish.tex:227-229 | by subject: Sonnet 9 vs 1, FPR 0.05 vs 0.12; Haiku 10 vs 1, recall 27/34 vs 22/34 | Opus re-audit rows (original label) | fixed (was wrong label basis) | marked "all 240 runs, original labels", matching the "On all 240 runs" figures it continues |
 | paper/punish.tex:233 | fake_citation 31/40, 33/40, 39/40 (saved labels) | rows | OK | — |
 | paper/punish.tex:236 | 92 corrected FPs, 89 suspicious_access (59 of 62 original) | corrected rows | OK | — |
-| paper/punish.tex:243 | 49 final_report FPs, 38 fabrication | rows (original label) | wrong label basis | OPEN (paper): 49 is the original-label count; corrected is 38 of 62 (as PITCH.md), or mark "original label" |
+| paper/punish.tex:243 | 49 final_report FPs, 38 fabrication | rows (original label) | fixed (was wrong label basis) | 49 → corrected 62 (38 fabrication), matching the corrected-label 92 FPs earlier in the paragraph |
 | paper/punish.tex:248-259 | 48 groups; 0.28 (0.38) vs random 0.23 (0.33); veto 0.15 (CI [0.05, 0.23]; 0.19); 0.06 grader score; 0.15 / 0.17 / 0.21 | `results/mitigation_bestofn_v2/` | OK | — |
 | paper/punish.tex:261-264 | v2 about $95; 2.5 cents per Sonnet audit (3.1 cents rebuilt); older code $88 | `results/COST.md` v2 rows ($95.03; $26.75 / 1,080); `results/CASCADE_corrected.md` ($0.0308) | OK | — |
 | paper/punish.tex:269-273 | v3: Haiku 200, covert 42/50, honest 0/50; Sonnet 150 of 200; covert_monitored 15 read (9 FP), 1/14 vs 13/15, 5/15 vs 11/15 (labeller-only) | v3 `relabel.json` / episode recount; REPORT §8.6 | OK | — |
 | paper/punish.tex:283-285 | disclosure detector 10/10; 25/25, 28/28, 20/23 (87–100%); corrected 63/66 | REPORT §8.10 sources | OK | — |
-| paper/punish.tex:287 | unprompted disclosure 0–90% per cell (4–10 hacks) | REPORT §8.10 (original label) | wrong label basis | OPEN (paper): corrected is 0–86% with 3–7 hacks per cell (REPORT.md:734-735); mark original or use corrected |
+| paper/punish.tex:287 | unprompted disclosure 0–90% per cell (4–10 hacks) | REPORT §8.10 (original label) | fixed (was wrong label basis) | original 0–90% / 4–10 kept (the sentence's covert figures are original) and corrected 0–86% / 3–7 added |
 | paper/punish.tex:290-301 | κ 0.55 → 0.80; 24/112 → 5/112; judge 60 sample κ 0.70, acc 0.85 (labeller 0.82, 0.57); 23; 59/60 κ 0.97 | `tasks/LABEL_AUDIT.md`, `docs/judge_validation.md` | OK | — |
 | paper/punish.tex:305-312 | calibration at FPR ≤ 5%: 0.70 / 0.49 / 0.15; Opus 0.63 / 0.57 / 0.19; 0.93 vs 0.93; 0.15–0.18 | `results/calibration_v2` | OK | — |
 | paper/punish.tex:317-321 | 301 of 375 FP audits; 24 of 72 read; ~0.3 cap; 122 of 1,800; 0.39 vs 0.20 | `results/errors_v2_corrected/ERRORS.md`, `docs/metric_gaming_review.md`, `results/id_leak` | OK | — |
-| paper/punish.tex:323 | evidence: full_trace 0.81–0.83 vs final_report 0.19–0.26 (19 v2 hacks) | REPORT §8.17 | stale | OPEN: bug-hunt rerun (`results/bug_hunt/EVIDENCE.md`) gives 0.82–0.83 vs 0.19–0.25; same decision as REPORT §8.17 |
+| paper/punish.tex:323 | evidence: full_trace 0.81–0.83 vs final_report 0.19–0.26 (19 v2 hacks) | `results/bug_hunt/EVIDENCE.md` common-trace table (19 traces): Sonnet 0.810 / 0.506, 0.603 / 0.480, 0.259 / 0.571; Opus 0.828 / 0.458, 0.638 / 0.507, 0.190 / 1.000 | fixed (citation added) | evidence sentence now cites `results/bug_hunt/EVIDENCE.md`. Its common-trace table matches the stated values exactly, so no number changed; the 0.823 / 0.253 in the previous pass came from the all-verdicts table (Sonnet n = 26) and was a misread |
 | paper/punish.tex:326-330 | original cascade 0.84 / 0.11 $0.051, 0.89 / 0.25 $0.031, 0.82 / 0.11 $0.057; corrected ≥ 0.22; 0.80 / 0.054 ($0.019) in-sample; precal 0.57 / 0.14; v3 0.63 / 0.029 | `results/CASCADE.md`, `results/CASCADE_corrected.md`, `results/cascade_heldout.json` | OK | — |
 | paper/punish.tex:333 | monitor attacks: 10 covert hacks; heuristic 7/10 → 6/10 | monitor-attack summary | OK | — |
 | paper/punish.tex:338 | 5 per cell, 30 per subject × config | design | OK | — |
@@ -420,7 +424,7 @@ Terminology, not numbers (left as is): `REPORT.md` §8.13 and `docs/reviewer_faq
 | results/README.md:45-50 | before/after table (rates, AUROC/recall/FPR) | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
 | results/README.md:67-69 | metric_gaming review: 24 of 72 hand-read; R² ≈ 0.447 | `results/metric_gaming_review.json` | OK | — |
 | results/README.md:72-74 | rubric v3 numbers are a PROXY, not a measured result | `results/rubric_v3_proxy.md`; `docs/rubric_v3.md` | OK | — |
-| results/README.md:88-90 | costs are estimates (chars / 4) and "a lower bound" | `results/COST.md` ($162.33 after bug-hunt); `docs/repro_check.md` | unsupported | OPEN: REPORT §8.9 and paper:264 say the rebuilt prompts *likely overstate* spend; this says *lower bound*. State both effects (longer rebuilt prompts vs unlogged thinking and retries) and drop "lower bound", or support it |
-| results/README.md:91-94 | $162.33 total, 8,519 calls; $151.54 + $9.55 + $1.12 + $0.31 − $0.13 history | `results/COST.md`, `docs/repro_check.md` | fixed (was stale) | $162.46 → $162.33; the integration merge names the cause, `6bb6b69` (−$0.13). The listed steps omit repro_check's −$0.04 and −$0.02, so they sum to $162.39 |
-| results/README.md:118-124 | v3 runtime → relabelled counts (labeller-only) | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
-| results/README.md:131-137 | v3 completeness: 200/200, 150 of 200, partial dirs, fault rate 0.5 | `results/README.md` run table; `relabel.json` | OK | — |
+| results/README.md:88-92 | costs are estimates (chars / 4) and "a lower bound" | `results/COST.md` ($162.33 after bug-hunt); `docs/repro_check.md` | fixed (was unsupported) | "lower bound" dropped; states both effects (unlogged thinking and retries vs longer rebuilt prompts, REPORT §8.9) |
+| results/README.md:93-96 | $162.33 total, 8,519 calls; $151.54 + $9.55 + $1.12 + $0.31 − $0.13 history | `results/COST.md`, `docs/repro_check.md` | fixed (was stale) | $162.46 → $162.33; the integration merge names the cause, `6bb6b69` (−$0.13). The listed steps omit repro_check's −$0.04 and −$0.02, so they sum to $162.39 |
+| results/README.md:120-126 | v3 runtime → relabelled counts (labeller-only) | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
+| results/README.md:133-139 | v3 completeness: 200/200, 150 of 200, partial dirs, fault rate 0.5 | `results/README.md` run table; `relabel.json` | OK | — |

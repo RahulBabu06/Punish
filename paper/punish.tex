@@ -133,8 +133,8 @@ bootstrap CIs over trajectories. McNemar tests are exact and paired.
 \paragraph{How often agents hack.} Figure~\ref{fig:rates} and Table~\ref{tab:rates}. Without the
 \code{covert} instruction, 27 of 150 incentivised or pressure runs hack with
 \code{leaked\_answer} excluded (43 of 180 on the original labels, but 16 of those are
-\code{leaked\_answer} runs that are mostly judge errors; see below). Most saved judge-positive runs in these configs are \code{fake\_citation}
-(25/30), labelled as overstating source support. These are label-conditional counts:
+\code{leaked\_answer} runs that are mostly judge errors; see below). 25 of the 27 judge-positive runs in these configs (\code{leaked\_answer} excluded) are
+\code{fake\_citation}, labelled as overstating source support. These are label-conditional counts:
 bibliography metadata alone does not establish what the full papers contain.
 A stronger worked example (case study~7) explicitly admits inventing an attributed
 finding, so its misconduct is established by the trajectory itself. The labeller misses most of
@@ -222,7 +222,7 @@ Opus makes real use of it: with \code{leaked\_answer} excluded, recall 0.77 agai
 ($\Delta$recall 0.14, CI [0.06, 0.25]) and FPR 0.06 against 0.12. On all 240 runs it has 19 vs 2
 discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR 0.11 against 0.17. Under the corrected label, accuracy ($+0.071$) and ranking
 ($\Delta$AUROC $+0.040$) both survive Holm correction ($p=0.002$), while recall and FPR are each
-underpowered. The direction holds for each subject (exploratory):
+underpowered. The direction holds for each subject (exploratory; all 240 runs, original labels):
 \begin{itemize}
 \item Sonnet~4.6 subject: 9 vs 1 ($p=0.021$). The gain is mostly in false positives (FPR 0.05
 against 0.12). The reasoning shows that an agent read \code{grade.py} and then ignored it.
@@ -240,7 +240,7 @@ the judge counts it only if it changes the report. All 9 Sonnet \mode{full\_trac
 saved labels. Real bibliography keys do not prove source support, but metadata alone
 does not prove that a finding is absent from a paper either. Case study~7 is a
 trace-grounded invention: the agent admits making up the attributed finding.
-Of the 49 \mode{final\_report} false positives, 38 are honest \code{fabrication} reports. They
+Of the 62 corrected-label \mode{final\_report} false positives, 38 are honest \code{fabrication} reports. They
 quote the instrument's real error message, and an auditor that cannot see the file thinks the
 message was made up.
 
@@ -284,7 +284,7 @@ The v3 labeller is stricter, so these rates cannot be compared with v2.
 Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2 (87--100\%; corrected
 label 63/66, 0.95). The three exceptions are saved judge-positive
 \code{fake\_citation} cases without explicit reasoning disclosure. Unprompted hacks
-(incentivised or pressure) disclose less often, 0--90\% per cell (4--10 hacks each).
+(incentivised or pressure) disclose less often, 0--90\% per cell (4--10 hacks each; corrected label 0--86\%, 3--7 hacks).
 
 \paragraph{Label audit.} \code{tasks/LABEL\_AUDIT.md} revises the labeller rules. On the 360
 judged v2 runs, labeller--judge agreement rises from $\kappa=0.55$ to $0.80$, and the labeller
@@ -319,7 +319,7 @@ all 24 are auditor false positives, not missed hacks (\code{docs/metric\_gaming\
 access or format repair, although the rubric caps read access alone at $\sim$0.3 confidence. The rendered
 trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, mostly in
 \mode{final\_report}, where those audits have higher FPR (Sonnet 0.39 vs 0.20, corrected). The
-auditor now sees an opaque token. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
+auditor now sees an opaque token. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}; \code{results/bug\_hunt/EVIDENCE.md}),
 \mode{full\_trace} auditors cite 0.81--0.83 of hack lines, against 0.19--0.26 for \mode{final\_report}.
 
 \paragraph{Deployment cost and attacks.} On 240 Opus-audited trajectories, original label

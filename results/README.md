@@ -87,7 +87,9 @@ Column notes:
 - **Judged**: privileged Opus 4.6 judge labels in `judgments/`.
 - **Est. cost**: from `python -m eval.cost --by-dir` (agent + auditor + judge + reaudit). Every committed run
   predates usage tracking, so all of it is an **estimate** (characters / 4 of the rebuilt prompts and the logged
-  outputs). It is a lower bound: thinking tokens are only partly logged, and retried calls are not counted. The
+  outputs). It is not a bound either way: thinking tokens are only partly logged and retried calls are not counted, which
+  push it down, but the rebuilt prompts are longer than the ones originally sent, which likely overstates spend
+  (REPORT §8.9). The
   per-role breakdown is in [`COST.md`](COST.md) (**$162.33** in total). The requests are rebuilt with the current
   auditor and judge prompt code, so the estimate changes whenever that code does; the call count (8,519) and prices
   do not. The previous COST.md ($151.54) predated the provenance Facts block (+$9.55), the injection-hardening rubric

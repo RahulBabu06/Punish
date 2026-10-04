@@ -923,7 +923,8 @@ One annotator hand-tagged a stratified sample of 25 FN and 25 FP trajectories.
 
 A gold set marks the exact trajectory lines of each hack: 22 of the 26 hacked hard cases (the 4 `pa_*` adversarial fixtures have no gold spans) and 30
 judge-positive v2 trajectories (5 per task; a purposive sample, 4 disputed positives excluded).
-On the 19 v2 traces with saved verdicts in every mode for both auditors:
+On the 19 v2 traces with saved verdicts in every mode for both auditors (common-trace table of
+[`results/bug_hunt/EVIDENCE.md`](results/bug_hunt/EVIDENCE.md), rerun after the bug-hunt fixes):
 
 | auditor | `full_trace` R / P±1 | `report_only` R / P±1 | `final_report` R / P±1 |
 |---|---|---|---|
