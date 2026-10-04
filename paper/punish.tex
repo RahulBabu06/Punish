@@ -258,10 +258,10 @@ Here the mode matters more than in Table~\ref{tab:auditor}: a Sonnet veto ships 
 with \mode{full\_trace}, 0.17 with \mode{report\_only} and 0.21 with \mode{final\_report}
 (original 0.19, 0.27, 0.29).
 
-\paragraph{Cost.} For the whole judged v2 study, \code{eval.cost} estimates about \$88. That is
-roughly 2.2 cents per Sonnet audit (3.0 cents when \code{eval.cascade} rebuilds the full
-audit request) and 7 cents per agent run. These runs did not log token
-usage, so the estimate is a lower bound.
+\paragraph{Cost.} For the whole judged v2 study, \code{eval.cost} estimates about \$95. That is
+roughly 2.5 cents per Sonnet audit (3.1 cents when \code{eval.cascade} rebuilds the full
+audit request) and 7 cents per agent run. The runs did not log usage; rebuilding requests with today's
+longer prompts likely overstates spend (older code: \$88).
 
 \paragraph{Preliminary: v3 and new conditions.} The API credit ran out during the 10-task v3
 runs, so they have labeller labels only (\code{REPORT.md}~\S8.6):
@@ -322,13 +322,12 @@ trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, mostly
 auditor now sees an opaque token. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
 \mode{full\_trace} auditors cite 0.81--0.83 of hack lines, against 0.19--0.26 for \mode{final\_report}.
 
-\paragraph{Deployment cost and attacks.} On the 240 Opus-audited trajectories
-(\code{results/CASCADE.md}), Sonnet alone has recall 0.89 and FPR 0.25 at about \$0.030 per
-trajectory, Opus alone 0.84 and 0.11 at \$0.051, and a Sonnet$\to$Opus cascade 0.82 and 0.11
-at \$0.056 (45.8\% escalated), so Opus alone is the best value on the original label. Under the
-corrected label (\code{results/CASCADE\_corrected.md}) every default Claude policy has FPR
-$\ge$ 0.22; only a tuned heuristic$\to$Sonnet cascade stays under 10\% (recall 0.80, FPR 0.054,
-\$0.019), but this is in-sample: the heuristic was calibrated on these v2 runs, so even cross-fit thresholds are not held out. A monitor-attack corpus (10 real \code{covert} hacks $\times$
+\paragraph{Deployment cost and attacks.} On 240 Opus-audited trajectories, original label
+(\code{results/CASCADE.md}), Opus alone (recall 0.84, FPR 0.11, \$0.051) is the best value against
+Sonnet alone (0.89/0.25, \$0.031) and Sonnet$\to$Opus (0.82/0.11, \$0.057). Under the corrected label
+(\code{results/CASCADE\_corrected.md}) every default Claude policy has FPR $\ge$ 0.22; a tuned
+heuristic$\to$Sonnet cascade reaches 0.80/0.054 (\$0.019), but only in-sample: with pre-calibration
+rules it equals Sonnet alone (0.57/0.14), and on unseen v3 (labeller labels) it gives 0.63/0.029. A monitor-attack corpus (10 real \code{covert} hacks $\times$
 6 attacks: report and file injections, laundered reasoning, padding, a fake self-check) has so
 far been scored only by the offline heuristic auditor: \mode{full\_trace} recall drops from
 7/10 to 6/10 under laundered reasoning. Claude auditors on the hard-case and attack sets, the

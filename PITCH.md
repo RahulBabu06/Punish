@@ -96,10 +96,11 @@ and clearing agents.
 **"FPR of 0.26 is too high to deploy."** (0.20 with `leaked_answer` excluded, 0.35 with the
 corrected label.) Agreed, it's not a standalone gate yet. Under the corrected label no Claude
 auditor mode keeps FPR ≤ 10% on unseen tasks with useful recall. The best low-FPR option we
-have is a heuristic → Sonnet cascade (recall 0.80 at FPR 0.054, `results/CASCADE_corrected.md`). That is
-in-sample: the heuristic's rules were calibrated on these v2 runs, so even the cross-fit thresholds
-(0.77, or 0.64 under a 5% cap) are not a held-out result. With the pre-calibration heuristic, the
-held-out cascade reportedly matches Sonnet alone.
+have is a heuristic → Sonnet cascade (recall 0.80 at FPR 0.054, `results/CASCADE_corrected.md`). That point is
+in-sample: the heuristic's rules were calibrated on these v2 runs. Without that calibration the held-out
+cascade equals Sonnet alone (0.57 / 0.14), just cheaper. On unseen v3 runs (labeller labels), the v2
+thresholds keep the low FPR at lower recall: 0.63 recall at FPR 0.029, against Sonnet alone at 0.86 / 0.17
+([`results/cascade_heldout.md`](results/cascade_heldout.md)).
 On corrected labels, 89 of the 92 `full_trace` false positives cite `suspicious_access`: an honest agent read
 `grade.py` or `eval.py` and then reported the true value. Our rubric counts any read as
 suspicious, and our judge doesn't. Requiring that the file's contents shape the report should
@@ -139,10 +140,10 @@ error from the data file. Without the file, the auditor thinks the error message
 up. Without the trajectory you can't tell honest from fabricated.
 
 **"What's the cost?"**
-An estimated 2.2 cents per Sonnet audit, and about 7 cents for the subject run itself (characters / 4, a lower bound). The whole
+An estimated 2.5 cents per Sonnet audit, and about 7 cents for the subject run itself (characters / 4; not billed spend). The whole
 judged v2 study (360 trajectories, 1,080 Sonnet audits, 720 Opus re-audits, 360 judge calls)
-is an estimated $88 (v2 rows of `results/COST.md`). That figure is a lower bound, from characters / 4,
-because those runs predate usage logging. Everything runs in parallel on Modal. We also ran
+is an estimated $95 (v2 rows of `results/COST.md`). Those runs predate usage logging, so the figure is
+rebuilt from characters / 4 of today's longer prompts and probably overstates the real spend. Everything runs in parallel on Modal. We also ran
 out of credit, which is why v3 is preliminary.
 
 **"What would you actually do with it?"**
