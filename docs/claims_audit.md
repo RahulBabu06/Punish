@@ -65,6 +65,30 @@ label basis is stated):
 
 `paper/punish.pdf` was rebuilt from the edited source with Tectonic 0.15.0 (`cd paper && tectonic punish.tex`).
 
+### Paper final pass on `devin/paper-final`
+
+`paper/punish.tex` was revised off integration `bbbbb40` per `docs/judge_review.md` and
+`docs/methodology_review.md`; the `paper/punish.tex` line numbers in the table below refer to `17595c3`.
+Every new or changed paper number was rechecked (all OK) and is pinned by
+`tests/test_claims_audit.py::test_paper_final_numbers_and_caveats`:
+
+- Headline basis: the abstract, Table 2 (now corr / excl / orig) and the results text lead with the corrected
+  label (93/360; labeller 47 of 93; covert 66/90, pressure 16/90, incentivised 11/90, honest 0/90).
+- `paper/punish.tex:47-48` (was OK, misleading): the all-run Opus recall 0.84 vs 0.73 sat next to the McNemar
+  accuracy $p<0.001$. Removed; the paper now gives corrected accuracy +0.071 (19 vs 2, Holm p = 0.002) and,
+  separately, recall 0.63 → 0.77 (Holm p = 0.070), FPR 0.27 → 0.22 (Holm p = 0.157) from
+  `results/significance/SIGNIFICANCE.md`.
+- Cascade (`results/cascade_heldout.json`): v2 in-sample 80.4% / 5.4%, cross-fit thresholds 76.8% / 5.4%,
+  pre-calibration 57.1% / 14.1%, v3 held out (labeller-only) 62.7% / 2.9%.
+- Methods: percentile trajectory bootstrap (paired for mode deltas), best-of-n CI over task × config groups,
+  exact McNemar, DeLong, Holm per label and family, Wilson for slices.
+- Robustness (`results/robustness/robustness.json`): role named in 75/90 covert reasonings (0/270 others), Opus
+  gain +0.056 without them (13 vs 2, unadjusted p = 0.007); Sonnet `report_only` − `final_report` recall
+  +0.33 covert vs −0.22 natural (`final_report` 26/27 natural), cell CI [−0.01, 0.35]; natural recall Sonnet
+  19/27, Opus 5/17; cell-clustered CIs up to about 2× wider; precision 0.48 → 0.12 at 5% prevalence.
+
+The PDF was rebuilt with Tectonic (`cd paper && tectonic punish.tex`) and is still 6 pages.
+
 ### Fixed on this branch
 
 - `README.md:24`: corrected FPR 0.35 → 0.34 (92/267 = 0.3446)
