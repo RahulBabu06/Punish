@@ -22,8 +22,8 @@ USD per trajectory is the `eval/cost.py` chars/4 estimate of the audit request, 
 
 | cohort (label) | heuristic rules | thresholds | heuristic -> Sonnet recall | FPR | USD / traj | Sonnet only (same thresholds rule): recall / FPR / USD |
 |---|---|---|---|---|---|---|
-| v2, 240 (corrected) | calibrated on v2: **in-sample** | tuned in-sample, FPR <= 10% | 45/56 = 0.804 | 10/184 = 0.054 | $0.0187 | no point with FPR <= 10% |
-| v2, 240 (corrected) | calibrated on v2: **in-sample** | leave-one-experiment-out | 43/56 = 0.768 | 10/184 = 0.054 | $0.0160 | 32/56 = 0.571 / 26/184 = 0.141 / $0.0307 |
+| v2, 240 (corrected) | calibrated on v2: **in-sample** | tuned in-sample, FPR <= 10% | 45/56 = 0.804 | 10/184 = 0.054 | $0.0188 | no point with FPR <= 10% |
+| v2, 240 (corrected) | calibrated on v2: **in-sample** | leave-one-experiment-out | 43/56 = 0.768 | 10/184 = 0.054 | $0.0161 | 32/56 = 0.571 / 26/184 = 0.141 / $0.0308 |
 | v2, 240 (corrected) | pre-calibration `f664c95` | tuned in-sample, FPR <= 10% | no point with FPR <= 10% | | | no point with FPR <= 10% |
 | v2, 240 (corrected) | pre-calibration `f664c95` | leave-one-experiment-out | 32/56 = 0.571 | 26/184 = 0.141 | $0.0220 | 32/56 = 0.571 / 26/184 = 0.141 / $0.0308 |
 | v2, 240 (corrected) | pre-calibration `f664c95` | defaults (own flags) | 45/56 = 0.804 | 63/184 = 0.342 | $0.0255 | 47/56 = 0.839 / 63/184 = 0.342 / $0.0308 |
@@ -49,10 +49,10 @@ What this says:
 
 - **Labeller-only labels.** The deterministic labeller (`tasks/registry.py:label`) and the heuristic are separate
   code, but both are rule-based and look at the same observable events (files read, numbers reported). Agreement
-  between them may overstate the heuristic. A check against independent labels uses the 40-trajectory hand-labelled
+  between them may overstate the heuristic. A check against independent labels uses the 70-trajectory hand-labelled
   sample in `results/v3_hand_review`, with ambiguous cases dropped and results weighted to the population by stratum.
-  It gives the v2-tuned cascade 9/13 recall (weighted 0.69) and 1/26 FPR (weighted 0.02). Sonnet only gets 12/13
-  (0.92) and 3/26 (0.11). The direction agrees; the sample is far too small for intervals that mean anything.
+  It gives the v2-tuned cascade 10/14 recall (weighted 0.71) and 2/55 FPR (weighted 0.04). Sonnet only gets 13/14
+  (0.93) and 6/55 (0.11). The direction agrees; the sample is far too small for intervals that mean anything.
 - **"Held out" means outside the documented calibration set,** not a timestamp guarantee. Two heuristic-side
   commits postdate the v3 runs. `2e7c2aa` changed provenance Facts; `4adb558` changed `final_report` only.
   Rerunning v3 with the tree at `5e0630c` (before the v3 results were committed) changes 17 of 450 `full_trace`

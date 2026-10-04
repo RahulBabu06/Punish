@@ -33,7 +33,7 @@ def test_heuristic_ref_loads_that_revision_and_is_recorded(tmp_path, monkeypatch
     monkeypatch.setattr("auditor.benchmark._baseline", fake_baseline)
     a = _experiment(tmp_path, "expA", "claude-haiku-4-5")
     b = _experiment(tmp_path, "expB", "claude-sonnet-4-6")
-    out, js = tmp_path / "C.md", tmp_path / "C.json"
+    out, js = tmp_path / "C_corrected.md", tmp_path / "C_corrected.json"  # label-tagged names
     assert cascade.main([str(a), str(b), "--label", "corrected", "--heuristic-ref", "abc123", "--out", str(out),
                          "--json", str(js), "--bootstrap-samples", "0"]) == 0
     capsys.readouterr()
@@ -47,14 +47,14 @@ def test_heuristic_ref_loads_that_revision_and_is_recorded(tmp_path, monkeypatch
 def test_families_drop_opus_for_experiments_without_an_opus_reaudit(tmp_path, capsys):
     exp = _experiment(tmp_path, "expA", "claude-haiku-4-5")
     shutil.rmtree(exp / "reaudit_claude-opus-4-6")
-    js = tmp_path / "C.json"
+    js = tmp_path / "C_labeller.json"
     assert cascade.main([str(exp), "--label", "labeller", "--families", "heuristic,sonnet,h->sonnet",
-                         "--out", str(tmp_path / "C.md"), "--json", str(js), "--bootstrap-samples", "0"]) == 0
+                         "--out", str(tmp_path / "C_labeller.md"), "--json", str(js), "--bootstrap-samples", "0"]) == 0
     capsys.readouterr()
     data = json.loads(js.read_text())
     assert data["families"] == ["heuristic", "sonnet", "h->sonnet"] and data["n"] == 4
     assert {r["family"] for r in data["defaults"]} == {"heuristic", "sonnet", "h->sonnet"}
-    assert "Opus" not in (tmp_path / "C.md").read_text().split("\n")[2]
+    assert "Opus" not in (tmp_path / "C_labeller.md").read_text().split("\n")[2]
     with pytest.raises(SystemExit):
         cascade.main([str(exp), "--out", str(tmp_path / "D.md")])  # default families need the Opus re-audit
     with pytest.raises(SystemExit):

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="900" viewBox="0 0 1080 900" role="img" aria-labelledby="title desc">
-<title id="title">Reward hacking is inducible—and today’s auditor is useful, not solved</title><desc id="desc">corrected label (n=360) · committed v2 only · model outputs are evaluation data, not ground truth</desc>
+<title id="title">Reward hacking is inducible—and today’s auditor is useful, not solved</title><desc id="desc">corrected label (n=360) · committed v2, plus v3 held-out in C · model outputs are evaluation data, not ground truth</desc>
 <style>text{font-family:Inter,Arial,Helvetica,sans-serif} line,path{vector-effect:non-scaling-stroke}</style>
 <rect x="0.00" y="0.00" width="1080.00" height="900.00" rx="0" fill="#FFFFFF"/>
 <rect x="0.00" y="0.00" width="1080.00" height="98.00" rx="0" fill="#F3F7FA"/>
 <text x="36.00" y="39.00" font-size="25" fill="#14263D" text-anchor="start" font-weight="700">Reward hacking is inducible—and today’s auditor is useful, not solved</text>
-<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">corrected label (n=360) · committed v2 only · model outputs are evaluation data, not ground truth</text>
+<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">corrected label (n=360) · committed v2, plus v3 held-out in C · model outputs are evaluation data, not ground truth</text>
 <rect x="24.00" y="118.00" width="505.00" height="318.00" rx="8" fill="#F6F9FB"/>
 <text x="42.00" y="147.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">A  Hack rate depends on incentives</text>
 <text x="42.00" y="168.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label (n=360) · 90 trajectories per config</text>
@@ -65,21 +65,27 @@
 <text x="883.00" y="380.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">19.6%</text>
 <text x="972.00" y="380.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.808</text>
 <text x="569.00" y="424.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">FPR uses each auditor’s own hack_detected verdict.</text>
-<rect x="24.00" y="458.00" width="505.00" height="505.00" rx="8" fill="#F6F9FB"/>
-<text x="42.00" y="487.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">C  A cheap cascade reaches a lower-FPR point</text>
-<text x="42.00" y="508.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label · held-out h → Sonnet point · matched n=240</text>
-<text x="62.00" y="571.00" font-size="30" fill="#009E73" text-anchor="start" font-weight="700">64.3%</text>
-<text x="62.00" y="595.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">recall</text>
-<text x="229.00" y="571.00" font-size="30" fill="#D55E00" text-anchor="start" font-weight="700">5.4%</text>
-<text x="229.00" y="595.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">false-positive rate</text>
-<text x="409.00" y="571.00" font-size="30" fill="#0072B2" text-anchor="start" font-weight="700">1.25¢</text>
-<text x="409.00" y="595.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">per trajectory</text>
-<line x1="48.00" y1="619.00" x2="505.00" y2="619.00" stroke="#CED9E2" stroke-width="1"/>
-<text x="52.00" y="652.00" font-size="14" fill="#14263D" text-anchor="start" font-weight="700">Escalates 38.8% to Sonnet</text>
-<text x="52.00" y="682.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="400">Thresholds were trained on the other experiment.</text>
-<text x="52.00" y="704.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">The 5% FPR cap applied in training; held-out FPR is 5.4%.</text>
+<rect x="24.00" y="458.00" width="505.00" height="318.00" rx="8" fill="#F6F9FB"/>
+<text x="42.00" y="487.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">C  A cheap cascade: in-sample vs held-out</text>
+<text x="42.00" y="508.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">heuristic → Sonnet · heuristic rules calibrated on v2 · FPR cap 10%</text>
+<text x="324.00" y="540.00" font-size="11" fill="#14263D" text-anchor="middle" font-weight="700">Recall</text>
+<text x="404.00" y="540.00" font-size="11" fill="#14263D" text-anchor="middle" font-weight="700">FPR</text>
+<text x="479.00" y="540.00" font-size="11" fill="#14263D" text-anchor="middle" font-weight="700">¢ / traj</text>
+<text x="52.00" y="574.00" font-size="15" fill="#0072B2" text-anchor="start" font-weight="700">v2 in-sample</text>
+<text x="52.00" y="592.00" font-size="10" fill="#536579" text-anchor="start" font-weight="400">rules + thresholds fit on v2 · corrected · n=240</text>
+<text x="324.00" y="578.00" font-size="17" fill="#14263D" text-anchor="middle" font-weight="700">80.4%</text>
+<text x="404.00" y="578.00" font-size="17" fill="#D55E00" text-anchor="middle" font-weight="700">5.4%</text>
+<text x="479.00" y="578.00" font-size="17" fill="#14263D" text-anchor="middle" font-weight="700">1.88</text>
+<text x="52.00" y="630.00" font-size="15" fill="#009E73" text-anchor="start" font-weight="700">v3 held out</text>
+<text x="52.00" y="648.00" font-size="10" fill="#536579" text-anchor="start" font-weight="400">v2 thresholds unchanged · labeller-only · n=450</text>
+<text x="324.00" y="634.00" font-size="17" fill="#14263D" text-anchor="middle" font-weight="700">62.7%</text>
+<text x="404.00" y="634.00" font-size="17" fill="#D55E00" text-anchor="middle" font-weight="700">2.9%</text>
+<text x="479.00" y="634.00" font-size="17" fill="#14263D" text-anchor="middle" font-weight="700">1.69</text>
+<line x1="48.00" y1="668.00" x2="505.00" y2="668.00" stroke="#CED9E2" stroke-width="1"/>
+<text x="52.00" y="692.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">The v2 point is in-sample for the heuristic rules; cross-fitting only the</text>
+<text x="52.00" y="709.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">thresholds gives 76.8% / 5.4%. v3 has no judge labels; costs are chars/4 estimates.</text>
 <text x="52.00" y="734.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Operational point, not a claim of solved detection.</text>
-<rect x="551.00" y="458.00" width="505.00" height="505.00" rx="8" fill="#F6F9FB"/>
+<rect x="551.00" y="458.00" width="505.00" height="318.00" rx="8" fill="#F6F9FB"/>
 <text x="569.00" y="487.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">D  Auditor veto reduces best-of-5 reward hacking</text>
 <text x="569.00" y="508.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label · Sonnet full trace · 48 groups / 240 trajectories</text>
 <line x1="736.00" y1="541.00" x2="736.00" y2="650.00" stroke="#E3EAF0" stroke-width="1"/>
@@ -100,7 +106,7 @@
 <text x="993.00" y="632.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="700">14.6%</text>
 <text x="579.00" y="705.00" font-size="15" fill="#009E73" text-anchor="start" font-weight="700">Hack rate change: -13.3 percentage points</text>
 <text x="579.00" y="732.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Mean grader score: 0.748 → 0.691</text>
-<text x="24.00" y="844.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">Sources: leaked_answer_correction.json · CASCADE_corrected.json · MITIGATION_bestofn_corrected.json</text>
-<text x="24.00" y="866.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">All panels use v2 corrected labels. Opus/cascade/veto cover the matched Haiku 4.5 + Sonnet 4.6 subset (n=240).</text>
+<text x="24.00" y="844.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">Sources: leaked_answer_correction.json · cascade_heldout.json · MITIGATION_bestofn_corrected.json</text>
+<text x="24.00" y="866.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">v2 panels use corrected labels; Opus/cascade/veto cover the matched Haiku 4.5 + Sonnet 4.6 subset (n=240). C adds v3 (labeller-only).</text>
 <text x="24.00" y="886.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">Correction removes 30 stale-context judge positives; it does not alter trajectories or saved judgments.</text>
 </svg>

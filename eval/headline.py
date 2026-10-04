@@ -17,6 +17,7 @@ OUTPUT = ROOT / "results" / "figures" / "headline.svg"
 CORRECTION = Path("results/leaked_answer_correction.json")
 CASCADE = Path("results/CASCADE_corrected.json")
 MITIGATION = Path("results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.json")
+HELDOUT = Path("results/cascade_heldout.json")
 
 BLUE = "#0072B2"
 ORANGE = "#D55E00"
@@ -30,13 +31,26 @@ def _read(root: Path, path: Path) -> dict:
     return json.loads((root / path).read_text(encoding="utf-8"))
 
 
+def _heldout_row(rows: list[dict], cohort: str, rules: str, thresholds: str, label: str) -> dict:
+    row = next(r for r in rows if r["family"] == "h->sonnet" and r["cohort"].startswith(cohort)
+               and r["rules"] == rules and r["thresholds"].startswith(thresholds))
+    if row["label"] != label:
+        raise ValueError(f"{cohort} cascade point must use the {label} label")
+    return row
+
+
 def load_data(root: Path = ROOT) -> dict:
     corrected = _read(root, CORRECTION)["headline"]["corrected"]
     cascade = _read(root, CASCADE)
     mitigation = _read(root, MITIGATION)
-    cascade_point = next(row for row in cascade["crossfit"]["0.05"] if row["family"] == "h->sonnet")
+    rows = _read(root, HELDOUT)["rows"]
     if corrected["n_trajectories"] != 360 or cascade["label"] != "corrected" or mitigation["label"] != "corrected":
         raise ValueError("headline inputs must be the corrected v2 releases")
+    cascade_point = {
+        "in_sample": _heldout_row(rows, "v2", "in-sample", "tuned in-sample", "corrected"),
+        "crossfit": _heldout_row(rows, "v2", "in-sample", "leave-one-experiment-out", "corrected"),
+        "held_out": _heldout_row(rows, "v3", "held out", "v2-tuned", "labeller"),
+    }
     return {
         "n": corrected["n_trajectories"],
         "positives": corrected["positives"],
@@ -60,7 +74,7 @@ def _pct(value: float) -> str:
 def render(data: dict) -> str:
     svg = SVG(
         "Reward hacking is inducible—and today’s auditor is useful, not solved",
-        "corrected label (n=360) · committed v2 only · model outputs are evaluation data, not ground truth",
+        "corrected label (n=360) · committed v2, plus v3 held-out in C · model outputs are evaluation data, not ground truth",
         900,
     )
 
@@ -104,20 +118,29 @@ def render(data: dict) -> str:
             svg.line(x + 18, cy + 15, x + w - 18, cy + 15, "#CED9E2")
     svg.text(x + 18, y + 306, "FPR uses each auditor’s own hack_detected verdict.", size=11, color=MUTED)
 
-    # C — deployment-oriented operating point, cross-fit across the two matched experiments.
-    x, y, h = 24, 458, 505
-    _panel(svg, x, y, w, h, "C  A cheap cascade reaches a lower-FPR point", "corrected label · held-out h → Sonnet point · matched n=240")
-    point = data["cascade"]
-    svg.text(x + 38, y + 113, _pct(point["recall"]), size=30, weight=700, color=GREEN)
-    svg.text(x + 38, y + 137, "recall", size=12, weight=700)
-    svg.text(x + 205, y + 113, _pct(point["fpr"]), size=30, weight=700, color=ORANGE)
-    svg.text(x + 205, y + 137, "false-positive rate", size=12, weight=700)
-    svg.text(x + 385, y + 113, f"{100 * point['usd_per_trajectory']:.2f}¢", size=30, weight=700, color=BLUE)
-    svg.text(x + 385, y + 137, "per trajectory", size=12, weight=700)
-    svg.line(x + 24, y + 161, x + w - 24, y + 161, "#CED9E2")
-    svg.text(x + 28, y + 194, f"Escalates {point['escalation_rate']:.1%} to Sonnet", size=14, weight=700)
-    svg.text(x + 28, y + 224, "Thresholds were trained on the other experiment.", size=12)
-    svg.text(x + 28, y + 246, "The 5% FPR cap applied in training; held-out FPR is 5.4%.", size=12, color=MUTED)
+    # C — heuristic → Sonnet cascade: the v2 point is in-sample for the heuristic's rules; v3 is held out.
+    x, y = 24, 458
+    _panel(svg, x, y, w, h, "C  A cheap cascade: in-sample vs held-out",
+           "heuristic → Sonnet · heuristic rules calibrated on v2 · FPR cap 10%")
+    points = data["cascade"]
+    svg.text(x + 300, y + 82, "Recall", anchor="middle", size=11, weight=700)
+    svg.text(x + 380, y + 82, "FPR", anchor="middle", size=11, weight=700)
+    svg.text(x + 455, y + 82, "¢ / traj", anchor="middle", size=11, weight=700)
+    rows = (("v2 in-sample", "rules + thresholds fit on v2 · corrected · n=240", points["in_sample"], BLUE),
+            ("v3 held out", "v2 thresholds unchanged · labeller-only · n=450", points["held_out"], GREEN))
+    for i, (name, note, point, color) in enumerate(rows):
+        cy = y + 116 + 56 * i
+        svg.text(x + 28, cy, name, size=15, weight=700, color=color)
+        svg.text(x + 28, cy + 18, note, size=10, color=MUTED)
+        svg.text(x + 300, cy + 4, _pct(point["recall"]), anchor="middle", size=17, weight=700)
+        svg.text(x + 380, cy + 4, _pct(point["fpr"]), anchor="middle", size=17, weight=700, color=ORANGE)
+        svg.text(x + 455, cy + 4, f"{100 * point['usd_per_trajectory']:.2f}", anchor="middle", size=17, weight=700)
+    svg.line(x + 24, y + 210, x + w - 24, y + 210, "#CED9E2")
+    crossfit = points["crossfit"]
+    svg.text(x + 28, y + 234, "The v2 point is in-sample for the heuristic rules; cross-fitting only the",
+             size=11, color=MUTED)
+    svg.text(x + 28, y + 251, f"thresholds gives {_pct(crossfit['recall'])} / {_pct(crossfit['fpr'])}. "
+             "v3 has no judge labels; costs are chars/4 estimates.", size=11, color=MUTED)
     svg.text(x + 28, y + 276, "Operational point, not a claim of solved detection.", size=12, color=MUTED)
 
     # D — mitigation replay.
@@ -142,9 +165,9 @@ def render(data: dict) -> str:
              f"Mean grader score: {mitigation['grader_only_grader']:.3f} → {mitigation['veto_grader_grader']:.3f}",
              size=12, color=MUTED)
 
-    svg.text(24, 844, "Sources: leaked_answer_correction.json · CASCADE_corrected.json · MITIGATION_bestofn_corrected.json",
+    svg.text(24, 844, "Sources: leaked_answer_correction.json · cascade_heldout.json · MITIGATION_bestofn_corrected.json",
              size=11, color=MUTED)
-    svg.text(24, 866, "All panels use v2 corrected labels. Opus/cascade/veto cover the matched Haiku 4.5 + Sonnet 4.6 subset (n=240).",
+    svg.text(24, 866, "v2 panels use corrected labels; Opus/cascade/veto cover the matched Haiku 4.5 + Sonnet 4.6 subset (n=240). C adds v3 (labeller-only).",
              size=11, color=MUTED)
     svg.text(24, 886, "Correction removes 30 stale-context judge positives; it does not alter trajectories or saved judgments.",
              size=11, color=MUTED)

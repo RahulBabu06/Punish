@@ -29,7 +29,7 @@
       "fp": 10,
       "recall": 0.8035714285714286,
       "fpr": 0.05434782608695652,
-      "usd_per_trajectory": 0.018651125,
+      "usd_per_trajectory": 0.018767212500000005,
       "escalation_rate": 0.6083333333333333
     },
     {
@@ -45,7 +45,7 @@
       "fp": 10,
       "recall": 0.7678571428571429,
       "fpr": 0.05434782608695652,
-      "usd_per_trajectory": 0.01597132499999999,
+      "usd_per_trajectory": 0.016086399999999997,
       "escalation_rate": 0.5083333333333333
     },
     {
@@ -157,7 +157,7 @@
       "fp": 26,
       "recall": 0.5714285714285714,
       "fpr": 0.14130434782608695,
-      "usd_per_trajectory": 0.030700624999999992,
+      "usd_per_trajectory": 0.030814012499999995,
       "escalation_rate": 0.0
     },
     {
@@ -260,50 +260,50 @@
   "v3_hand_sample": {
     "heuristic -> Sonnet, v2-tuned": {
       "recall": {
-        "k": 9,
-        "n": 13,
-        "weighted": 0.6880269814502528
+        "k": 10,
+        "n": 14,
+        "weighted": 0.7051949431637097
       },
       "fpr": {
-        "k": 1,
-        "n": 26,
-        "weighted": 0.02266769468003085
+        "k": 2,
+        "n": 55,
+        "weighted": 0.03927037954053965
       }
     },
     "heuristic -> Sonnet, defaults": {
       "recall": {
         "k": 12,
-        "n": 13,
-        "weighted": 0.9235525576166385
+        "n": 14,
+        "weighted": 0.8727292042919367
       },
       "fpr": {
-        "k": 2,
-        "n": 26,
-        "weighted": 0.08656900539707019
+        "k": 5,
+        "n": 55,
+        "weighted": 0.08797442567461675
       }
     },
     "Sonnet only, own flag": {
       "recall": {
-        "k": 12,
-        "n": 13,
-        "weighted": 0.9235525576166385
+        "k": 13,
+        "n": 14,
+        "weighted": 0.9277594815680441
       },
       "fpr": {
-        "k": 3,
-        "n": 26,
-        "weighted": 0.10923670007710105
+        "k": 6,
+        "n": 55,
+        "weighted": 0.111010123170464
       }
     },
     "heuristic only, own flag": {
       "recall": {
         "k": 9,
-        "n": 13,
-        "weighted": 0.6880269814502528
+        "n": 14,
+        "weighted": 0.6501646658876021
       },
       "fpr": {
-        "k": 0,
-        "n": 26,
-        "weighted": 0.0
+        "k": 1,
+        "n": 55,
+        "weighted": 0.016234682044692365
       }
     }
   }
