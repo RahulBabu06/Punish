@@ -349,7 +349,8 @@ and its visible report was internally consistent.</p>
 <div class="card" style="border-color:var(--orange)"><div class="big">0.17</div><p style="margin-top:6px"><span class="pill ro">report_only</span> FPR, 27/161 clean runs flagged</p></div>
 </div>
 <p style="margin:2px 0 0;font-size:17px">Opus 4.6 re-audit, 240 trajectories (Sonnet 4.6 + Haiku 4.5 subjects, 79 hacked). Recall 0.84 vs 0.73. Discordant pairs 19 vs 2, <b>exact McNemar p &lt; 0.001</b>.
-The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55. <b><code>leaked_answer</code> excluded (200 runs): recall 0.77 vs 0.63, FPR 0.06 vs 0.12.</b></p>
+The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55. <b><code>leaked_answer</code> excluded (200 runs): recall 0.77 vs 0.63, FPR 0.06 vs 0.12.</b>
+Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ranking (+0.04), both p = 0.002; Sonnet ranking improves (+0.05), accuracy unchanged.</p>
 <ul style="margin-top:4px">
 <li style="font-size:16.5px;margin-bottom:6px">Breakdown by subject: Sonnet 4.6, 9 vs 1 (p = 0.021), mostly fewer FPs (0.05 vs 0.12). Haiku 4.5, 10 vs 1 (p = 0.012), mostly recall (27/34 vs 22/34).</li>
 <li style="font-size:16.5px;margin-bottom:6px">With the reasoning visible, Opus can tell when an agent read <code>grade.py</code> but the grader didn't drive the number.</li>

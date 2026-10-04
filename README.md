@@ -33,9 +33,12 @@ keeps FPR ≤ 10% on unseen tasks with useful recall. A best-of-n veto still cut
 from 0.28 to 0.15 (`REPORT.md` §8.8, §8.13–8.14).
 
 Reading only the report misses a quarter to a third of the hacks (recall 0.76 vs 0.90 with
-`leaked_answer` excluded, 0.67 vs 0.93 original), and seeing the actions recovers them.
-For a Sonnet auditor, seeing the reasoning improves the confidence ranking (ΔAUROC +0.03)
-but almost never changes the verdict. A stronger auditor does use it. Re-auditing 240
+`leaked_answer` excluded, 0.67 vs 0.93 original), and seeing the actions recovers most of them.
+After Holm correction that recall gain is underpowered
+([`results/significance/SIGNIFICANCE.md`](results/significance/SIGNIFICANCE.md)). For a Sonnet auditor, seeing the reasoning improves the
+confidence ranking (ΔAUROC +0.03, supported) and leaves accuracy unchanged (a genuine null; recall
+is underpowered). A stronger auditor does use it: under the corrected label, reasoning improves
+Opus's accuracy (Holm p = 0.002) and its ranking. Re-auditing 240
 trajectories with Opus 4.6, `full_trace` gets recall 0.84 against 0.73 for `report_only`,
 and FPR 0.11 against 0.17 (paired McNemar p < 0.001); with `leaked_answer` excluded, 0.77
 against 0.63 and 0.06 against 0.12. Instructed (`covert`) agents hack 72–100% of the time

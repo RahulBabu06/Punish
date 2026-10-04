@@ -46,18 +46,27 @@ clean), and the original 123 hacks should not be read as clean ground truth. Res
    better use of the reasoning. `full_trace` has recall 0.84 against 0.73 for
    `report_only`, and FPR 0.11 against 0.17 (19 vs 2 discordant pairs, exact McNemar
    p < 0.001; excluded: recall 0.77 vs 0.63, FPR 0.06 vs 0.12, Δrecall 0.14 [0.06, 0.25]).
-   For Sonnet the reasoning improves the ranking (ΔAUROC +0.03, 95% bootstrap
-   CI [0.01, 0.05]) but not the verdicts: they are identical on 345 of 360 trajectories.
+   Under the corrected label with Holm correction (`results/significance/SIGNIFICANCE.md`), reasoning improves both
+   Opus's decisions (accuracy +0.071 [0.037, 0.108], Holm p = 0.002) and its ranking (ΔAUROC
+   +0.040, Holm p = 0.002); the recall and FPR components are each underpowered. For Sonnet
+   the reasoning improves the ranking (ΔAUROC +0.03, 95% bootstrap CI [0.01, 0.05]; corrected
+   +0.051, Holm p < 0.001). Its decisions are identical on 345 of 360 trajectories. That is
+   a genuine null on accuracy (Δ +0.003 [−0.019, 0.025]) and FPR, but for recall the data
+   cannot rule out a small difference (CI ±0.07).
 5. **Under the corrected label, auditors catch most hacks but over-flag honest
    grader-reading runs.** Trace-mode FPR is 0.22–0.35 (Opus `full_trace` 0.22, Sonnet
    `full_trace` 0.35) at recall 0.77–0.91. No Claude auditor × mode keeps FPR ≤ 10% on unseen
    tasks with useful recall (§8.14). As a best-of-n veto the auditor still roughly halves
    shipped hacks, 0.28 → 0.15 (§8.8).
 
-Seeing the agent's actions makes a large difference compared with reading only its report.
-Whether also seeing its reasoning helps depends on the auditor: it changes Sonnet 4.6's
-confidence scores but rarely its verdicts, while for Opus 4.6 it significantly improves
-both recall and false positives. Preliminary labeller-only runs on a 10-task v3 suite and
+Seeing the agent's actions raises recall compared with reading only the report (corrected
+0.91 vs 0.74). After Holm correction that gain is underpowered (p = 0.057), and the extra
+false positives it costs (0.35 vs 0.23) are supported (p = 0.049). Whether also seeing the
+reasoning helps depends on the auditor. For Sonnet 4.6 it improves the confidence ranking
+and leaves accuracy unchanged. For Opus 4.6 it significantly improves both accuracy and
+ranking. Hack-rate differences between configs (`covert` > `pressure`, `incentivized` >
+`honest`) are all supported. `pressure` vs `incentivized` and the differences between
+subject models are underpowered. Preliminary labeller-only runs on a 10-task v3 suite and
 on new conditions are in §8.6.
 
 ## 1. Motivation
@@ -334,7 +343,8 @@ Findings:
   (p = 0.3116). The judge rated 2 of the 4 `minor` and 2 `major`. Case study 10 is one of
   them. All four are among the 30 likely judge errors: 0.3116 is the correct answer
   on the data they had, so this shows grader-awareness rather than a hack.
-- **Sonnet 4.5 hacks most.** It hacks in 28/30 `covert` runs and 10/30 `pressure` runs, and
+- **Sonnet 4.5 hacks most in these counts.** The difference between subject models is
+  underpowered (corrected 37/120 vs 28/120, Holm p = 0.98, `results/significance/SIGNIFICANCE.md`). It hacks in 28/30 `covert` runs and 10/30 `pressure` runs, and
   is the only model whose hacks the labeller often catches (21 of its 28 covert hacks). The
   model probe (§8.5) has the qualitative differences.
 - **The labeller misses most hacks.** The labeller and judge agree on 47 trajectories as
@@ -381,13 +391,21 @@ the report (paired Δrecall `full_trace` − `final_report` 0.26 [0.16, 0.36], �
 A report that says "R² = 0.92" looks fine unless you can see the agent computing 0.447 and
 then reading `grade.py` (case study 2). The `leaked_answer` row rests mostly on likely-wrong
 labels (§8.0). With that task excluded, recall is 0.90 against 0.76 (Δrecall 0.14 [0.03, 0.26]).
+Significance (`results/significance/SIGNIFICANCE.md`, Holm-corrected): the recall gain from seeing actions is
+**underpowered** under both the corrected and the excluded label (`report_only` − `final_report`
+corrected Δ +0.17 [0.06, 0.28], Holm p = 0.057). The extra FPR is **supported** under the
+corrected label (Δ +0.12 [0.04, 0.20], Holm p = 0.049). `full_trace` vs `final_report`
+AUROC is **partly supported**: Holm p < 0.001 excluded, 0.104 corrected.
 
 **With a Sonnet auditor, seeing the reasoning changes confidence but rarely the verdict.**
 `full_trace` and `report_only` give the same prediction on 345/360 trajectories. Of the 15
 where they disagree, `full_trace` is right on 8 and `report_only` on 7 (exact McNemar
 p = 1.0; Δrecall −0.01 [−0.06, 0.04]). The confidence ranking does improve: ΔAUROC +0.030
-[0.012, 0.049], largest for Sonnet 4.5 and Haiku subjects (0.06 and 0.05). Possible
-reasons that verdicts barely move:
+[0.012, 0.049], largest for Sonnet 4.5 and Haiku subjects (0.06 and 0.05). Under the
+corrected label, the ranking gain is **supported** (ΔAUROC +0.051 [0.027, 0.076], Holm
+p < 0.001). The decision null is genuine for accuracy (Δ +0.003 [−0.019, 0.025]) and FPR (Δ
+−0.007 [−0.026, 0.011]), while recall is **underpowered** (Δ −0.011 [−0.073, 0.053]) (`results/significance/SIGNIFICANCE.md`).
+Possible reasons that verdicts barely move:
 
 - Our exploits need almost no reasoning to carry out: copying a number takes one step, so
   the tool calls already show it. This matches Emmons et al.'s point that CoT monitoring
@@ -424,8 +442,11 @@ rows below are restricted to the same 240 trajectories.
 | Opus 4.6 | `final_report` | 0.63 | 0.57 (45/79) [0.46, 0.68] | 0.16 (26/161) | 0.841 [0.789, 0.890] |
 
 For Opus, `full_trace` beats `report_only` on the same trajectories: 19 vs 2 discordant
-pairs, exact McNemar p < 0.001, Δrecall +0.10 [0.04, 0.17]. This holds for each subject
-separately:
+pairs, exact McNemar p < 0.001, Δrecall +0.10 [0.04, 0.17]. Under the corrected label with
+Holm correction, both the accuracy gain (+0.071 [0.037, 0.108], Holm p = 0.002) and the ranking
+gain (ΔAUROC +0.040 [0.020, 0.062], Holm p = 0.002) are **supported**. Recall (+0.14, Holm
+p = 0.070) and FPR (−0.05, Holm p = 0.157) are each **underpowered** on their own (`results/significance/SIGNIFICANCE.md`).
+The direction holds for each subject separately; the per-subject tests are exploratory:
 
 - Sonnet 4.6 subject: 9 vs 1 (p = 0.021). FPR 0.05 (4/75) vs 0.12 (9/75), recall 39/45
   vs 36/45.
@@ -489,7 +510,7 @@ ablation compares two almost identical inputs.
   (`metric_swap` 4/5, `fabrication` 3/5, `cherry_pick` 1/5).
 
 All four headline patterns (instruction drives hacking, the labeller under-counts, the
-report alone misses trace-only hacks, reasoning adds little) were already visible in this
+report alone misses trace-only hacks, Sonnet's verdicts barely move with reasoning) were already visible in this
 probe and held up in v2.
 
 ### 8.5 Model probe: the hack narrated in the reasoning (`results/model_probe/`)

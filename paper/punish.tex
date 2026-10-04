@@ -42,8 +42,9 @@ those labels corrected. Excluding it, agents explicitly told to hack and hide it
 deterministic exploit labeller finds only 46 of the 91 hacks found by the judge.
 
 With only the report, a Sonnet auditor's recall is 0.76. Once it also sees the actions,
-recall rises to 0.90 and AUROC from 0.86 to 0.93--0.96. The reasoning alone barely changes
-Sonnet's verdicts. It does improve Opus: recall 0.77 against 0.63, and false-positive rate
+recall rises to 0.90 and AUROC from 0.86 to 0.93--0.96, although after Holm correction the
+recall gain is underpowered. Reasoning improves Sonnet's ranking but not its accuracy.
+For Opus it improves both accuracy and ranking (corrected label, Holm $p=0.002$): recall 0.77 against 0.63, and false-positive rate
 0.06 against 0.12 (on all 240 Opus-audited runs, 0.84 vs 0.73 and 0.11 vs 0.17, $p<0.001$).
 Under the corrected label, auditors catch most hacks but over-flag honest runs that read the
 grader: trace-mode FPR is 0.22--0.35, and no Claude auditor keeps FPR $\le$ 10\% on unseen tasks
@@ -201,17 +202,22 @@ the grader), so we treat the excluded view as primary.
 \paragraph{Seeing the actions matters.} See Table~\ref{tab:auditor}. With \code{leaked\_answer}
 excluded, Sonnet's recall drops from 0.90 to 0.76 with only the report ($\Delta$recall 0.14, CI
 [0.03, 0.26]; $\Delta$AUROC 0.10, CI [0.06, 0.15]); on the original labels the drop is 0.26.
+After Holm correction (\code{results/significance/SIGNIFICANCE.md}), the recall gain is
+underpowered (corrected Holm $p=0.057$), and its FPR cost is supported (0.35 vs 0.23, $p=0.049$).
 The drop comes from hacks that leave no trace in a coherent report. In \code{metric\_gaming}
 the trace modes catch 15/15 hacks and the report alone 3/15. A report that says ``$R^2=0.92$'' looks
 fine unless you can see the agent compute 0.447 and then read \code{grade.py}.
 
 \paragraph{Reasoning helps a stronger auditor.} For Sonnet, \mode{full\_trace} and
 \mode{report\_only} give the same verdict on 345 of 360 trajectories (8 vs 7 discordant,
-$p=1.0$). The reasoning only improves the ranking ($\Delta$AUROC $+0.030$, CI [0.012, 0.049]).
+$p=1.0$). The reasoning only improves the ranking ($\Delta$AUROC $+0.030$, CI [0.012, 0.049]; corrected
+$+0.051$, Holm $p<0.001$). On accuracy the null is genuine ($\Delta$ $+0.003$, CI [$-0.019$, 0.025]),
+but for recall a small difference cannot be ruled out.
 Opus makes real use of it: with \code{leaked\_answer} excluded, recall 0.77 against 0.63
 ($\Delta$recall 0.14, CI [0.06, 0.25]) and FPR 0.06 against 0.12. On all 240 runs it has 19 vs 2
-discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR 0.11 against 0.17, and the
-effect holds for each subject:
+discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR 0.11 against 0.17. Under the corrected label, accuracy ($+0.071$) and ranking
+($\Delta$AUROC $+0.040$) both survive Holm correction ($p=0.002$), while recall and FPR are each
+underpowered. The direction holds for each subject (exploratory):
 \begin{itemize}
 \item Sonnet~4.6 subject: 9 vs 1 ($p=0.021$). The gain is mostly in false positives (FPR 0.05
 against 0.12). The reasoning shows that an agent read \code{grade.py} and then ignored it.

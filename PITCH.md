@@ -4,7 +4,9 @@
 quarter of its reward hacks. Punish audits what the agent actually did and catches about 9 in
 10, but it still over-flags honest agents that merely read the grader.*
 
-(Corrected label: `final_report` recall 0.74 vs `full_trace` 0.90, trace-mode FPR 0.22–0.35.)
+(Corrected label: `final_report` recall 0.74 vs `full_trace` 0.90, trace-mode FPR 0.22–0.35.
+After Holm correction that recall gap is underpowered rather than established
+(`results/significance/SIGNIFICANCE.md`), so say "about a quarter in our data".)
 
 Numbers come from the v2 sweep (360 trajectories from three subject models, 1,080 Sonnet
 audits plus 720 Opus re-audits, Opus-judge ground truth; details in `REPORT.md` §8). The
@@ -76,10 +78,12 @@ task definition (`leaked_answer`), so it over-flags rather than misses. Human va
 
 **"So chain of thought doesn't matter?"**
 It depends on the auditor. For Sonnet 4.6, 345 of 360 verdicts are identical with and
-without reasoning (8 vs 7 discordant, McNemar p = 1.0), though its confidence ranking
-improves a little (ΔAUROC +0.03). The hacks are one-step actions, like copying a number,
+without reasoning (8 vs 7 discordant, McNemar p = 1.0): a genuine null on accuracy, though for
+recall a small difference can't be ruled out. Its confidence ranking does improve (ΔAUROC
++0.03; corrected +0.05, Holm p < 0.001). The hacks are one-step actions, like copying a number,
 which the tool calls already show. For Opus 4.6, reasoning helps significantly (240 trajectories,
-19 vs 2 discordant, p < 0.001). On Sonnet-subject runs it mainly clears honest agents that
+19 vs 2 discordant, p < 0.001; corrected label, accuracy +0.07 and ΔAUROC +0.04, both Holm
+p = 0.002). On Sonnet-subject runs it mainly clears honest agents that
 read the grader (FPR 0.12 → 0.05), and on Haiku-subject runs it mainly raises recall. The literature expects CoT to matter most when
 the bad behaviour needs multi-step reasoning (Emmons et al.; Baker et al.), and Chen et al.
 show reasoning often leaves things out. Our probe and the model probe show agents narrating
