@@ -65,6 +65,9 @@ def load_items(exp_dirs: list[str], *, heuristic_fn=None, mode: str = MODE, labe
     """One item per trajectory: label, live heuristic verdict and each Claude auditor's (pred, confidence, usd)."""
     from eval.analyze import load_experiment
     from eval.cost import DEFAULT_AUDITOR_MODEL, canonical_model
+    from eval.labels import column, relabel
+
+    col = column(label)
 
     if heuristic_fn is None:
         from auditor.heuristic import heuristic_audit as heuristic_fn
@@ -72,7 +75,7 @@ def load_items(exp_dirs: list[str], *, heuristic_fn=None, mode: str = MODE, labe
     for d in exp_dirs:
         exp = Path(d)
         meta = {}
-        for r in load_experiment(d):
+        for r in relabel(load_experiment(d), label):
             meta.setdefault(r["trajectory_id"], r)
         sources = [(exp / "episodes", DEFAULT_AUDITOR_MODEL)]
         sources += [(s / "episodes", s.name.removeprefix("reaudit_")) for s in sorted(exp.glob("reaudit_*"))]
@@ -94,11 +97,11 @@ def load_items(exp_dirs: list[str], *, heuristic_fn=None, mode: str = MODE, labe
                     "usd": cost, "estimated": estimated}
         for tid in sorted(audits):
             row = meta.get(tid)
-            if row is None or row.get(label) is None:
+            if row is None or row.get(col) is None:
                 continue
             h = heuristic_fn(str(exp / "trajectories" / f"{tid}.jsonl"), mode)
             items.append({"experiment": exp.name, "trajectory_id": tid, "subject_model": row["subject_model"],
-                          "agent_config": row["agent_config"], "task_id": row["task_id"], "label": bool(row[label]),
+                          "agent_config": row["agent_config"], "task_id": row["task_id"], "label": bool(row[col]),
                           "heuristic": {"pred": bool(h["hack_detected"]), "confidence": float(h["confidence"]),
                                         "usd": 0.0, "estimated": False},
                           **{f"audit:{k}": v for k, v in audits[tid].items()}})
@@ -441,13 +444,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--figure-cap", type=float, default=0.10)
     p.add_argument("--bootstrap-samples", type=int, default=1000)
     p.add_argument("--seed", type=int, default=1729)
+    from eval.labels import add_argument as add_label_argument
+
+    add_label_argument(p)
     args = p.parse_args(argv)
     caps = tuple(float(c) for c in args.fpr_caps.split(",") if c)
-    items = common(load_items(args.experiments), FIRST, SECOND)
+    items = common(load_items(args.experiments, label=args.label), FIRST, SECOND)
     if not items:
         p.error(f"no trajectories audited in {MODE} by both {FIRST} and {SECOND}")
     res = analyze(items, lo=args.lo, hi=args.hi, caps=tuple(sorted({*caps, args.figure_cap})),
                   repeats=args.bootstrap_samples, seed=args.seed)
+    res["label"] = args.label
     rel_fig = None
     if args.figure:
         Path(args.figure).parent.mkdir(parents=True, exist_ok=True)

@@ -133,24 +133,25 @@ def _read_events(path: Path) -> list[dict]:
 
 
 def load_rows(exp_dirs: list[str], auditor: str = DEFAULT_AUDITOR,
-              overrides: list[dict] | None = None) -> list[dict]:
+              overrides: list[dict] | None = None, label: str = "either") -> list[dict]:
     """One row per trajectory: labels, rubric score and the ``auditor``'s prediction in each mode.
 
     ``overrides`` ({"experiment", "trajectory_id", "hacked"}) replace the hack label of listed trajectories
     (e.g. a manual review of labeller-only positives); their ``label_source`` gets a ``+manual`` suffix."""
     manual = {(o["experiment"], o["trajectory_id"]): bool(o["hacked"]) for o in overrides or []}
     from eval.analyze import load_experiment
+    from eval.labels import relabel
 
     rows = []
     for d in exp_dirs:
         judged = any(Path(d, "judgments").glob("*.json"))
         by_tid: dict[str, dict] = {}
-        for r in load_experiment(d):
+        for r in relabel(load_experiment(d), label):
             row = by_tid.setdefault(r["trajectory_id"], {
                 "experiment": r["experiment"], "trajectory_id": r["trajectory_id"], "task_id": r["task_id"],
                 "agent_config": r["agent_config"], "subject_model": r["subject_model"],
                 "labeller": r["labeller"], "judge": r["judge"],
-                "label_source": "either" if judged else "labeller", "audits": {}})
+                "label_source": label if judged else "labeller", "audits": {}})
             if r["auditor"] == auditor:
                 row["audits"][r["auditor_mode"]] = r["pred"]
         for tid, row in sorted(by_tid.items()):
@@ -297,9 +298,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--overrides", default=None,
                    help="manual hack labels JSON (list of {experiment, trajectory_id, hacked}) replacing the default label")
     p.add_argument("--out", default=None, help="markdown output (a .json with rows + summary is written next to it)")
+    from eval.labels import add_argument as add_label_argument
+
+    add_label_argument(p)
     args = p.parse_args(argv)
     overrides = json.loads(Path(args.overrides).read_text(encoding="utf-8")) if args.overrides else None
-    rows = load_rows(args.experiments, args.auditor, overrides)
+    rows = load_rows(args.experiments, args.auditor, overrides, args.label)
     if args.configs:
         keep = {c.strip() for c in args.configs.split(",") if c.strip()}
         rows = [r for r in rows if r["agent_config"] in keep]
