@@ -147,8 +147,12 @@ def require(step: Step, path: Path) -> None:
 
 def batch_audits(step: Step, source: Path, out: Path, ids: list[str], model: str,
                  modes: tuple = MODES, backend: str = "claude", rubric: bool = False) -> None:
+    from eval.batch import pending_modes
+
     for mode in modes:
-        pending = [tid for tid in ids if not all(complete(p) for p in audit_outputs(out, tid, mode, backend))]
+        pending = [tid for tid in ids if not all(complete(p) for p in audit_outputs(out, tid, mode, backend))
+                   or pending_modes(source / "trajectories" / f"{tid}.jsonl", [mode], str(out), backend,
+                                    rubric="v3" if rubric else "default")]
         if not pending:
             continue
         args = ["--results-dir", str(source), "--job", "reaudit", "--auditor-model", model,
@@ -272,8 +276,6 @@ def build_step(key: str, root: Path, rates: dict, flags: dict) -> Step:
                 step.charge("judge", OPUS, 1.5)
         step.notes.append("20 first attempts, one retry only if flagged; estimate assumes 50% retried. All-retried cost is 4/3 this estimate.")
     elif key in ("rubric-v3", "rejudge-leaked"):
-        if key == "rubric-v3" and "--rubric" not in flags.get("eval/batch.py", set()):
-            step.blocked.append("PLACEHOLDER: merge devin/rubric-v3, then rerun; eval/batch.py --rubric v3 is not available yet.")
         for name in V2_DIRS:
             source = results / name
             require(step, source / "trajectories")
@@ -310,8 +312,6 @@ def validate_commands(steps: list[Step], flags: dict, root: Path = ROOT) -> None
             if not (root / module).is_file():
                 step.blocked.append(f"missing module: {module}")
             missing = {a for a in command.argv[3:] if a.startswith("--")} - flags.get(module, set())
-            if step.key == "rubric-v3":
-                missing.discard("--rubric")
             if missing:
                 step.blocked.append(f"unsupported {module} flags: {sorted(missing)}")
 
@@ -326,7 +326,7 @@ def render(steps: list[Step], rates: dict, running: bool = False) -> str:
         lines.append(f"| {step.key}: {step.title} | {math.ceil(sum(step.calls.values()))} | ${step.estimate(rates):.2f} | "
                      f"{len(step.commands)} | {'BLOCKED' if step.blocked else 'ready' if step.commands else 'complete'} |")
     lines += [f"| **total** | **{sum(math.ceil(sum(s.calls.values())) for s in steps)}** | "
-              f"**${sum(s.estimate(rates) for s in steps):.2f}** | | includes blocked/projected work |", "",
+              f"**${sum(s.estimate(rates) for s in steps):.2f}** | | includes projected work |", "",
               "Cost basis: eval.cost's committed results/COST.md token rows, repriced with eval.cost.usd; agent turn/episode averages from agent_records on available trajectories.",
               "Historical estimates omit some thinking, retries, and Modal compute. Agentic uses an 8-turn standard-audit proxy; audit-and-retry assumes 50% retries."]
     for step in steps:
@@ -339,7 +339,6 @@ def render(steps: list[Step], rates: dict, running: bool = False) -> str:
 
 
 def execute(keys: list[str], root: Path, rates: dict, flags: dict, runner=subprocess.run) -> int:
-    blocked = False
     for key in keys:
         step = build_step(key, root, rates, flags)
         # At execution time include all still-unjudged trajectories, including newly completed ones.
@@ -348,10 +347,7 @@ def execute(keys: list[str], root: Path, rates: dict, flags: dict, runner=subpro
         validate_commands([step], flags, root)
         if step.blocked:
             print(f"BLOCKED {key}: {'; '.join(step.blocked)}", file=sys.stderr)
-            if key != "rubric-v3":
-                return 2
-            blocked = True
-            continue
+            return 2
         for command in step.commands:
             print(shlex.join(command.argv), flush=True)
             argv = list(command.argv)
@@ -363,13 +359,13 @@ def execute(keys: list[str], root: Path, rates: dict, flags: dict, runner=subpro
             if missing:
                 print(f"Incomplete outputs after {key}: {missing[:5]}; rerun the planner to resume.", file=sys.stderr)
                 return 1
-    return 2 if blocked else 0
+    return 0
 
 
 def run_prerequisites(steps: list[Step]) -> list[str]:
     from modal.config import config
 
-    problems = [msg for step in steps if step.key != "rubric-v3" for msg in step.blocked]
+    problems = [msg for step in steps for msg in step.blocked]
     if not config.get("token_id") or not config.get("token_secret"):
         problems.append("Modal credentials not configured; authenticate Modal before --run.")
     for step in steps:

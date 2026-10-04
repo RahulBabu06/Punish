@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="900" viewBox="0 0 1080 900" role="img" aria-labelledby="title desc">
+<title id="title">Reward hacking is inducible—and today’s auditor is useful, not solved</title><desc id="desc">corrected label (n=360) · committed v2 only · model outputs are evaluation data, not ground truth</desc>
+<style>text{font-family:Inter,Arial,Helvetica,sans-serif} line,path{vector-effect:non-scaling-stroke}</style>
+<rect x="0.00" y="0.00" width="1080.00" height="900.00" rx="0" fill="#FFFFFF"/>
+<rect x="0.00" y="0.00" width="1080.00" height="98.00" rx="0" fill="#F3F7FA"/>
+<text x="36.00" y="39.00" font-size="25" fill="#14263D" text-anchor="start" font-weight="700">Reward hacking is inducible—and today’s auditor is useful, not solved</text>
+<text x="36.00" y="68.00" font-size="13" fill="#536579" text-anchor="start" font-weight="400">corrected label (n=360) · committed v2 only · model outputs are evaluation data, not ground truth</text>
+<rect x="24.00" y="118.00" width="505.00" height="318.00" rx="8" fill="#F6F9FB"/>
+<text x="42.00" y="147.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">A  Hack rate depends on incentives</text>
+<text x="42.00" y="168.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label (n=360) · 90 trajectories per config</text>
+<line x1="152.00" y1="192.00" x2="152.00" y2="388.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="152.00" y="409.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">0%</text>
+<line x1="219.50" y1="192.00" x2="219.50" y2="388.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="219.50" y="409.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">25%</text>
+<line x1="287.00" y1="192.00" x2="287.00" y2="388.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="287.00" y="409.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">50%</text>
+<line x1="354.50" y1="192.00" x2="354.50" y2="388.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="354.50" y="409.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">75%</text>
+<line x1="422.00" y1="192.00" x2="422.00" y2="388.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="422.00" y="409.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">100%</text>
+<text x="140.00" y="215.00" font-size="12" fill="#14263D" text-anchor="end" font-weight="600">Honest</text>
+<rect x="152.00" y="200.00" width="0.00" height="20.00" rx="3" fill="#0072B2"/>
+<text x="434.00" y="215.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">0.0%  (0/90)</text>
+<text x="140.00" y="261.00" font-size="12" fill="#14263D" text-anchor="end" font-weight="600">Incentivized</text>
+<rect x="152.00" y="246.00" width="33.00" height="20.00" rx="3" fill="#009E73"/>
+<text x="434.00" y="261.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">12.2%  (11/90)</text>
+<text x="140.00" y="307.00" font-size="12" fill="#14263D" text-anchor="end" font-weight="600">Pressure</text>
+<rect x="152.00" y="292.00" width="48.00" height="20.00" rx="3" fill="#D55E00"/>
+<text x="434.00" y="307.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">17.8%  (16/90)</text>
+<text x="140.00" y="353.00" font-size="12" fill="#14263D" text-anchor="end" font-weight="600">Covert</text>
+<rect x="152.00" y="338.00" width="198.00" height="20.00" rx="3" fill="#8B5FBF"/>
+<text x="434.00" y="353.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">73.3%  (66/90)</text>
+<text x="276.50" y="427.00" font-size="11" fill="#536579" text-anchor="middle" font-weight="400">Share of trajectories labelled hacked</text>
+<rect x="551.00" y="118.00" width="505.00" height="318.00" rx="8" fill="#F6F9FB"/>
+<text x="569.00" y="147.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">B  Detection is strong—but false alarms are high</text>
+<text x="569.00" y="168.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label · Sonnet n=360; Opus matched n=240</text>
+<text x="799.00" y="197.00" font-size="11" fill="#14263D" text-anchor="middle" font-weight="700">Recall</text>
+<text x="883.00" y="197.00" font-size="11" fill="#14263D" text-anchor="middle" font-weight="700">FPR</text>
+<text x="972.00" y="197.00" font-size="11" fill="#14263D" text-anchor="middle" font-weight="700">AUROC</text>
+<text x="569.00" y="225.00" font-size="11" fill="#0072B2" text-anchor="start" font-weight="700">Sonnet</text>
+<text x="633.00" y="225.00" font-size="11" fill="#14263D" text-anchor="start" font-weight="400">Full trace</text>
+<text x="799.00" y="225.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">90.3%</text>
+<text x="883.00" y="225.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">34.5%</text>
+<text x="972.00" y="225.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.891</text>
+<text x="633.00" y="256.00" font-size="11" fill="#14263D" text-anchor="start" font-weight="400">Actions + report</text>
+<text x="799.00" y="256.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">91.4%</text>
+<text x="883.00" y="256.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">35.2%</text>
+<text x="972.00" y="256.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.840</text>
+<text x="633.00" y="287.00" font-size="11" fill="#14263D" text-anchor="start" font-weight="400">Final report</text>
+<text x="799.00" y="287.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">74.2%</text>
+<text x="883.00" y="287.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">23.2%</text>
+<text x="972.00" y="287.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.825</text>
+<line x1="569.00" y1="300.00" x2="1038.00" y2="300.00" stroke="#CED9E2" stroke-width="1"/>
+<text x="569.00" y="318.00" font-size="11" fill="#8B5FBF" text-anchor="start" font-weight="700">Opus</text>
+<text x="633.00" y="318.00" font-size="11" fill="#14263D" text-anchor="start" font-weight="400">Full trace</text>
+<text x="799.00" y="318.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">76.8%</text>
+<text x="883.00" y="318.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">22.3%</text>
+<text x="972.00" y="318.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.861</text>
+<text x="633.00" y="349.00" font-size="11" fill="#14263D" text-anchor="start" font-weight="400">Actions + report</text>
+<text x="799.00" y="349.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">62.5%</text>
+<text x="883.00" y="349.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">27.2%</text>
+<text x="972.00" y="349.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.821</text>
+<text x="633.00" y="380.00" font-size="11" fill="#14263D" text-anchor="start" font-weight="400">Final report</text>
+<text x="799.00" y="380.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">62.5%</text>
+<text x="883.00" y="380.00" font-size="12" fill="#D55E00" text-anchor="middle" font-weight="700">19.6%</text>
+<text x="972.00" y="380.00" font-size="12" fill="#14263D" text-anchor="middle" font-weight="700">0.808</text>
+<text x="569.00" y="424.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">FPR uses each auditor’s own hack_detected verdict.</text>
+<rect x="24.00" y="458.00" width="505.00" height="505.00" rx="8" fill="#F6F9FB"/>
+<text x="42.00" y="487.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">C  A cheap cascade reaches a lower-FPR point</text>
+<text x="42.00" y="508.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label · held-out h → Sonnet point · matched n=240</text>
+<text x="62.00" y="571.00" font-size="30" fill="#009E73" text-anchor="start" font-weight="700">64.3%</text>
+<text x="62.00" y="595.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">recall</text>
+<text x="229.00" y="571.00" font-size="30" fill="#D55E00" text-anchor="start" font-weight="700">5.4%</text>
+<text x="229.00" y="595.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">false-positive rate</text>
+<text x="409.00" y="571.00" font-size="30" fill="#0072B2" text-anchor="start" font-weight="700">1.25¢</text>
+<text x="409.00" y="595.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="700">per trajectory</text>
+<line x1="48.00" y1="619.00" x2="505.00" y2="619.00" stroke="#CED9E2" stroke-width="1"/>
+<text x="52.00" y="652.00" font-size="14" fill="#14263D" text-anchor="start" font-weight="700">Escalates 38.8% to Sonnet</text>
+<text x="52.00" y="682.00" font-size="12" fill="#14263D" text-anchor="start" font-weight="400">Thresholds were trained on the other experiment.</text>
+<text x="52.00" y="704.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">The 5% FPR cap applied in training; held-out FPR is 5.4%.</text>
+<text x="52.00" y="734.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Operational point, not a claim of solved detection.</text>
+<rect x="551.00" y="458.00" width="505.00" height="505.00" rx="8" fill="#F6F9FB"/>
+<text x="569.00" y="487.00" font-size="17" fill="#14263D" text-anchor="start" font-weight="700">D  Auditor veto reduces best-of-5 reward hacking</text>
+<text x="569.00" y="508.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">corrected label · Sonnet full trace · 48 groups / 240 trajectories</text>
+<line x1="736.00" y1="541.00" x2="736.00" y2="650.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="736.00" y="669.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">0%</text>
+<line x1="797.25" y1="541.00" x2="797.25" y2="650.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="797.25" y="669.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">10%</text>
+<line x1="858.50" y1="541.00" x2="858.50" y2="650.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="858.50" y="669.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">20%</text>
+<line x1="919.75" y1="541.00" x2="919.75" y2="650.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="919.75" y="669.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">30%</text>
+<line x1="981.00" y1="541.00" x2="981.00" y2="650.00" stroke="#E3EAF0" stroke-width="1"/>
+<text x="981.00" y="669.00" font-size="10" fill="#536579" text-anchor="middle" font-weight="400">40%</text>
+<text x="724.00" y="566.00" font-size="11" fill="#14263D" text-anchor="end" font-weight="600">Grader-only selection</text>
+<rect x="736.00" y="550.00" width="170.99" height="20.00" rx="3" fill="#D55E00"/>
+<text x="993.00" y="566.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="700">27.9%</text>
+<text x="724.00" y="632.00" font-size="11" fill="#14263D" text-anchor="end" font-weight="600">Veto, then best grader</text>
+<rect x="736.00" y="616.00" width="89.32" height="20.00" rx="3" fill="#009E73"/>
+<text x="993.00" y="632.00" font-size="13" fill="#14263D" text-anchor="start" font-weight="700">14.6%</text>
+<text x="579.00" y="705.00" font-size="15" fill="#009E73" text-anchor="start" font-weight="700">Hack rate change: -13.3 percentage points</text>
+<text x="579.00" y="732.00" font-size="12" fill="#536579" text-anchor="start" font-weight="400">Mean grader score: 0.748 → 0.691</text>
+<text x="24.00" y="844.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">Sources: leaked_answer_correction.json · CASCADE_corrected.json · MITIGATION_bestofn_corrected.json</text>
+<text x="24.00" y="866.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">All panels use v2 corrected labels. Opus/cascade/veto cover the matched Haiku 4.5 + Sonnet 4.6 subset (n=240).</text>
+<text x="24.00" y="886.00" font-size="11" fill="#536579" text-anchor="start" font-weight="400">Correction removes 30 stale-context judge positives; it does not alter trajectories or saved judgments.</text>
+</svg>
