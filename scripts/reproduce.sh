@@ -9,7 +9,7 @@
 #   scripts/reproduce.sh sweep         print the exact Modal commands behind each committed results dir
 #   scripts/reproduce.sh derived       committed label/mode variants: mitigation, calibration, cascade, obfuscation,
 #                                      cascade held-out check + headline figure, judge validation, error tables and
-#                                      robustness (v2 corrected + v3 labeller-only)
+#                                      robustness (v2 corrected + v3 labeller-only), hidden-line evidence
 #                                      (explicit paths; --label tags the filenames)
 #   scripts/reproduce.sh export-demo   single self-contained static HTML demo -> docs/demo.html (demo.export)
 #   scripts/reproduce.sh all           test + analyze + cost + derived + sweep + export-demo
@@ -109,6 +109,9 @@ cmd_derived() {
   # robustness (docs/methodology_review.md): clustered CIs, covert vs natural, role leak, PPV at lower prevalence
   "$PY" -m eval.robustness --out results/robustness >/dev/null
   "$PY" -m eval.robustness --cohort v3 --out results/robustness >/dev/null
+  # known issue (docs/methodology_review.md): committed verdicts citing mode-hidden lines, repair impact
+  "$PY" -m eval.hidden_evidence --out results/hidden_evidence/HIDDEN_EVIDENCE.md \
+    --json results/hidden_evidence/hidden_evidence.json >/dev/null
 }
 
 cmd_sweep() { setup; "$PY" scripts/sweep_commands.py "$@"; }
