@@ -100,6 +100,7 @@ background:#0c1018;border:1px solid var(--line);border-radius:99px;padding:2px 1
 def nav(active: str) -> str:
     tabs = [("gallery", "/", "Gallery"), ("dashboard", "/dashboard", "Results"), ("benchmarks", "/benchmarks", "Benchmarks"),
             ("story", "/story", "Story"),
+            ("live", "/live", "Run live"),
             ("view", "/view", "Live view")]
     links = "".join(f'<a class="tab{" on" if k == active else ""}" href="{h}">{t}</a>' for k, h, t in tabs)
     return (f'<nav class="top"><a class="logo" href="/">PUNISH</a>{links}'
