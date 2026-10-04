@@ -3,6 +3,8 @@
 This is a map for reviewing the large integration diff based on commit `836dab5`. The scientific claims and caveats are
 summarised in the [reviewer FAQ](reviewer_faq.md); this guide focuses on code ownership, evidence and verification.
 
+For a 75-second visual tour, watch [`media/walkthrough.mp4`](media/walkthrough.mp4) (or the short [`walkthrough.gif`](media/walkthrough.gif)).
+
 ## Reading order
 
 1. Read [`PITCH.md`](../PITCH.md) and the 10-second [`headline.svg`](../results/figures/headline.svg) for the claim.
