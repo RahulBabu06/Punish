@@ -2,7 +2,7 @@
 
   modal run eval/batch.py --results-dir results/v2_sonnet46 --job judge
   modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit --auditor-model claude-opus-4-6 \
-      --auditor-modes full_trace,report_only,final_report --out-dir results/v2_sonnet46/opus_auditor
+      --auditor-modes full_trace,report_only,final_report --out-dir results/v2_sonnet46/reaudit_claude-opus-4-6
   python -m eval.batch --local --results-dir ... --job judge
 
 judge   -> <results-dir>/judgments/<trajectory_id>.json (privileged ground truth, eval/judge.py)
@@ -194,6 +194,9 @@ def _cli(argv: list[str] | None = None) -> int:
         p.error("--n-samples must be positive")
     if not args.local:
         p.error("pass --local, or use `modal run eval/batch.py ...`")
+    from agent.credentials import require_anthropic
+
+    require_anthropic(f"eval.batch --job {args.job}")
     paths = _pending(args.results_dir, _trajectories(args.results_dir), args.job, True)
     texts = [p.read_text(encoding="utf-8") for p in paths]
 

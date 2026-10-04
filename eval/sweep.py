@@ -165,6 +165,9 @@ def _cli(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     if not args.local:
         p.error("for Modal use `modal run eval/sweep.py --n-episodes N`; pass --local to run here")
+    from agent.credentials import require_anthropic
+
+    require_anthropic("eval.sweep --local")
     run_local(args.n_episodes, args.tasks, args.configs, args.auditor_modes, args.auditor_backend,
               args.results_dir, args.workers)
     return 0

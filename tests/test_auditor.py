@@ -305,6 +305,7 @@ def test_audit_default_client_is_lazy(monkeypatch):
     import anthropic
 
     monkeypatch.setattr(anthropic, "Anthropic", Sentinel)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     verdict = audit(str(TRAJECTORY))
     assert len(created) == 1
     check_verdict(verdict, N)

@@ -83,9 +83,9 @@ def judge(trajectory_path: str, task: dict, model: str | None = None, client=Non
     events = load_events(trajectory_path)
     model = model or os.environ.get("PUNISH_JUDGE_MODEL") or DEFAULT_MODEL
     if client is None:
-        import anthropic
+        from agent.credentials import anthropic_client
 
-        client = anthropic.Anthropic()
+        client = anthropic_client("the privileged judge")
     user = build_user_message(task, events)
     response = client.messages.create(
         model=model,

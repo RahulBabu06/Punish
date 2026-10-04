@@ -536,6 +536,10 @@ def cli(argv: list[str] | None = None, client=None) -> int:
     skipped = [m for m in modes if not hc.supported(args.auditor, m)]
     if skipped:
         print(f"note: the {args.auditor} auditor does not support {', '.join(skipped)}; skipped", file=sys.stderr)
+    if args.auditor != "heuristic" and client is None:
+        from agent.credentials import require_anthropic
+
+        require_anthropic(f"--auditor {args.auditor}", "--auditor heuristic")
     workers = 1 if client is not None else args.workers
     rows = run(cases, modes, args.auditor, model=args.model, client=client, workers=workers,
                verdict_dir=Path(args.out, "verdicts"))
