@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # task-definition matching reads old definitions from git history
       - uses: astral-sh/setup-uv@v5
       - name: Install (Python 3.11)
         run: |
