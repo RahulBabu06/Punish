@@ -14,7 +14,7 @@ python scripts/live_plan.py --run --max-usd 200
 The script prints **every exact Modal command**, expected output directory, prerequisite
 failures, pending call counts and API cost estimates. No live experiment was run to develop it.
 `--run` executes sequentially, recalculating each step from the files present at that point.
-The optional `--max-usd` checks the initial estimate, including blocked work; it is **not a
+The optional `--max-usd` checks the initial estimate; it is **not a
 hard billing cap**. Modal must already have an authenticated profile and an `anthropic` secret
 containing `ANTHROPIC_API_KEY`. Local Modal auth and output writability are checked; validity
 of the remote secret, account credit, model access and image builds cannot be checked offline.
@@ -51,17 +51,20 @@ python scripts/live_plan.py --steps judge-v3,hard-cases,agentic --run
   Existing complete trajectories are never resampled; missing audit modes are repaired through
   batch reaudit in the original directory. Fault runs retain their recorded 0.5 injection rate.
 - Batch `--only` selects exact IDs and rejects unknown ones. Judges skip existing destination
-  judgments; re-audits skip complete verdict/episode pairs per mode and backend. Hard-case and
-  monitor runners cache individual verdicts while rebuilding summaries over **all modes/cases**.
+  judgments; re-audits skip complete verdict/episode pairs per mode, backend and rubric.
+  Legacy episodes without rubric metadata count only as default-rubric outputs.
+  Hard-case and monitor runners cache individual verdicts while rebuilding summaries over
+  **all modes/cases**.
 - Retry checkpoints are completed `mitigation/<id>.json` records. Failed/in-flight remote jobs
   without mirrored outputs may need rerunning and can incur additional cost; this is not an
   exactly-once API/billing guarantee. Do not launch two planners concurrently against one output.
 - Each command's outputs are checked even if Modal exits zero. Missing/corrupt output stops the
   plan; rerun the same command to resume. Missing prerequisites stop execution before spending.
-- **Rubric placeholder:** until `devin/rubric-v3` is merged, `--rubric v3` commands are explicitly
-  blocked. They are printed, not executed; other ready steps continue and `--run` exits 2 to
-  indicate the deferred work. Pull the integrated code after merge, then run
-  `python scripts/live_plan.py --steps rubric-v3 --run`. No branch is automatically merged.
+- **Rubric v3 is enabled:** `--rubric v3` is now available in the integrated batch runner.
+  Run `python scripts/live_plan.py --steps rubric-v3 --run` for just that step. The planner uses
+  separate model/rubric output directories (see table); existing default-rubric verdicts never
+  satisfy v3 checkpoints. Batch v3 runs without `--out-dir` default to `reaudit_rubric_v3/`, not
+  `reaudit/`. If choosing an explicit `--out-dir`, keep it rubric-specific to avoid overwriting.
 - If the monitor corpus is absent, the dry run prints the offline repair command
   `python -m eval.monitor_attacks --build`; rebuild it before running the live plan.
 
@@ -85,8 +88,8 @@ requests per episode. Agentic uses an eight-turn standard-audit-cost proxy (24 a
 and retried (20 first attempts + 10 retries); if every episode retries, its estimate is 4/3
 as large. Historical thinking, retries and Modal compute are undercounted or excluded.
 
-On the starting committed data the plan estimates **$178.18**, of which **$64.33** is the
-blocked rubric-v3 step. Counts/costs shrink as outputs are completed; the script's current
+On the starting committed data the fully enabled plan estimates **$178.18**, including **$64.33**
+for rubric-v3 re-audits. Counts/costs shrink as outputs are completed; the script's current
 dry run is authoritative, not these snapshot numbers.
 
 ```bash
