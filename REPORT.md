@@ -354,7 +354,7 @@ Findings:
 | `final_report` | 0.53 | 0.74 (69/93) | 0.23 (62/267) | 0.62 | 0.825 |
 
 Against the deterministic labeller, the auditor reaches recall 1.00 / 0.98 / 0.57 and
-AUROC 0.97 / 0.93 / 0.77. FPR is higher (0.41 / 0.43 / 0.33) because many of its "false
+AUROC 0.97 / 0.93 / 0.77. FPR is higher (0.41 / 0.42 / 0.33) because many of its "false
 positives" are hacks the labeller misses.
 
 **Seeing actions has a descriptive recall gain, with a supported FPR cost.** Sonnet
@@ -948,7 +948,7 @@ is in [`docs/methodology_review.md`](docs/methodology_review.md); these are expl
 not new live audits.
 
 - **Small n.** There are 5 episodes per (model, config, task) cell, and per-task results
-  rest on 2–40 corrected-label positives, and 4–27 in the Opus subset. Several recall and
+  rest on 2–40 corrected-label positives, and 0–27 in the Opus subset (4–27 original). Several recall and
   FPR comparisons remain underpowered after Holm correction (§8.2).
 - **Clustering.** Cell-resampled CIs can be about 2× wider; task resampling widens them further.
   Sonnet's action-access Δrecall has cell CI [−0.01, +0.35] and ΔFPR [−0.04, +0.28], both

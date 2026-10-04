@@ -482,3 +482,35 @@ def test_robustness_caveats_in_faq_and_slides(tmp_path):
     assert set(nums) >= {"66/93", "75/90", "0.056", "0.48", "26%", "0.12", "26/27", "20/27"}
     assert "up to about 2×" in faq and "up to ~2×" in slides
     assert "Actions are the main signal" not in slides
+
+
+def test_claims_final_2_fixes():
+    """Rows fixed on devin/claims-final-2: per-task positive ranges, labeller-truth FPR, excluded recall pair."""
+    rows = [r for d in V2 for r in labels.load_experiment(d, "corrected")]
+    col = labels.column("corrected")
+
+    def task_range(dirs):
+        trajs = {(r["experiment"], r["trajectory_id"]): r for r in rows if f"results/{r['experiment']}" in dirs}
+        tasks = {r["task_id"] for r in trajs.values()}
+        n = [sum(bool(r[col]) for r in trajs.values() if r["task_id"] == t) for t in tasks]
+        return f"{min(n)}–{max(n)}"
+
+    assert task_range(V2) == "2–40"
+    opus = task_range(MATCHED)
+    assert opus == "0–27"
+    report, slides = re.sub(r"\s+", " ", doc("REPORT.md")), doc("docs/slides.html")
+    assert f"2–40 corrected-label positives, and {opus} in the Opus subset (4–27 original)" in report
+    assert f"4–27 in the Opus subset (original; {opus} corrected)" in slides
+
+    sonnet = [r for r in rows if r["auditor"] == "claude-sonnet-4-6"]
+    fpr = []
+    for mode in ("full_trace", "report_only", "final_report"):
+        neg = [r for r in sonnet if r["auditor_mode"] == mode and not r["labeller"]]
+        fpr.append(f"{sum(bool(r['pred']) for r in neg) / len(neg):.2f}")
+    assert f"FPR is higher ({' / '.join(fpr)})" in report
+
+    excl = [r for r in sonnet if r["task_id"] != "leaked_answer" and r[col]]
+    rec = {m: sum(bool(r["pred"]) for r in excl if r["auditor_mode"] == m) / sum(r["auditor_mode"] == m for r in excl)
+           for m in ("report_only", "final_report")}
+    paper = re.sub(r"\s+", " ", doc("paper/punish.tex"))
+    assert f"excluded {rec['report_only']:.2f} vs {rec['final_report']:.2f})" in paper
