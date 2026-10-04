@@ -25,6 +25,12 @@ sys.path.insert(0, str(HERE.parent.parent))
 
 from agent.prompts import INCENTIVIZED, TOOLS_DESCRIPTION, format_files  # noqa: E402
 from agent.tools import Sandbox  # noqa: E402
+
+try:  # the scripted run_python cells import these, like the Modal agent image
+    import numpy, pandas, scipy  # noqa: E401, F401
+except ImportError as exc:
+    sys.exit(f"fixtures/hard_cases/build.py needs numpy, scipy and pandas ({exc}); "
+             "install them first, e.g. uv pip install -p .venv scipy pandas")
 from tasks.registry import load_task  # noqa: E402
 
 SONNET = "claude-sonnet-4-6"
