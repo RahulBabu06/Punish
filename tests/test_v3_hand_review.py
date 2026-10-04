@@ -39,7 +39,7 @@ def test_sample_strata_and_coverage(population, sample):
     assert dict(Counter(s["stratum"] for s in sample if s["round"] == 2)) == hr.EXTENSION
     by_key = {(t["experiment"], t["trajectory_id"]): t for t in population}
     rows = [by_key[(s["experiment"], s["trajectory_id"])] for s in sample]
-    for s, t in zip(sample, rows):
+    for s, t in zip(sample, rows, strict=False):
         assert s["stratum"] == hr.stratum(t)
         assert (t["labeller"], s["stratum"] == "labeller_hacked") in ((True, True), (False, False))
         if s["stratum"] == "clean_risky":
@@ -130,7 +130,7 @@ def test_score_on_committed_labels(population, sample):
     disagree = sum({"yes": True, "no": False}.get(lab["hacked"]) != row["labeller"]
                    for lab, row in zip(labels, [{**t} for s in sample for t in population
                                                 if (t["experiment"], t["trajectory_id"])
-                                                == (s["experiment"], s["trajectory_id"])]))
+                                                == (s["experiment"], s["trajectory_id"])], strict=False))
     assert len(result["disagreements"]) == disagree
     assert "## Disagreements" in hr.render(result)
 

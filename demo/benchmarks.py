@@ -194,7 +194,7 @@ def cost(results_dir: Path) -> dict | None:
     if per_row:
         h = per_row["headers"]
         for r in per_row["rows"]:
-            row = dict(zip(h, r))
+            row = dict(zip(h, r, strict=False))
             d = dirs.setdefault(row["results dir"].strip("`"), {"usd": 0.0, "calls": 0, "roles": {}})
             usd = _money(row.get("USD", "")) or 0.0
             d["usd"] += usd
@@ -203,7 +203,7 @@ def cost(results_dir: Path) -> dict | None:
     roles = []
     if by_role:
         for r in by_role["rows"]:
-            row = dict(zip(by_role["headers"], r))
+            row = dict(zip(by_role["headers"], r, strict=False))
             roles.append({"role": row["role"].strip("*"), "calls": row.get("calls", ""), "usd": _money(row.get("USD", ""))})
     notes = [p for p in md_intro(text, 4) if p.startswith("Prices")]
     return {"dirs": dirs, "roles": roles, "notes": notes, "sources": [_rel(results_dir / "COST.md")]}
@@ -243,7 +243,7 @@ def cascade_chart(doc: dict) -> str:
     usd = "USD / trajectory" if "USD / trajectory" in h else None
     groups = []
     for r in t["rows"]:
-        row = dict(zip(h, r))
+        row = dict(zip(h, r, strict=False))
         label = re.sub(r"^\(\w\)\s*", "", row["policy"]).replace(" only", "").replace(" -> ", "→")
         cost_ = re.search(r"\$[\d.]+", row.get(usd, "")) if usd else None
         groups.append((label + (f"\n{cost_.group(0)}/traj" if cost_ else ""),
@@ -258,8 +258,8 @@ def calibration_chart(doc: dict) -> str:
         return ""
     h = t["headers"]
     series = [s for s in ("ECE raw", "ECE platt", "ECE iso") if s in h]
-    groups = [(f'{_short_model(dict(zip(h, r))["auditor"])}\n{dict(zip(h, r)).get("mode", "")}',
-               [(s, _num(dict(zip(h, r))[s])) for s in series]) for r in t["rows"]]
+    groups = [(f'{_short_model(dict(zip(h, r, strict=False))["auditor"])}\n{dict(zip(h, r, strict=False)).get("mode", "")}',
+               [(s, _num(dict(zip(h, r, strict=False))[s])) for s in series]) for r in t["rows"]]
     top = max([v for _, vals in groups for _, v in vals if v] + [0.1])
     return bar_chart("Expected calibration error by auditor and mode (lower is better, leave-one-task-out)", groups,
                      series, ymax=round(top * 1.2, 2), fmt=lambda v: f"{v:.2f}", width=760)
@@ -547,8 +547,8 @@ def judge_chart(doc: dict) -> str:
     h = t["headers"]
     kappa = next((x for x in h if "κ" in x or "kappa" in x.lower()), None)
     series = ["accuracy"] + (["Cohen's κ"] if kappa else [])
-    groups = [(dict(zip(h, r))["comparison"].replace("`", ""),
-               [("accuracy", _num(dict(zip(h, r))["accuracy"]))] + ([("Cohen's κ", _num(dict(zip(h, r))[kappa]))] if kappa else []))
+    groups = [(dict(zip(h, r, strict=False))["comparison"].replace("`", ""),
+               [("accuracy", _num(dict(zip(h, r, strict=False))["accuracy"]))] + ([("Cohen's κ", _num(dict(zip(h, r, strict=False))[kappa]))] if kappa else []))
               for r in t["rows"]]
     return bar_chart("Agreement with blind labels", groups, series, width=520, fmt=lambda v: f"{v:.2f}")
 

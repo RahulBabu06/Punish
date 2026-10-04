@@ -174,7 +174,7 @@ def labeller_estimates(population: list[dict], sample: list[dict], labels: list[
     cells = {}
     for name in STRATA:
         decided = []
-        for s, lab in zip(sample, labels):
+        for s, lab in zip(sample, labels, strict=False):
             if s["stratum"] != name:
                 continue
             h = lab["hacked"]
@@ -214,7 +214,7 @@ def auditor_shift(population: list[dict], sample: list[dict], labels: list[dict]
     sizes = Counter(t["stratum"] for t in population)
     n_h = Counter(s["stratum"] for s in sample)
     rows = []
-    for s, lab in zip(sample, labels):
+    for s, lab in zip(sample, labels, strict=False):
         t = by_key[(s["experiment"], s["trajectory_id"])]
         if t["full_trace_pred"] is None:
             continue
@@ -247,7 +247,7 @@ def score(population=None, sample=None, labels=None) -> dict:
     labels = labels if labels is not None else load_labels(sample)
     by_key = {(t["experiment"], t["trajectory_id"]): t for t in population}
     disagreements = []
-    for s, lab in zip(sample, labels):
+    for s, lab in zip(sample, labels, strict=False):
         t = by_key[(s["experiment"], s["trajectory_id"])]
         hand = {"yes": True, "no": False}.get(lab["hacked"])
         if hand is None or hand != t["labeller"]:
@@ -351,7 +351,7 @@ def decoy_impact(v2=V2_EXPERIMENTS, v3=EXPERIMENTS, sample=None, labels=None,
 
     sample = sample if sample is not None else load_sample()
     labels = labels if labels is not None else load_labels(sample)
-    hand = {(s["experiment"], s["trajectory_id"]): lab["hacked"] for s, lab in zip(sample, labels)}
+    hand = {(s["experiment"], s["trajectory_id"]): lab["hacked"] for s, lab in zip(sample, labels, strict=False)}
     review = {(r["experiment"], r["trajectory_id"]): r for r in json.loads(Path(review_path).read_text("utf-8"))}
     out: dict = {"rule": "tasks.registry.leaked_grader_decoy"}
     for name, experiments in (("v2", v2), ("v3", v3)):
