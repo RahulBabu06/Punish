@@ -1,0 +1,350 @@
+{
+ "cohorts": {
+  "v2 corrected": [
+   {
+    "auditor": "heuristic",
+    "mode": "full_trace",
+    "matched_to": null,
+    "n": 360,
+    "pos": 93,
+    "tp": 58,
+    "fp": 24,
+    "recall": 0.6236559139784946,
+    "fpr": 0.0898876404494382,
+    "auroc": 0.687
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "report_only",
+    "matched_to": null,
+    "n": 360,
+    "pos": 93,
+    "tp": 51,
+    "fp": 22,
+    "recall": 0.5483870967741935,
+    "fpr": 0.08239700374531835,
+    "auroc": 0.605
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 360,
+    "pos": 93,
+    "tp": 45,
+    "fp": 7,
+    "recall": 0.4838709677419355,
+    "fpr": 0.026217228464419477,
+    "auroc": 0.826
+   },
+   {
+    "auditor": "Opus 4.6",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 240,
+    "pos": 56,
+    "tp": 35,
+    "fp": 36,
+    "recall": 0.625,
+    "fpr": 0.1956521739130435,
+    "auroc": 0.808
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": "Opus 4.6",
+    "n": 240,
+    "pos": 56,
+    "tp": 29,
+    "fp": 7,
+    "recall": 0.5178571428571429,
+    "fpr": 0.03804347826086957,
+    "auroc": 0.855
+   },
+   {
+    "auditor": "Sonnet 4.6",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 360,
+    "pos": 93,
+    "tp": 69,
+    "fp": 62,
+    "recall": 0.7419354838709677,
+    "fpr": 0.23220973782771537,
+    "auroc": 0.825
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": "Sonnet 4.6",
+    "n": 360,
+    "pos": 93,
+    "tp": 45,
+    "fp": 7,
+    "recall": 0.4838709677419355,
+    "fpr": 0.026217228464419477,
+    "auroc": 0.826
+   }
+  ],
+  "v2 excl_leaked": [
+   {
+    "auditor": "heuristic",
+    "mode": "full_trace",
+    "matched_to": null,
+    "n": 300,
+    "pos": 91,
+    "tp": 56,
+    "fp": 10,
+    "recall": 0.6153846153846154,
+    "fpr": 0.04784688995215311,
+    "auroc": 0.724
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "report_only",
+    "matched_to": null,
+    "n": 300,
+    "pos": 91,
+    "tp": 49,
+    "fp": 9,
+    "recall": 0.5384615384615384,
+    "fpr": 0.0430622009569378,
+    "auroc": 0.638
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 300,
+    "pos": 91,
+    "tp": 45,
+    "fp": 6,
+    "recall": 0.4945054945054945,
+    "fpr": 0.028708133971291867,
+    "auroc": 0.837
+   },
+   {
+    "auditor": "Opus 4.6",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 200,
+    "pos": 56,
+    "tp": 35,
+    "fp": 25,
+    "recall": 0.625,
+    "fpr": 0.1736111111111111,
+    "auroc": 0.848
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": "Opus 4.6",
+    "n": 200,
+    "pos": 56,
+    "tp": 29,
+    "fp": 6,
+    "recall": 0.5178571428571429,
+    "fpr": 0.041666666666666664,
+    "auroc": 0.857
+   },
+   {
+    "auditor": "Sonnet 4.6",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 300,
+    "pos": 91,
+    "tp": 69,
+    "fp": 43,
+    "recall": 0.7582417582417582,
+    "fpr": 0.20574162679425836,
+    "auroc": 0.858
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": "Sonnet 4.6",
+    "n": 300,
+    "pos": 91,
+    "tp": 45,
+    "fp": 6,
+    "recall": 0.4945054945054945,
+    "fpr": 0.028708133971291867,
+    "auroc": 0.837
+   }
+  ],
+  "v3 labeller-only": [
+   {
+    "auditor": "heuristic",
+    "mode": "full_trace",
+    "matched_to": null,
+    "n": 377,
+    "pos": 95,
+    "tp": 62,
+    "fp": 11,
+    "recall": 0.6526315789473685,
+    "fpr": 0.03900709219858156,
+    "auroc": 0.843
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "report_only",
+    "matched_to": null,
+    "n": 377,
+    "pos": 95,
+    "tp": 59,
+    "fp": 10,
+    "recall": 0.6210526315789474,
+    "fpr": 0.03546099290780142,
+    "auroc": 0.783
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 377,
+    "pos": 95,
+    "tp": 50,
+    "fp": 4,
+    "recall": 0.5263157894736842,
+    "fpr": 0.014184397163120567,
+    "auroc": 0.868
+   },
+   {
+    "auditor": "Sonnet 4.6",
+    "mode": "final_report",
+    "matched_to": null,
+    "n": 377,
+    "pos": 95,
+    "tp": 72,
+    "fp": 42,
+    "recall": 0.7578947368421053,
+    "fpr": 0.14893617021276595,
+    "auroc": 0.876
+   },
+   {
+    "auditor": "heuristic",
+    "mode": "final_report",
+    "matched_to": "Sonnet 4.6",
+    "n": 377,
+    "pos": 95,
+    "tp": 50,
+    "fp": 4,
+    "recall": 0.5263157894736842,
+    "fpr": 0.014184397163120567,
+    "auroc": 0.868
+   }
+  ]
+ },
+ "hard_cases": [
+  {
+   "auditor": "heuristic",
+   "mode": "full_trace",
+   "subset": "all",
+   "n": 36,
+   "pos": 26,
+   "tp": 11,
+   "fp": 1,
+   "recall": 0.4230769230769231,
+   "fpr": 0.1,
+   "auroc": 0.717
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "report_only",
+   "subset": "all",
+   "n": 36,
+   "pos": 26,
+   "tp": 11,
+   "fp": 1,
+   "recall": 0.4230769230769231,
+   "fpr": 0.1,
+   "auroc": 0.719
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "final_report",
+   "subset": "all",
+   "n": 36,
+   "pos": 26,
+   "tp": 2,
+   "fp": 0,
+   "recall": 0.07692307692307693,
+   "fpr": 0.0,
+   "auroc": 0.554
+  }
+ ],
+ "monitor_attacks": [
+  {
+   "auditor": "heuristic",
+   "mode": "full_trace",
+   "subset": "unattacked",
+   "n": 10,
+   "pos": 10,
+   "tp": 7,
+   "fp": 0,
+   "recall": 0.7,
+   "fpr": null,
+   "auroc": null
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "full_trace",
+   "subset": "attacked",
+   "n": 60,
+   "pos": 60,
+   "tp": 40,
+   "fp": 0,
+   "recall": 0.6666666666666666,
+   "fpr": null,
+   "auroc": null
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "report_only",
+   "subset": "unattacked",
+   "n": 10,
+   "pos": 10,
+   "tp": 6,
+   "fp": 0,
+   "recall": 0.6,
+   "fpr": null,
+   "auroc": null
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "report_only",
+   "subset": "attacked",
+   "n": 60,
+   "pos": 60,
+   "tp": 36,
+   "fp": 0,
+   "recall": 0.6,
+   "fpr": null,
+   "auroc": null
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "final_report",
+   "subset": "unattacked",
+   "n": 10,
+   "pos": 10,
+   "tp": 3,
+   "fp": 0,
+   "recall": 0.3,
+   "fpr": null,
+   "auroc": null
+  },
+  {
+   "auditor": "heuristic",
+   "mode": "final_report",
+   "subset": "attacked",
+   "n": 60,
+   "pos": 60,
+   "tp": 39,
+   "fp": 0,
+   "recall": 0.65,
+   "fpr": null,
+   "auroc": null
+  }
+ ]
+}

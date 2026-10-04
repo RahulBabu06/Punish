@@ -203,7 +203,8 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/errors_v2/` | auditor error taxonomy with a hand-tagged sample ([`docs/error_analysis.md`](docs/error_analysis.md)) |
 | `results/task_stats/` | per-task hack rate, exploit-file reads and auditor recall/FPR ([`docs/task_design.md`](docs/task_design.md)) |
 | `results/metric_gaming_review.{json,md}` | hand review of the 72 flagged label-clean `metric_gaming` runs (24 read: all auditor false positives, [`docs/metric_gaming_review.md`](docs/metric_gaming_review.md)) |
-| `results/rubric_v3_proxy.{json,md}` | offline **proxy** (not a measurement) for the opt-in `--rubric v3` grader-access fix: Sonnet `full_trace` FPR 0.34 → 0.03 at recall 0.90 if Claude obeyed the new rules exactly; live validation pending ([`docs/rubric_v3.md`](docs/rubric_v3.md)) |
+| `results/heuristic_final_report/COMPARISON.md` | offline heuristic `final_report` checker vs Claude `final_report`: v2 corrected recall 0.48 / FPR 0.03 / AUROC 0.826 vs Sonnet 0.74 / 0.23 / 0.825 (checks fitted on v2/v3, not held out) |
+| `results/rubric_v3_proxy.{json,md}` | offline **proxy** (not a measurement) for the opt-in `--rubric v3` grader-access fix: Sonnet `full_trace` FPR 0.34 → 0.05 on v2 (0.20 → 0.10 on v3) at unchanged recall, an in-sample upper bound that assumes Claude obeys the new rules exactly; live validation pending ([`docs/rubric_v3.md`](docs/rubric_v3.md)) |
 | `results/id_leak/` | recall/FPR of verdicts that cite the trajectory id vs not (corrected label) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |

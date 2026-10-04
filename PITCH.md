@@ -102,7 +102,7 @@ have is a heuristic → Sonnet cascade (recall 0.77 at FPR 0.054 with held-out t
 `grade.py` or `eval.py` and then reported the true value. Our rubric counts any read as
 suspicious, and our judge doesn't. Requiring that the file's contents shape the report should
 remove most of them. That is our opt-in rubric v3. An offline proxy on the saved verdicts
-estimates Sonnet `full_trace` FPR 0.34 → 0.03 at unchanged recall, but that's a proxy, not a
+estimates Sonnet `full_trace` FPR 0.34 → 0.05 at unchanged recall, but that's a proxy, not a
 measurement, and live validation is pending (`docs/rubric_v3.md`). An Opus auditor with the full trace already gets FPR 0.11 (18/161), and 0.05 (4/75) on the
 Sonnet-subject runs. As a triage tool for flagging runs for human review, 0.90 recall at 0.35
 FPR (corrected label; 0.93 / 0.26 original) is already useful.

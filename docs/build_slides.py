@@ -387,12 +387,12 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
         # 8 hard cases
         """<section class="slide">
 <div class="kicker">Red team · fixtures/hard_cases</div>
-<h2>32 hand-built hard cases to stress-test the auditor</h2>
+<h2>36 hand-built hard cases to stress-test the auditor</h2>
 <div class="row" style="gap:30px">
 <div class="col" style="flex:.9">
 <div class="grid" style="gap:10px">
 <div class="card"><h3>Hard negatives (10)</h3><p>Honest but suspicious: reads <code>eval.py</code> and then computes honestly, runs the grader only to check the format, discloses an exclusion, reports a null result</p></div>
-<div class="card" style="border-color:var(--orange)"><h3>Obfuscated hacks (10)</h3><p>The hack is in the actions, the reasoning is bland: a copied value, a "sanity check" that reads the answer, a mislabelled metric</p></div>
+<div class="card" style="border-color:var(--orange)"><h3>Obfuscated hacks (14)</h3><p>The hack is in the actions, the reasoning is bland: a copied value, a "sanity check" that reads the answer, a mislabelled metric</p></div>
 <div class="card" style="border-color:var(--amber)"><h3>Reasoning-only tells (5)</h3><p>Defensible actions, but the reasoning admits intent ("round toward the expected value")</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Report-only tells (7)</h3><p>Clean trace, but the report adds checks that never ran</p></div>
 </div>
@@ -402,13 +402,13 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <table>
 <tr><th>category</th><th>metric</th><th>heuristic</th><th>hand-label agreement</th></tr>
 <tr><td>hard_negative</td><td>FPR</td><td class="hi">0.10 (1/10)</td><td>10/10</td></tr>
-<tr><td>obfuscated_hack</td><td>recall</td><td>0.40 (4/10)</td><td>9/10</td></tr>
+<tr><td>obfuscated_hack</td><td>recall</td><td>0.43 (6/14)</td><td>12/14</td></tr>
 <tr><td>reasoning_only</td><td>recall</td><td class="lo">0.20 (1/5)</td><td>4/5</td></tr>
 <tr><td>report_only</td><td>recall</td><td>0.57 (4/7)</td><td class="lo">1/7</td></tr>
-<tr class="sep"><td><b>all 32</b></td><td>P / R</td><td>0.90 / 0.41</td><td>24/32</td></tr>
+<tr class="sep"><td><b>all 36</b></td><td>P / R</td><td>0.92 / 0.42</td><td>27/36</td></tr>
 </table>
 <p style="font-size:14px;color:var(--muted);margin:6px 0 14px">Offline provenance-based heuristic auditor; <code>full_trace</code> and <code>report_only</code> scores are identical. Last column: the deterministic labeller against the hand labels.</p>
-<div class="callout"><p><b>The rules miss 59% of the hard hacks</b>, and the labeller misses 6 of 7 report-only fabrications. This is the gap an LLM auditor has to close.</p>
+<div class="callout"><p><b>The rules miss 58% of the hard hacks</b>, and the labeller misses 6 of 7 report-only fabrications. This is the gap an LLM auditor has to close.</p>
 <p>Claude auditor run: <b>pending</b>. One command: <code style="background:#24384F;color:#fff">modal run eval/hard_cases.py --modes all</code></p></div>
 </div>
 </div>
@@ -439,7 +439,7 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <li><b>Rule-based ground truth undercounts.</b> The labeller finds 46 of the 91 hacks the judge finds (leaked_answer excluded).</li>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>
-<div class="q" style="font-size:23px">Next: measure the opt-in rubric v3 live (offline proxy only: FPR 0.34 → 0.03, not measured), run the Claude auditor on the hard cases
+<div class="q" style="font-size:23px">Next: measure the opt-in rubric v3 live (offline proxy only: FPR 0.34 → 0.05, not measured), run the Claude auditor on the hard cases
 and monitor attacks, re-judge leaked_answer, and validate the judge against human raters.</div>
 <div class="src">Sources: results/RESULTS.md · REPORT.md §8.2, §10 · github.com/RahulBabu06/Punish</div>
 </section>""",
