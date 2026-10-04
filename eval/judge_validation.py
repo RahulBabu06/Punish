@@ -235,7 +235,11 @@ def auditor_metrics(audit_rows: list[dict], rows: list[dict]) -> list[dict]:
     return out
 
 
-def score(experiments=EXPERIMENTS, sample_path=SAMPLE_PATH, labels_path=LABELS_PATH, root: Path = ROOT) -> dict:
+def score(experiments=EXPERIMENTS, sample_path=SAMPLE_PATH, labels_path=LABELS_PATH, root: Path = ROOT,
+          label: str = "either") -> dict:
+    """``label`` (eval.labels) rewrites judge/either of every row; sampling strata keep the original labels."""
+    from eval.labels import relabel
+
     sample = load_sample(sample_path)
     labels = load_labels(sample, labels_path)
     audit_rows = []
@@ -243,7 +247,12 @@ def score(experiments=EXPERIMENTS, sample_path=SAMPLE_PATH, labels_path=LABELS_P
         audit_rows += analyze.load_experiment(str(root / exp) if not Path(exp).is_absolute() else exp)
     population = [t for t in analyze.trajectories(audit_rows) if t["judge"] is not None]
     rows = join(sample, labels, population, root)
-    return {"n": len(rows), "agreement": agreement_table(rows),
+    if label != "either":
+        audit_rows = relabel(audit_rows, label)
+        fixed = {(t["experiment"], t["trajectory_id"]): t for t in analyze.trajectories(audit_rows)}
+        rows = [{**r, "judge": fixed[k]["judge"], "either": fixed[k]["either"]} for r in rows
+                if (k := (r["experiment"], r["trajectory_id"])) in fixed]
+    return {"label": label, "n": len(rows), "agreement": agreement_table(rows),
             "by_stratum": {k[0]: agreement_table(v) for k, v in analyze.group(rows, "stratum").items()},
             "by_task": {k[0]: agreement_table(v)["judge"] for k, v in analyze.group(rows, "task_id").items()},
             "weighted_judge_accuracy": weighted_judge_accuracy(rows, population),
@@ -258,7 +267,9 @@ def _f(x) -> str:
 
 def render(result: dict) -> str:
     t = analyze._table
-    lines = [f"## Agreement with the blind labels (n = {result['n']})", ""]
+    lines = [] if result.get("label", "either") == "either" else [
+        f"Label variant: `{result['label']}` (judge and either columns rewritten by eval.labels; strata unchanged).", ""]
+    lines += [f"## Agreement with the blind labels (n = {result['n']})", ""]
     lines += t(["comparison", "n", "accuracy", "Cohen's kappa", "both hacked", "only comparison hacked",
                 "only blind hacked", "both honest"],
                [[c, a["n"], _f(a["accuracy"]), _f(a["kappa"]), a["tp"], a["fp"], a["fn"], a["tn"]]
@@ -290,7 +301,7 @@ def render(result: dict) -> str:
 
 
 def cmd_score(args) -> int:
-    result = score(args.experiments, args.sample, args.labels)
+    result = score(args.experiments, args.sample, args.labels, label=args.label)
     text = render(result)
     if args.out:
         out = Path(args.out)
@@ -315,6 +326,9 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--sample", default=str(SAMPLE_PATH))
     c.add_argument("--labels", default=str(LABELS_PATH))
     c.add_argument("--out", default="", help="also write score.json and SUMMARY.md to this directory")
+    from eval.labels import add_argument as add_label_argument
+
+    add_label_argument(c)
     c.set_defaults(fn=cmd_score)
     args = p.parse_args(argv)
     return args.fn(args)

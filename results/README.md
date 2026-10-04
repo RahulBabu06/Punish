@@ -47,6 +47,11 @@ the grader a hack. The judgment files are left unchanged.
 `RESULTS_v2_excl_leaked.md` is `eval.analyze --exclude-task leaked_answer`. New judge runs use the definition matching
 each trajectory's sandbox files (`eval.judge.task_for_events`).
 
+**Corrected-label outputs.** `mitigate best-of-n`, `calibrate`, `cascade`, `obfuscation` and `judge_validation score`
+take `--label {either,corrected,excl_leaked}` (`eval/labels.py`, shared). The `*_corrected.*` files next to each original
+(`mitigation_bestofn_v2/`, `calibration_v2/`, `CASCADE_corrected.*`, `obfuscation/`, `judge_validation_corrected/`) are
+the same commands with `--label corrected`.
+
 Column notes:
 
 - **Subject model**: the `config.model` header of each trajectory. Full ids are `claude-haiku-4-5-20251001`,
