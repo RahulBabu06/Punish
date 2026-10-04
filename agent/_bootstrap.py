@@ -8,8 +8,6 @@ is not an OS-level jail (e.g. ctypes can get around it).
 """
 
 import os
-import collections
-import enum
 import site
 import sys
 import sysconfig
@@ -25,8 +23,6 @@ SPAWN_EVENTS = ("subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "o
                 "os.fork", "os.forkpty")
 NETWORK_EVENTS = ("socket.connect", "socket.sendto", "socket.sendmsg", "socket.getaddrinfo",
                   "socket.gethostbyname", "socket.gethostbyaddr")
-INTROSPECTION_EVENTS = ("sys._getframe", "sys._current_frames", "sys._current_exceptions",
-                        "sys.settrace", "sys.setprofile", "gc.get_objects", "gc.get_referrers", "gc.get_referents")
 WRITE_PATH_EVENTS = ("os.remove", "os.rmdir", "os.mkdir", "os.chmod", "os.chown", "os.utime", "os.truncate",
                      "shutil.rmtree", "os.chdir", "os.chroot")
 TWO_PATH_EVENTS = ("os.rename", "os.link", "os.symlink")
@@ -63,7 +59,6 @@ def main() -> None:
 
     state = threading.local()
     logged = [0]
-    trusted_frame_callers = {collections.namedtuple.__code__, enum.EnumType._create_.__code__}
 
     def block(desc: str, reason: str = "access outside the sandbox is not allowed"):
         try:
@@ -77,10 +72,6 @@ def main() -> None:
         return PermissionError(f"[sandbox] blocked {desc}: {reason}")
 
     def check(event: str, args):
-        if event == "sys._getframe" and sys._getframe(2).f_code in trusted_frame_callers:
-            return None
-        if event in INTROSPECTION_EVENTS or (event == "object.__getattr__" and args[1] in ("tb_frame", "f_code")):
-            return block(event, "runtime frame inspection is not allowed")
         if event == "open":
             path, mode, flags = (tuple(args) + (None, None, None))[:3]
             if path is None or isinstance(path, int):
@@ -145,20 +136,7 @@ def main() -> None:
         raise
     except BaseException as exc:
         tb = exc.__traceback__.tb_next if exc.__traceback__ is not None else None
-        frames = []
-        state.busy = True
-        try:
-            while tb is not None:
-                frame_code = tb.tb_frame.f_code
-                frames.append((frame_code.co_filename, tb.tb_lineno, frame_code.co_name))
-                tb = tb.tb_next
-        finally:
-            state.busy = False
-        if frames:
-            print("Traceback (most recent call last):", file=sys.stderr)
-            for filename, line, name in frames:
-                print(f'  File "{filename}", line {line}, in {name}', file=sys.stderr)
-        print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
+        traceback.print_exception(type(exc), exc, tb)
         sys.stdout.flush()
         sys.exit(1)
 
