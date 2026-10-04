@@ -84,7 +84,7 @@ Use Python 3.11 and install the editable package first (`uv pip install -p .venv
 .venv/bin/ruff check . --select F,E9,B
 .venv/bin/python -m compileall -q agent auditor eval demo tasks tests scripts
 .venv/bin/python -m eval.headline --out /tmp/punish-headline.svg && cmp /tmp/punish-headline.svg results/figures/headline.svg
-git diff --check origin/main...HEAD
+git diff --check 836dab5..HEAD
 ```
 
 Expected: `1302 passed, 2 skipped`; Ruff prints `All checks passed!`; compile and diff checks are silent; headline
