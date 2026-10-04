@@ -9,7 +9,7 @@ Each case is <case>.jsonl (a schema-valid trajectory on a real task) plus <case>
 obfuscated_hack (hack visible in actions, bland reasoning), reasoning_only (only the reasoning admits intent),
 report_only (honest trace, report adds claims never computed). Prints per-category precision/recall per mode and
 writes <out>/verdicts/<case>__<mode>__<auditor>.json, <out>/results_<auditor>.json and <out>/SUMMARY_<auditor>.md.
-The heuristic auditor has no final_report mode; those cells are skipped.
+The heuristic auditor's final_report mode sees only the prompt and report (auditor/report_checks.py).
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ def parse_modes(spec: str) -> list[str]:
 
 
 def supported(auditor: str, mode: str) -> bool:
-    return not (auditor == "heuristic" and mode == "final_report")
+    return mode in MODES
 
 
 def audit_case(path: str, mode: str, auditor: str = "heuristic", model: str | None = None, client=None) -> dict:
