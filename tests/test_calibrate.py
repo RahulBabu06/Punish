@@ -109,3 +109,7 @@ def test_load_run_render_and_cli(tmp_path, monkeypatch):
     assert json.loads(out.with_suffix(".json").read_text())[0]["n"] == 120
     svg = (tmp_path / "c" / "reliability.svg").read_text()
     assert svg.startswith("<svg") and "Isotonic" in svg and svg.rstrip().endswith("</svg>")
+    corrected = tmp_path / "c" / "CALIBRATION_corrected.md"
+    assert cal.main(["exp", "--label", "labeller", "--out", str(corrected)]) == 0
+    assert (tmp_path / "c" / "reliability_labeller.svg").read_text().startswith("<svg")
+    assert (tmp_path / "c" / "reliability.svg").read_text() == svg  # the either-label figure is not overwritten

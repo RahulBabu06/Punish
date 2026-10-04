@@ -896,6 +896,8 @@ def _cli(argv: list[str] | None = None) -> int:
                   args.auditor_modes, args.veto_mode, args.threshold, args.retry_style, not args.no_judge,
                   args.results_dir, args.workers, args.start_episode)
     else:
+        if not load_records(args.results_dir):
+            p.error(f"no {RECORDS_DIR}/*.json under {args.results_dir} (run `eval.mitigate retry` first)")
         write_retry_summary(args.results_dir)
     return 0
 
