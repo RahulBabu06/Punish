@@ -296,7 +296,7 @@ async function show(u){
 }
 frame.addEventListener("load", () => { try { frame.contentWindow.focus(); } catch (e) {} });
 window.addEventListener("message", e => { if (e.data && typeof e.data.punishGo === "string") location.hash = "#" + e.data.punishGo; });
-const current = () => decodeURIComponent(location.hash.slice(1)) || "/";
+const current = () => decodeURIComponent(location.hash.slice(1)) || "/story";
 window.addEventListener("hashchange", () => show(current()));
 if (typeof DecompressionStream === "undefined") document.body.innerHTML = "<p style='padding:40px'>This browser lacks DecompressionStream; please use a current Chrome, Firefox or Safari.</p>";
 else show(current());

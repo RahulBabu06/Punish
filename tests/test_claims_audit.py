@@ -67,7 +67,7 @@ def test_recomputed_values():
 
 def test_corrected_positives_in_docs():
     h = headline()
-    assert f"corrected ({h['n']}, {h['pos']} hacked)" in doc("README.md")
+    assert f"sweep of {h['n']} runs, Sonnet 4.6 auditor, corrected labels: {h['pos']} hacked" in doc("README.md")
     assert f"| corrected | {h['n']} | {h['pos']} |" in doc("REPORT.md")
 
 
@@ -131,7 +131,10 @@ def test_cascade_heldout_in_docs():
     v3 = heldout_row("v3", "v2-tuned")
     rec, fpr = f"{v3['recall']:.3f}", f"{v3['fpr']:.3f}"
     readme = doc("README.md")
-    assert f"{v3['recall']:.2f} recall at {fpr} FPR" in readme
+    assert f"{100 * v3['recall']:.1f}% recall at {100 * v3['fpr']:.1f}% FPR" in readme
+    v2_tuned, v2_cross = heldout_row("v2", "tuned in-sample"), heldout_row("v2", "leave-one-experiment-out")
+    assert f"({100 * v2_tuned['recall']:.1f}% recall at {100 * v2_tuned['fpr']:.1f}% FPR, corrected label)" in readme
+    assert f"thresholds gives {100 * v2_cross['recall']:.1f}% / {100 * v2_cross['fpr']:.1f}%" in readme
     assert "holds out thresholds only" not in readme
     assert re.search(r"v2 point .*\n?.*is in-sample: the heuristic's rules and the cascade thresholds", readme)
     assert f"{v3['tp']}/{v3['pos']} = {rec} recall at\n  {v3['fp']}/{v3['n'] - v3['pos']} = {fpr} FPR" in doc("REPORT.md")
@@ -190,3 +193,53 @@ def test_closed_label_basis_rows():
     assert r"Of the 62 corrected-label \mode{final\_report} false positives, 38" in paper
     assert r"corrected label 0--86\%, 3--7 hacks" in paper
     assert "lower bound" not in doc("results/README.md")
+
+
+def submission_numbers() -> dict[str, str]:
+    """Every number SUBMISSION.md may quote, recomputed or read from its committed source."""
+    s = headline()["sonnet_ft"]
+    sonnet = row_cells("results/leaked_answer_correction.md", "| claude-sonnet-4-6 | full_trace | corrected |")
+    final = row_cells("results/heuristic_final_report/COMPARISON.md", "| v2 corrected | Sonnet 4.6 | final_report |")
+    bon_row = row_cells("results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md", "| **all** |")
+    bon = best_of_n()
+    cost = row_cells("results/COST.md", "| **total** |")
+    out = {
+        "360": "corrected trajectories", "93": "corrected hacked",
+        f"{s['recall']:.2f}": "Sonnet full_trace recall", f"{s['fpr']:.2f}": "Sonnet full_trace FPR",
+        sonnet[-1]: "Sonnet full_trace AUROC",
+        final[4]: "Sonnet final_report recall", final[5]: "Sonnet final_report FPR", final[6]: "final_report AUROC",
+        bon_row[2]: "best-of-n runs",
+        f"{bon['grader_only_hack']:.2f}": "grader-only hack rate", f"{bon['veto_grader_hack']:.2f}": "veto hack rate",
+        cost[2].strip("*"): "estimated cost", cost[1]: "API calls",
+    }
+    assert (headline()["n"], headline()["pos"]) == (360, 93)
+    assert (sonnet[-1], final[4:7]) == ("0.891", ["0.74", "0.23", "0.825"])
+    for key in (("v2", "tuned in-sample"), ("v3", "v2-tuned")):
+        r = heldout_row(*key)
+        out[f"{100 * r['recall']:.1f}%"] = f"{key[0]} cascade recall"
+        out[f"{100 * r['fpr']:.1f}%"] = f"{key[0]} cascade FPR"
+        out[f"{r['tp']}/{r['pos']}"] = f"{key[0]} cascade tp/pos"
+        out[f"{r['fp']}/{r['n'] - r['pos']}"] = f"{key[0]} cascade fp/neg"
+    return out
+
+
+def test_submission_numbers_match_committed_results():
+    text = doc("docs/SUBMISSION.md")
+    prose = re.sub(r"```.*?```", "", text, flags=re.S)
+    prose = re.sub(r"\]\([^)]*\)|Track 2|\b(?:Sonnet|Opus|Haiku) \d\.\d", "", prose)
+    prose = re.sub(r"^\d+\. ", "", prose, flags=re.M)
+    found = set(re.findall(r"(?<![\w.$])\$?\d[\d,]*(?:\.\d+)?(?:%|/\d+)?", prose))
+    allowed = submission_numbers()
+    assert found - set(allowed) == set(), "numbers with no committed source"
+    assert set(allowed) - found == set(), "headline numbers missing from SUBMISSION.md"
+    assert "0.28 to 0.15" in text
+
+
+def test_submission_abstract_and_links():
+    text = doc("docs/SUBMISSION.md")
+    abstract = text.split("## Abstract", 1)[1].split("\n## ", 1)[0]
+    assert 140 <= len(abstract.split()) <= 160
+    links = re.findall(r"\]\(([^)]+)\)", text)
+    assert {"../README.md", "../REPORT.md", "../PITCH.md", "../paper/punish.pdf", "demo.html", "slides.html",
+            "REVIEW_GUIDE.md"} <= set(links)
+    assert all((ROOT / "docs" / link).resolve().exists() for link in links)
