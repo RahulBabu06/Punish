@@ -25,6 +25,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from eval.outputs import guard_inputs, output
+
 LABELS = ("labeller", "judge", "either")
 MODES = ("full_trace", "report_only", "final_report")
 DEFAULT_BOOTSTRAPS = 2000
@@ -542,10 +544,12 @@ def render(rows: list[dict], experiments: list[str], *, stats: dict | None = Non
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("experiments", nargs="+")
-    p.add_argument("--out", default="results/RESULTS.md")
+    p.add_argument("--out", default=None,
+                   help="report path (default: <exp>/RESULTS.md, or <parent>/combined__<exps>/RESULTS.md for several)")
     p.add_argument("--json", default=None, help="also dump all rows as JSON")
-    p.add_argument("--figures", action="store_true", help="write four stdlib SVGs to results/figures/")
-    p.add_argument("--figures-dir", default="results/figures")
+    p.add_argument("--figures", action="store_true", help="write four stdlib SVGs to --figures-dir")
+    p.add_argument("--figures-dir", default=None, help="default: figures/ next to --out")
+    p.add_argument("--force", action="store_true", help="replace an --out report built from other experiments")
     p.add_argument("--bootstrap-samples", type=int, default=DEFAULT_BOOTSTRAPS)
     p.add_argument("--seed", type=int, default=DEFAULT_SEED)
     p.add_argument("--exclude-task", action="append", default=[], metavar="TASK",
@@ -553,7 +557,10 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     if args.bootstrap_samples < 1:
         p.error("--bootstrap-samples must be positive")
-    out = Path(args.out)
+    out = output(args.out, args.experiments, "RESULTS.md")
+    if err := guard_inputs(out, [Path(e).name for e in args.experiments], "Experiments: ", args.force):
+        p.error(err)
+    figures_dir = Path(args.figures_dir) if args.figures_dir else out.parent / "figures"
     stats_path = out.with_suffix(".json")
     if stats_path == out:
         stats_path = out.with_name(out.name + ".stats.json")
@@ -573,7 +580,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.figures:
         from eval.figures import write_figures
 
-        for path in write_figures(stats, args.figures_dir):
+        for path in write_figures(stats, figures_dir):
             links.append((path.stem.replace("_", " "), Path(os.path.relpath(path, out.parent)).as_posix()))
     text = render(rows, [Path(e).name for e in args.experiments], stats=stats, figure_links=links,
                   excluded_tasks=args.exclude_task)

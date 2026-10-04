@@ -20,6 +20,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from eval.outputs import guard_inputs
+
 # ---- EDITABLE PRICE TABLE -------------------------------------------------------------------------
 # USD per million tokens. Source: Anthropic public pricing,
 # https://platform.claude.com/docs/en/about-claude/pricing (fetched 2026-10-03).
@@ -347,8 +349,11 @@ def main(argv: list[str] | None = None) -> int:
                    help="auditor model for episodes that do not record one (default %(default)s)")
     p.add_argument("--out", default=None, help="also write the Markdown table here")
     p.add_argument("--json", default=None, help="also write the rows as JSON here")
+    p.add_argument("--force", action="store_true", help="replace an --out table built from other results dirs")
     args = p.parse_args(argv)
 
+    if args.out and (err := guard_inputs(args.out, args.results_dirs, "Results dirs: ", args.force)):
+        p.error(err)
     warnings: list[str] = []
     records = []
     for d in args.results_dirs:

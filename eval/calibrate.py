@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
 import numpy as np
 
 from eval.analyze import MODES, auroc, load_experiment, unique_audits
-from eval.labels import column, relabel, suffixed
+from eval.labels import column, relabel
+from eval.outputs import output, tagged
 
 METHODS = ("raw", "platt", "isotonic")
 DEFAULT_CAPS = (0.05, 0.10)
@@ -369,17 +369,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--bins", type=int, default=10)
     p.add_argument("--folds", default="task", choices=["task", "random"],
                    help="task = leave-one-task-out (default); random = diagnostic folds that ignore task")
-    p.add_argument("--out", default="results/calibration/CALIBRATION.md")
+    p.add_argument("--out", default=None, help="default: CALIBRATION.md next to the experiment(s); a non-default "
+                   "--label/--folds is added to the filename")
     p.add_argument("--svg", default=None, help="reliability diagram (default: reliability.svg, or reliability_<label>.svg, next to --out)")
     args = p.parse_args(argv)
     caps = tuple(float(c) for c in args.caps.split(","))
     results = run(load_scores(args.experiments, args.label), caps, args.bins, args.budget, args.folds)
-    out = Path(args.out)
+    out = output(args.out, args.experiments, "CALIBRATION.md", args.folds, args.label)
     out.parent.mkdir(parents=True, exist_ok=True)
     md = render(results, args.experiments, args.label, caps)
     out.write_text(md, encoding="utf-8")
     out.with_suffix(".json").write_text(json.dumps(results, indent=2), encoding="utf-8")
-    svg = Path(args.svg) if args.svg else out.with_name(suffixed("reliability.svg", args.label).name)
+    svg = tagged(args.svg, args.label) if args.svg else out.with_name(tagged("reliability.svg", args.label).name)
     svg.write_text(reliability_svg(results), encoding="utf-8")
     print(md)
     return 0
