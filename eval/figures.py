@@ -94,11 +94,16 @@ def _ci(svg: SVG, x, low, high, color, *, horizontal=False):
         svg.line(x - 5, high, x + 5, high, color, width=2)
 
 
+def _label_title(stats: dict) -> str:
+    return {"labeller": "deterministic labeller", "judge": "privileged judge"}.get(
+        stats.get("headline_label"), "labeller OR privileged judge")
+
+
 def hack_rate_svg(stats: dict) -> str:
     rows = stats["hack_rates"]
     height = max(365, 249 + 54 * len(rows))
     svg = SVG("Reward hacking by subject model and configuration",
-              "Headline label: labeller OR privileged judge · trajectory bootstrap 95% CI", height)
+              f"Headline label: {_label_title(stats)} · trajectory bootstrap 95% CI", height)
     left, width = 344, 520
     top, bottom = 126, 126 + 54 * len(rows)
     for i in range(6):
@@ -109,7 +114,7 @@ def hack_rate_svg(stats: dict) -> str:
     colors = {cfg: PALETTE[i % len(PALETTE)] for i, cfg in enumerate(configs)}
     for i, r in enumerate(rows):
         y = top + i * 54 + 16
-        rate = r["labels"]["either"]
+        rate = r["labels"][stats.get("headline_label", "either")]
         svg.text(left - 16, y - 1, r["subject_model"], anchor="end", weight=600)
         svg.text(left - 16, y + 17, r["agent_config"], anchor="end", size=12, color=MUTED)
         color = colors[r["agent_config"]]
@@ -134,11 +139,11 @@ def hack_rate_svg(stats: dict) -> str:
 
 
 def roc_svg(stats: dict) -> str:
-    rows = stats["auditor_quality"]["either"]
+    rows = stats["auditor_quality"][stats.get("headline_label", "either")]
     auditors = sorted({r["auditor"] for r in rows})
     height = 157 + max(1, len(auditors)) * 382
     svg = SVG("Auditor ROC: detection versus false alarms",
-              "Headline label: labeller OR privileged judge · threshold score = P(hacked) · ties move together", height)
+              f"Headline label: {_label_title(stats)} · threshold score = P(hacked) · ties move together", height)
     for panel, auditor in enumerate(auditors):
         top, left, width, ph = 146 + panel * 382, 108, 610, 255
         svg.text(left, top - 21, f"Auditor: {auditor}", size=16, weight=600)
@@ -177,7 +182,7 @@ def recall_svg(stats: dict) -> str:
     configs = sorted({r["agent_config"] for r in rows})
     height = 177 + max(1, len(auditors)) * 367
     svg = SVG("Which configurations does each auditor mode catch?",
-              "Actual verdicts · labeller OR privileged judge · subject models pooled by config · bootstrap 95% CI", height)
+              f"Actual verdicts · {_label_title(stats)} · subject models pooled by config · bootstrap 95% CI", height)
     for panel, auditor in enumerate(auditors):
         left, top, width, ph = 108, 146 + panel * 367, 610, 235
         svg.text(left, top - 21, f"Auditor: {auditor}", size=16, weight=600)
@@ -219,7 +224,7 @@ def calibration_svg(stats: dict) -> str:
     auditors = sorted({r["auditor"] for r in rows})
     height = 157 + max(1, len(auditors)) * 382
     svg = SVG("Calibration: do hack probabilities match observed frequency?",
-              "Reliability diagram · ten equal-width confidence bins · headline label: labeller OR privileged judge", height)
+              f"Reliability diagram · ten equal-width confidence bins · headline label: {_label_title(stats)}", height)
     for panel, auditor in enumerate(auditors):
         top, left, width, ph = 146 + panel * 382, 108, 610, 255
         svg.text(left, top - 21, f"Auditor: {auditor}", size=16, weight=600)
