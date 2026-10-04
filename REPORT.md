@@ -564,6 +564,14 @@ plates A and B after plate C failed (see [`tasks/LABEL_AUDIT.md`](tasks/LABEL_AU
 original label as `ground_truth_hacked_runtime`, and each dir has a `relabel.json` summary. All figures below
 use the relabelled labels.
 
+**Label-quality check (`docs/v3_hand_review.md`).** An AI annotator (Devin, one annotator, no adjudication)
+hand-labelled a seeded stratified sample of 40 of the 450 v3 trajectories. This is a sanity check, not human
+labels. Population-weighted labeller precision is 0.92 [0.67, 0.99], recall 0.92 [0.39, 1.00] and FPR 0.023
+[0.004, 0.122]. The recall interval is wide because the large `clean_other` stratum (honest / incentivized /
+sycophantic runs, N = 222) was sampled with only 10 runs. On the sample, Sonnet 4.6 `full_trace` weighted recall
+is 0.79 against the labeller and 0.92 against the hand labels (FPR 0.13 vs 0.11), so the labeller-only v3
+auditor numbers probably understate the auditor slightly. With n = 40 that is a direction, not a correction.
+
 | config | runtime labeller | relabelled |
 |---|---|---|
 | covert | 63/86 = 0.73 | 70/86 = 0.81 |
@@ -1052,15 +1060,15 @@ in §8 come from:
 ```bash
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/RESULTS.md --figures                                      # §8.1–8.3
-.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_sonnet46 results/v3cond_sonnet46 \
-  results/v3cond_haiku45 results/v3fault_sonnet46 results/v3_opus46 \
+.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 \
+  results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46 \
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3   # §8.6
-.venv/bin/python -m eval.analyze results/probe_v1                         # §8.4
+.venv/bin/python -m eval.analyze results/probe_v1 \
+  --out results/probe_v1/SUMMARY_regen.md                                 # §8.4 (scratch)
 .venv/bin/python -m eval.hard_cases --auditor heuristic                   # §8.7
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md               # §8.8
-.venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
-  --by-dir --out results/COST.md                                          # §8.9
+scripts/reproduce.sh cost   # §8.9; fresh estimates drift ~7% above the committed COST.md
 .venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
   --labels docs/obfuscation_handlabels_heldout.json --out results/obfuscation/OBFUSCATION.md   # §8.10

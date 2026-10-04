@@ -77,7 +77,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh          # if uv is missing
 .venv/bin/pytest -q                                       # fully offline (fake clients)
 ```
 
-Runtime dependencies: `anthropic`, `modal`, `pytest`, and the stdlib. Live runs need
+Runtime dependencies: `anthropic`, `modal`, `numpy`, `pytest`, and the stdlib. Rebuilding
+the hard-case fixtures (`fixtures/hard_cases/build.py`) also needs scipy and pandas:
+`~/.local/bin/uv pip install -p .venv -e ".[sandbox]"`. Live runs need
 `ANTHROPIC_API_KEY`. Modal runs need a Modal secret named `anthropic` that contains that
 key.
 
@@ -157,16 +159,20 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/RESULTS.md --figures
 # REPORT §8.6 (labeller-only, preliminary)
-.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_sonnet46 results/v3cond_sonnet46 \
-  results/v3cond_haiku45 results/v3fault_sonnet46 results/v3_opus46 \
+.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 \
+  results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46 \
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3
 # REPORT §8.4
-.venv/bin/python -m eval.analyze results/probe_v1
+# (writes a scratch file; the committed results/probe_v1/SUMMARY.md predates the current layout,
+# and without --out this would overwrite results/RESULTS.md)
+.venv/bin/python -m eval.analyze results/probe_v1 --out results/probe_v1/SUMMARY_regen.md
 # REPORT §8.7–8.9: hard-case set (heuristic), best-of-n veto replay, API cost estimate
 .venv/bin/python -m eval.hard_cases --auditor heuristic
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
-.venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --by-dir --out results/COST.md
+# cost of every committed run -> results/COST.md; estimates rebuild requests from current
+# prompts, so they drift (~7%) above the committed figures
+scripts/reproduce.sh cost
 # REPORT §8.10–8.13: reasoning disclosure, labeller audit, monitor attacks (heuristic), cost vs detection
 .venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
@@ -177,16 +183,36 @@ commands rebuild every table in `REPORT.md` offline:
   --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
 .venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/calibration_v2/CALIBRATION.md
-.venv/bin/python -m eval.judge_validation score --out results/judge_validation
-# corrected-label versions (*_corrected.* files): add --label corrected to mitigate,
-# calibrate, cascade, obfuscation and judge_validation score (see results/README.md)
+# corrected-label versions (*_corrected.* files); each needs its own --out, or it overwrites
+# the original-label file (docs/repro_check.md)
+.venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 --label corrected \
+  --out results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md
+.venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --label corrected \
+  --out results/calibration_v2/CALIBRATION_corrected.md
+.venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --label corrected --folds random \
+  --out results/calibration_v2/random_folds/CALIBRATION_corrected.md
+.venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 --label corrected \
+  --out results/CASCADE_corrected.md --json results/CASCADE_corrected.json \
+  --figure results/figures/cascade_frontier_corrected.svg
+.venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 --mode final_report --label corrected \
+  --out results/CASCADE_final_report_corrected.md --json results/CASCADE_final_report_corrected.json \
+  --figure results/figures/cascade_frontier_final_report_corrected.svg
+.venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
+  --labels docs/obfuscation_handlabels_heldout.json --label corrected --out results/obfuscation/OBFUSCATION_corrected.md
+.venv/bin/python -m eval.judge_validation score --label corrected --out results/judge_validation_corrected
+# heuristic vs Claude final_report comparison (REPORT §8.13)
+.venv/bin/python -m eval.final_report_compare --out results/heuristic_final_report/COMPARISON.md \
+  --json results/heuristic_final_report/comparison.json
 .venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --tags docs/error_tags.json --sample-out results/errors_v2/sample.json --out results/errors_v2/ERRORS.md
-# corrected: add --correction results/leaked_answer_correction.json --out results/errors_v2_corrected/ERRORS.md
+.venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --tags docs/error_tags.json --correction results/leaked_answer_correction.json \
+  --sample-out results/errors_v2_corrected/sample.json --out results/errors_v2_corrected/ERRORS.md
 .venv/bin/python -m eval.evidence   # evidence localisation vs fixtures/evidence_gold
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
-  --out /tmp/results.md --json /tmp/rows.json
+  --out results/scratch_results.md --json results/scratch_rows.json   # untracked scratch
 ```
 
 | run | what |
