@@ -14,6 +14,8 @@ See the `demo/` section of [ARCHITECTURE.md](../ARCHITECTURE.md) for the spec an
 # http://localhost:8000/            gallery of every results/*/trajectories/*.jsonl (filters + ground-truth/verdict badges)
 # http://localhost:8000/compare?traj=results/probe_v1/trajectories/metric_gaming__covert__ep000.jsonl   mode comparison
 # http://localhost:8000/dashboard   hack rates + auditor precision/recall/AUROC (eval.analyze.load_experiment) + SVG charts
+# http://localhost:8000/benchmarks  hard cases, monitor attacks, relabelling, obfuscation, best-of-n, cost,
+#                                    plus any write-up under results/ (calibration, cascade, judge validation, ...)
 .venv/bin/python -m demo.app --story my_story.json         # custom playlist: JSON list of steps (see catalog.load_story)
 ```
 
@@ -23,7 +25,7 @@ See the `demo/` section of [ARCHITECTURE.md](../ARCHITECTURE.md) for the spec an
 .venv/bin/python -m demo.export --out docs/demo.html   # one self-contained HTML file (~4 MB): open it via file://
 ```
 
-The file holds the story, a curated gallery (`--max-gallery`, default 120; story runs are always included), the mode
+The file holds the story, a curated gallery (`--max-gallery`, default 100; story runs are always included), the mode
 comparison for every gallery row, replays in all three auditor modes, and the dashboard for every experiment (plus all
 of them together) × ground-truth label. Pages are rendered by the same `pages.py` / viewer code, gzip+base64-inlined
 and shown by a small hash router (`#/story?step=3`, `#/dashboard?...`). It needs a browser with `DecompressionStream`
@@ -71,8 +73,9 @@ No-browser fallback (same options, ANSI output):
 | `/` | gallery of trajectories in `fixtures/`, `results/trajectories/` and `results/<exp>/trajectories/` |
 | `/compare?traj=<path>` | the three auditor modes side by side (evidence cited, lines each mode could see) |
 | `/dashboard?exp=<name>&label=labeller\|judge\|either` | results dashboard |
+| `/benchmarks` | benchmark results from committed files; hard-case and attack trajectories link to `/compare` and `/view` |
 | `/story`, `/story?step=N` | story playlist / redirect to step N |
-| `/api/gallery`, `/api/compare`, `/api/dashboard`, `/api/story` | the same data as JSON |
+| `/api/gallery`, `/api/compare`, `/api/dashboard`, `/api/story`, `/api/benchmarks` | the same data as JSON |
 | `/view?traj=<path>` | the two-pane viewer |
 | `/events?traj=<path>` | SSE stream (see below) |
 | `/verdict?traj=<path>` | the verdict JSON (404 if none yet; `?audit=heuristic` runs `auditor.heuristic`) |
@@ -100,5 +103,7 @@ With `--audit file` (default), the verdict is the `--verdict` file if given, oth
 - `terminal.py`: ANSI replay (`replay(StreamOptions, out)`).
 - `catalog.py`: read-only index of `results/` (gallery rows, per-mode visibility/citations, dashboard data, story).
 - `pages.py`: server-rendered HTML for gallery / compare / dashboard / story (inline CSS + SVG, no external assets).
+- `benchmarks.py`: the Benchmarks page (`results/hard_cases`, `monitor_attacks`, `*/relabel.json`, `obfuscation`,
+  `mitigation_bestofn_v2`, `COST.md`, and Markdown tables + SVG figures from any other write-up under `results/`).
 
 Tests: `.venv/bin/pytest -q tests/test_demo.py tests/test_demo_v2.py tests/test_demo_export.py`.

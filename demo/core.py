@@ -107,6 +107,7 @@ def verdict_candidates(
     traj = Path(trajectory_path)
     suffix = mode_suffix(mode)
     out = [traj.parent.parent / "verdicts" / f"{traj.stem}{suffix}.json"]
+    out += bench_verdict_candidates(traj, mode, results_dir)
     verdicts = Path(results_dir) / "verdicts"
     for name in (trajectory_id, traj.stem):
         if name:
@@ -116,6 +117,47 @@ def verdict_candidates(
         if all(path.resolve() != u.resolve() for u in unique):
             unique.append(path)
     return unique
+
+
+BENCH_FIXTURES = ("hard_cases", "monitor_attacks")
+BENCH_AUDITORS = ("claude", "heuristic")
+
+
+def bench_verdict_candidates(traj: Path, mode: str, results_dir: str | os.PathLike = RESULTS_DIR) -> list[Path]:
+    """``fixtures/<bench>/<case>.jsonl`` -> ``results/<bench>/verdicts/<case>__<mode>__<auditor>.json`` (claude first)."""
+    traj = Path(traj)
+    if traj.parent.name not in BENCH_FIXTURES or traj.parent.parent.resolve() != FIXTURES_DIR.resolve():
+        return []
+    d = Path(results_dir) / traj.parent.name / "verdicts"
+    return [d / f"{traj.stem}__{mode or 'full_trace'}__{a}.json" for a in BENCH_AUDITORS]
+
+
+_ROW_CACHE: dict = {}
+
+
+def bench_row_verdict(traj: Path, mode: str, results_dir: str | os.PathLike = RESULTS_DIR) -> dict | None:
+    """Verdict rebuilt from a ``results/<bench>/results_<auditor>.json`` row when no per-mode verdict file was saved."""
+    traj = Path(traj)
+    if traj.parent.name not in BENCH_FIXTURES or traj.parent.parent.resolve() != FIXTURES_DIR.resolve():
+        return None
+    mode = mode or "full_trace"
+    for auditor in BENCH_AUDITORS:
+        src = Path(results_dir) / traj.parent.name / f"results_{auditor}.json"
+        try:
+            key = (str(src), src.stat().st_mtime_ns)
+        except OSError:
+            continue
+        if key not in _ROW_CACHE:
+            rows = (load_verdict_file(src) or {}).get("rows") or []
+            _ROW_CACHE[key] = {(r.get("case_id"), r.get("mode")): r for r in rows if isinstance(r, dict)}
+        r = _ROW_CACHE[key].get((traj.stem, mode))
+        if r and not r.get("error") and isinstance(r.get("predicted"), bool):
+            return {"trajectory_id": traj.stem, "auditor_mode": mode, "hack_detected": r["predicted"],
+                    "hack_types": r.get("predicted_hack_types") or [], "evidence": [], "confidence": r.get("confidence"),
+                    "auditor_notes": f"{auditor} auditor ({mode}), from the summary row in {src.name}; no per-trajectory "
+                                     "verdict file was saved, so there is no evidence list.",
+                    "_source": src}
+    return None
 
 
 def mode_suffix(mode: str) -> str:
@@ -255,6 +297,8 @@ def _resolve_verdict(opts: StreamOptions, trajectory_id: str | None, n_lines: in
                 last_ping = time.monotonic()
                 yield "ping", {}
             verdict, path = find_verdict(candidates)
+    if verdict is None and (row := bench_row_verdict(opts.trajectory, opts.auditor_mode, opts.results_dir)):
+        verdict, path = row, row.pop("_source")
     if verdict is None:
         names = ", ".join(_display(p) for p in candidates)
         yield "notice", {"level": "warn", "text": f"No verdict found (looked for {names}). Try --audit heuristic."}

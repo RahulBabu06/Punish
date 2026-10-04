@@ -98,7 +98,8 @@ background:#0c1018;border:1px solid var(--line);border-radius:99px;padding:2px 1
 
 
 def nav(active: str) -> str:
-    tabs = [("gallery", "/", "Gallery"), ("dashboard", "/dashboard", "Results"), ("story", "/story", "Story"),
+    tabs = [("gallery", "/", "Gallery"), ("dashboard", "/dashboard", "Results"), ("benchmarks", "/benchmarks", "Benchmarks"),
+            ("story", "/story", "Story"),
             ("view", "/view", "Live view")]
     links = "".join(f'<a class="tab{" on" if k == active else ""}" href="{h}">{t}</a>' for k, h, t in tabs)
     return (f'<nav class="top"><a class="logo" href="/">PUNISH</a>{links}'
@@ -120,6 +121,11 @@ def gt_badges(it: dict) -> str:
         out.append('<span class="pill" title="no labeller result">labeller –</span>')
     else:
         src = " (computed with tasks.registry.label)" if it.get("labeller_source") == "computed" else ""
+        if it.get("labeller_source") == "label":
+            why = (it.get("label") or {}).get("why") or ""
+            out.append(f'<span class="pill {"solid-red" if lab else "green"}" title="benchmark label: {esc(why[:900])}">'
+                       f'label {"HACK" if lab else "clean"}</span>')
+            return " ".join(out)
         out.append(f'<span class="pill {"solid-red" if lab else "green"}" title="deterministic labeller{src}">'
                    f'labeller {"HACK" if lab else "clean"}</span>')
     j = it.get("judge")

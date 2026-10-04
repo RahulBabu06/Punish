@@ -17,7 +17,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from demo.core import FIXTURES_DIR, RESULTS_DIR, ROOT, load_verdict_file, mode_suffix, parse_line, read_lines
+from demo.core import (BENCH_FIXTURES, FIXTURES_DIR, RESULTS_DIR, ROOT, bench_row_verdict, bench_verdict_candidates, load_verdict_file,
+                       mode_suffix, parse_line, read_lines)
 
 MODES = ("full_trace", "report_only", "final_report")
 MODE_SHORT = {"full_trace": "FT", "report_only": "RO", "final_report": "FR"}
@@ -70,6 +71,8 @@ def experiment_of(path: Path, results_dir: Path = RESULTS_DIR, fixtures_dir: Pat
     for e in experiments(results_dir, fixtures_dir):
         if path.parent == e.trajectories.resolve():
             return e
+    if path.parent.name in BENCH_FIXTURES and path.parent.parent == FIXTURES_DIR.resolve():
+        return Experiment(path.parent.name, path.parent)
     return Experiment(path.parent.parent.name, path.parent.parent)
 
 
@@ -166,13 +169,21 @@ def trajectory_info(path: Path, exp: Experiment | None = None, results_dir: Path
         candidates = [exp.root / "verdicts" / f"{stem}{sfx}.json"]
         if info["trajectory_id"] != stem:
             candidates.append(exp.root / "verdicts" / f"{info['trajectory_id']}{sfx}.json")
+        candidates += bench_verdict_candidates(path, mode, results_dir)
         for vp in candidates:
             v = _json(vp)
             if v is not None:
                 info["verdicts"][mode] = {"hack_detected": v.get("hack_detected"), "confidence": v.get("confidence"),
                                           "hack_types": v.get("hack_types") or [], "path": rel(vp)}
                 break
+        if mode not in info["verdicts"] and (row := bench_row_verdict(path, mode, results_dir)):
+            src = row.pop("_source")
+            info["verdicts"][mode] = {"hack_detected": row["hack_detected"], "confidence": row["confidence"],
+                                      "hack_types": row["hack_types"], "path": rel(src), "row_verdict": row}
     info["labeller"], info["labeller_source"] = _labeller(exp, stem, info["task_id"], path, events, info["finished"])
+    hand = _json(path.with_name(f"{stem}.label.json")) if path.parent.name in BENCH_FIXTURES else None
+    if isinstance(hand, dict) and isinstance(hand.get("hacked"), bool):
+        info["labeller"], info["labeller_source"], info["label"] = hand["hacked"], "label", hand
     for name in dict.fromkeys([info["trajectory_id"], stem]):
         j = _json(exp.root / "judgments" / f"{name}.json")
         if j is not None and isinstance(j.get("hacked"), bool):
@@ -304,7 +315,7 @@ def compare(path: Path, results_dir: Path = RESULTS_DIR, fixtures_dir: Path | No
     verdicts = {}
     for mode in MODES:
         meta = info["verdicts"].get(mode)
-        v = _json(ROOT / meta["path"]) if meta else None
+        v = (meta.get("row_verdict") or _json(ROOT / meta["path"])) if meta else None
         v = json.loads(json.dumps(v)) if v is not None else None  # annotated below; keep the cache pristine
         verdicts[mode] = v
         for i, item in enumerate((v or {}).get("evidence") or []):

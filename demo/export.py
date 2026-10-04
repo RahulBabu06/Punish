@@ -20,7 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from demo import catalog, pages
+from demo import benchmarks, catalog, pages
 from demo.app import VIEWER_HTML
 from demo.core import FIXTURES_DIR, RESULTS_DIR, ROOT, StreamOptions, stream
 
@@ -104,12 +104,29 @@ def pack(text: str) -> str:
     return base64.b64encode(gzip.compress(text.encode("utf-8"), 9, mtime=0)).decode("ascii")
 
 
+BLOCK_RE = re.compile(r"<style>.*?</style>|<script>.*?</script>", re.DOTALL)
+
+
+def shared_blocks(pages_: dict[str, str], min_len: int = 400) -> list[str]:
+    """<style>/<script> blocks repeated across pages; stored once and re-inserted by the router."""
+    seen: dict[str, int] = {}
+    for page in pages_.values():
+        for b in set(BLOCK_RE.findall(page)):
+            if len(b) >= min_len:
+                seen[b] = seen.get(b, 0) + 1
+    return sorted((b for b, n in seen.items() if n > 1), key=len, reverse=True)
+
+
+def dedupe(page: str, index: dict[str, int]) -> str:
+    return BLOCK_RE.sub(lambda m: f"<!--punish:{index[m.group(0)]}-->" if m.group(0) in index else m.group(0), page)
+
+
 def _strip(page: str) -> str:
     return re.sub(r'<link rel="icon"[^>]*>', "", page)
 
 
 def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_DIR, story: str | None = None,
-          max_gallery: int = 120, delay: float = 0.8) -> tuple[str, dict]:
+          max_gallery: int = 100, delay: float = 0.8) -> tuple[str, dict]:
     """Return (html, stats)."""
     items = catalog.gallery(results_dir, fixtures_dir)
     steps = catalog.load_story(story, results_dir)
@@ -118,7 +135,7 @@ def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_
     must = {s["traj"] for s in steps if s.get("traj")} | {default_traj}
     chosen = curate(items, must, max_gallery)
     allowed = {it["key"] for it in chosen} | must
-    key = lambda href: route_key(href, experiments, default_traj)  # noqa: E731
+    key = lambda href: route_key(href, experiments, default_traj)
 
     note = (f"Static export: a curated {len(chosen)} of {len(items)} trajectories (hacks caught or missed, false "
             f"positives, every experiment). Run <code>python -m demo.app</code> to browse them all.")
@@ -126,6 +143,12 @@ def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_
     for it in chosen:
         rendered[key(pages.url("/compare", traj=it["key"]))] = pages.compare_page(
             catalog.compare(ROOT / it["key"], results_dir, fixtures_dir))
+    bench = benchmarks.benchmarks(results_dir, fixtures_dir or FIXTURES_DIR)
+    bench_keys = [k for k in benchmarks.trajectory_keys(bench) if k not in allowed]
+    rendered["/benchmarks"] = benchmarks.benchmarks_page(bench, allowed | set(bench_keys))
+    for k in bench_keys:
+        rendered[key(pages.url("/compare", traj=k))] = pages.compare_page(catalog.compare(ROOT / k, results_dir, fixtures_dir))
+    allowed |= set(bench_keys)
     for label in ("either", "labeller", "judge"):
         for sel in [[]] + [[e] for e in experiments]:
             k = key(pages.url("/dashboard", exp=sel, label=label))
@@ -163,7 +186,10 @@ def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_
     missing = pages.shell("Not in this export", '<h1>Not included in the static export</h1><p class="sub">'
                           '<code id="missing-href"></code> is not part of this file. Run <code>python -m demo.app'
                           '</code> from the repo to browse every trajectory.</p><p><a href="/">Back to the gallery</a></p>')
-    data = {"pages": {k: pack(_strip(v)) for k, v in rendered.items()}, "views": {k: pack(v) for k, v in views.items()},
+    stripped = {k: _strip(v) for k, v in rendered.items()}
+    blocks = shared_blocks(stripped)
+    index = {b: i for i, b in enumerate(blocks)}
+    data = {"pages": {k: pack(dedupe(v, index)) for k, v in stripped.items()}, "blocks": pack(json.dumps(blocks)), "views": {k: pack(v) for k, v in views.items()},
             "lines": {k: pack(json.dumps(v, ensure_ascii=False).replace("</", "<\\/")) for k, v in lines.items()},
             "viewer": pack(VIEWER_HTML.replace("</body>", pages.STORY_CSS + pages.STORY_JS + "</body>")),
             "missing": pack(_strip(missing)), "story": payload, "experiments": experiments,
@@ -257,7 +283,13 @@ async function show(u){
     const v = JSON.parse(await unpack(D.views[k]));
     page = await unpack(D.viewer);
     extra = "window.__punishLines=" + await unpack(D.lines[v.traj]) + ";window.__punishEvents=" + js(v.events) + ";";
-  } else if (D.pages[k]) page = await unpack(D.pages[k]);
+  } else if (D.pages[k]){
+    page = await unpack(D.pages[k]);
+    if (page.includes("<!--punish:")){
+      const blocks = JSON.parse(await unpack(D.blocks));
+      page = page.replace(/<!--punish:(\d+)-->/g, (m, i) => blocks[+i]);
+    }
+  }
   else { page = (await unpack(D.missing)).replace('<code id="missing-href"></code>', "<code>" + u.replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c])) + "</code>"); }
   const tag = shim(search, extra);
   frame.srcdoc = page.replace(/<head[^>]*>/i, m => m + tag);
@@ -276,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default=str(DEFAULT_OUT), help="output HTML file (default docs/demo.html)")
     p.add_argument("--results-dir", default=str(RESULTS_DIR))
     p.add_argument("--story", default=None, metavar="PLAYLIST_JSON", help="custom story playlist (default: built-in)")
-    p.add_argument("--max-gallery", type=int, default=120, help="trajectories in the curated gallery (story ones always included)")
+    p.add_argument("--max-gallery", type=int, default=100, help="trajectories in the curated gallery (story ones always included)")
     p.add_argument("--delay", type=float, default=0.8, help="default replay delay in seconds")
     args = p.parse_args(argv)
     out_html, stats = build(Path(args.results_dir), FIXTURES_DIR, args.story, args.max_gallery, args.delay)
