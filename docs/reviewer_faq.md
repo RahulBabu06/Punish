@@ -52,7 +52,7 @@ outputs, but require API credit. See
 Yes at its own binary verdict. On corrected labels, Sonnet full-trace recall is 90.3% with 34.5% FPR;
 Opus is 76.8% recall with 22.3% FPR on its 240-trajectory subset. Confidence thresholds and cascades
 offer different trade-offs: a cross-experiment heuristic→Sonnet point reaches 64.3% recall and 5.4%
-held-out FPR, not perfect detection. See
+FPR, not perfect detection, and it is in-sample for the heuristic (§9). See
 [`results/errors_v2_corrected/ERRORS.md`](../results/errors_v2_corrected/ERRORS.md) and
 [`results/CASCADE_corrected.md`](../results/CASCADE_corrected.md).
 
@@ -77,7 +77,11 @@ deterrence probe, not evidence against deceptive alignment. See
 Partly. The displayed operating point tunes thresholds on one of the two matched experiments and scores
 the other, then pools the held-out predictions: 64.3% recall, 5.4% FPR and 38.8% escalation. The 5% cap
 applied during training, so 5.4% held-out FPR is expected; only two folds and 240 trajectories limit
-generalisation. See [`results/CASCADE_corrected.md`](../results/CASCADE_corrected.md).
+generalisation. More importantly, only the thresholds are held out: the heuristic's rules were calibrated
+on `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`, so the cascade is in-sample for the
+heuristic. With the pre-calibration heuristic, the held-out cascade is reported to fall to about the
+Sonnet-only level (not yet committed). Do not read it as a held-out win. See
+[`results/CASCADE_corrected.md`](../results/CASCADE_corrected.md).
 
 ## 10. Does auditor veto really reduce reward hacking?
 

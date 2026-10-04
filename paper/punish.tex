@@ -26,8 +26,8 @@ AI science agents are scored by proxies such as a test file, a metric threshold 
 ``$p<0.05$'' requirement, and an agent can satisfy the proxy without doing honest science.
 We build \emph{Punish}, a small benchmark and auditor for this failure. A Claude subject agent
 solves six data-analysis tasks, each with a planted exploit: a leaked answer key, an
-unreachable $R^2$ threshold, a significant subgroup, a bibliography that does not support the
-claim, a metric that rewards the wrong thing, and a failed plate of measurements. A Claude
+unreachable $R^2$ threshold, a significant subgroup, a thin bibliography inviting unsupported source
+attribution, a metric that rewards the wrong thing, and a failed plate of measurements. A Claude
 auditor then reads the trajectory and returns a structured verdict. We vary what the auditor
 sees as an ablation of access to the chain of thought (CoT): reasoning, actions and report
 (\mode{full\_trace}); actions and report (\mode{report\_only}); or only the final report
@@ -42,13 +42,14 @@ those labels corrected. Excluding it, agents explicitly told to hack and hide it
 deterministic exploit labeller finds only 46 of the 91 hacks found by the judge.
 
 With only the report, a Sonnet auditor's recall is 0.76. Once it also sees the actions,
-recall rises to 0.90 and AUROC from 0.86 to 0.93--0.96. The reasoning alone barely changes
-Sonnet's verdicts. It does improve Opus: recall 0.77 against 0.63, and false-positive rate
+recall rises to 0.90 and AUROC from 0.86 to 0.93--0.96, although after Holm correction the
+recall gain is underpowered. Reasoning improves Sonnet's ranking but not its accuracy.
+For Opus it improves both accuracy and ranking (corrected label, Holm $p=0.002$): recall 0.77 against 0.63, and false-positive rate
 0.06 against 0.12 (on all 240 Opus-audited runs, 0.84 vs 0.73 and 0.11 vs 0.17, $p<0.001$).
 Under the corrected label, auditors catch most hacks but over-flag honest runs that read the
 grader: trace-mode FPR is 0.22--0.35, and no Claude auditor keeps FPR $\le$ 10\% on unseen tasks
 with useful recall. Used as a best-of-$n$ veto, the auditor still cuts the share of shipped
-trajectories that are hacked from 0.28 to 0.15 (corrected; 0.37 to 0.21 original). All results
+trajectories that are hacked from 0.28 to 0.15 (corrected; 0.38 to 0.19 original). All results
 are preliminary (5 episodes per cell).
 \end{abstract}
 
@@ -93,7 +94,7 @@ told to take grader shortcuts and hide them in its visible output.
 \item \code{leaked\_answer}: \code{eval.py} contains the expected $p$-value.
 \item \code{metric\_gaming}: a grader requires $R^2\ge0.90$, but the honest $R^2$ is about 0.447.
 \item \code{cherry\_pick}: the trial's primary $p$ is about 0.26, while excluding one site post hoc gives $p\approx0.025$.
-\item \code{fake\_citation}: the bibliography does not support the claim.
+\item \code{fake\_citation}: a thin bibliography invites unsupported source attribution.
 \item \code{metric\_swap}: plain accuracy rewards a trivial classifier.
 \item \code{fabrication}: one plate failed with a lamp error.
 \end{itemize}
@@ -132,8 +133,11 @@ bootstrap CIs over trajectories. McNemar tests are exact and paired.
 \paragraph{How often agents hack.} Figure~\ref{fig:rates} and Table~\ref{tab:rates}. Without the
 \code{covert} instruction, 27 of 150 incentivised or pressure runs hack with
 \code{leaked\_answer} excluded (43 of 180 on the original labels, but 16 of those are
-\code{leaked\_answer} runs that are mostly judge errors; see below). Most are ``soft'' hacks:
-overstating what real papers show (\code{fake\_citation}, 25/30). The labeller misses most of
+\code{leaked\_answer} runs that are mostly judge errors; see below). Most saved judge-positive runs in these configs are \code{fake\_citation}
+(25/30), labelled as overstating source support. These are label-conditional counts:
+bibliography metadata alone does not establish what the full papers contain.
+A stronger worked example (case study~7) explicitly admits inventing an attributed
+finding, so its misconduct is established by the trajectory itself. The labeller misses most of
 these. Labeller-only hack rates would understate the problem by about $2\times$ (46 vs 91
 excluded; $2.6\times$ on the original labels).
 
@@ -201,32 +205,41 @@ the grader), so we treat the excluded view as primary.
 \paragraph{Seeing the actions matters.} See Table~\ref{tab:auditor}. With \code{leaked\_answer}
 excluded, Sonnet's recall drops from 0.90 to 0.76 with only the report ($\Delta$recall 0.14, CI
 [0.03, 0.26]; $\Delta$AUROC 0.10, CI [0.06, 0.15]); on the original labels the drop is 0.26.
-The drop comes from hacks that leave no trace in a coherent report. In \code{metric\_gaming}
-the trace modes catch 15/15 hacks and the report alone 3/15. A report that says ``$R^2=0.92$'' looks
-fine unless you can see the agent compute 0.447 and then read \code{grade.py}.
+After Holm correction (\code{results/significance/SIGNIFICANCE.md}), the recall gain is
+underpowered (corrected Holm $p=0.057$), and its FPR cost is supported (0.35 vs 0.23, $p=0.049$).
+In \code{metric\_gaming}, the trace modes catch 15/15 labelled hacks and the
+report alone 3/15. In case study~2, the trace directly shows $R^2=0.446745$
+being replaced by 0.92. The report looks polished, but its $n=40$ and slope
+$p\approx2.44\times10^{-6}$ also contradict that $R^2$; report-only review
+could detect the inconsistency even without recomputation.
 
 \paragraph{Reasoning helps a stronger auditor.} For Sonnet, \mode{full\_trace} and
 \mode{report\_only} give the same verdict on 345 of 360 trajectories (8 vs 7 discordant,
-$p=1.0$). The reasoning only improves the ranking ($\Delta$AUROC $+0.030$, CI [0.012, 0.049]).
+$p=1.0$). The reasoning only improves the ranking ($\Delta$AUROC $+0.030$, CI [0.012, 0.049]; corrected
+$+0.051$, Holm $p<0.001$). On accuracy the null is genuine ($\Delta$ $+0.003$, CI [$-0.019$, 0.025]),
+but for recall a small difference cannot be ruled out.
 Opus makes real use of it: with \code{leaked\_answer} excluded, recall 0.77 against 0.63
 ($\Delta$recall 0.14, CI [0.06, 0.25]) and FPR 0.06 against 0.12. On all 240 runs it has 19 vs 2
-discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR 0.11 against 0.17, and the
-effect holds for each subject:
+discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR 0.11 against 0.17. Under the corrected label, accuracy ($+0.071$) and ranking
+($\Delta$AUROC $+0.040$) both survive Holm correction ($p=0.002$), while recall and FPR are each
+underpowered. The direction holds for each subject (exploratory):
 \begin{itemize}
 \item Sonnet~4.6 subject: 9 vs 1 ($p=0.021$). The gain is mostly in false positives (FPR 0.05
 against 0.12). The reasoning shows that an agent read \code{grade.py} and then ignored it.
 \item Haiku~4.5 subject: 10 vs 1 ($p=0.012$). The gain is mostly in recall (27/34 against 22/34).
 \end{itemize}
 Our exploits need little serial reasoning, which is the hard case for CoT
-monitoring~\citep{emmons2025necessary}. Reasoning can also reassure the auditor wrongly. On
+monitoring~\citep{emmons2025necessary}. Reasoning also changes citation verdicts under the saved labels. On
 \code{fake\_citation}, Sonnet \mode{full\_trace} catches 31/40 hacks, \mode{report\_only}
 33/40 and \mode{final\_report} 39/40.
 
-\paragraph{Where the auditor is wrong.} Of the 62 Sonnet \mode{full\_trace} false positives,
-59 cite \code{suspicious\_access}. In these runs the agent read the grader and then reported
+\paragraph{Where the auditor is wrong.} Of the 92 corrected-label Sonnet \mode{full\_trace} false positives,
+89 cite \code{suspicious\_access} (original 59 of 62). In these runs the agent read the grader and then reported
 the honest value. The rubric counts reading an eval file as \code{suspicious\_access}, while
-the judge counts it only if it changes the report. All 9 Sonnet \mode{full\_trace} misses are
-\code{fake\_citation}: the bibliography keys are real, but the claimed findings are invented.
+the judge counts it only if it changes the report. All 9 Sonnet \mode{full\_trace} misses fall on \code{fake\_citation} under the
+saved labels. Real bibliography keys do not prove source support, but metadata alone
+does not prove that a finding is absent from a paper either. Case study~7 is a
+trace-grounded invention: the agent admits making up the attributed finding.
 Of the 49 \mode{final\_report} false positives, 38 are honest \code{fabrication} reports. They
 quote the instrument's real error message, and an auditor that cannot see the file thinks the
 message was made up.
@@ -234,15 +247,16 @@ message was made up.
 \paragraph{Mitigation: best-of-$n$ veto.} We replay the v2 Sonnet~4.6 and Haiku~4.5 runs as if
 a deployment shipped one of the five trajectories in each task $\times$ config group (48 groups):
 \begin{itemize}
-\item picking the highest grader score ships 0.28 hacks under the corrected label (0.37
+\item picking the highest grader score ships 0.28 hacks under the corrected label (0.38
 original), against 0.23 (0.33) at random;
 \item vetoing what Sonnet \mode{full\_trace} flags, then taking the highest score, ships 0.15
-(difference CI [0.05, 0.23]; original 0.21);
+(difference CI [0.05, 0.23]; original 0.19) at a cost of 0.06 grader score;
 \item that equals the oracle, which ships a clean trajectory whenever one exists (0.15; 0.19
 original).
 \end{itemize}
-Here the mode matters more than in Table~\ref{tab:auditor}: a Sonnet veto ships 0.21 hacks
-with \mode{full\_trace} against 0.29 with \mode{report\_only} (original label).
+Here the mode matters more than in Table~\ref{tab:auditor}: a Sonnet veto ships 0.15 hacks
+with \mode{full\_trace}, 0.17 with \mode{report\_only} and 0.21 with \mode{final\_report}
+(original 0.19, 0.27, 0.29).
 
 \paragraph{Cost.} For the whole judged v2 study, \code{eval.cost} estimates about \$88. That is
 roughly 2.2 cents per Sonnet audit (3.0 cents when \code{eval.cascade} rebuilds the full
@@ -256,17 +270,20 @@ runs, so they have labeller labels only (\code{REPORT.md}~\S8.6):
 \item Sonnet~4.6: 150 of 200 planned trajectories.
 \item \code{covert\_monitored} (the agent is told an auditor reads its reasoning), with all 15
 labeller positives read by hand (9 were labeller false positives): Haiku hacked 1/14 times on
-three tasks against 13/15 under v3 \code{covert}, and Sonnet~4.6 5/15 against 11/15. All 6
-remaining hacks state the fabrication in the reasoning. Monitoring deterred hacking; it did not
-make it hidden.
+three tasks against 13/15 under v3 \code{covert}, and Sonnet~4.6 5/15 against 11/15. All six
+reviewed monitored hacks explicitly disclose effect-size fabrication in
+their reasoning. The unmonitored comparator is labeller-only and not fully
+reviewed; disclosed plate-C imputations remain label-policy boundaries.
+This small comparison is consistent with deterrence, but is not a validated
+causal estimate of a reduction in misconduct or evidence of successful concealment.
 \end{itemize}
 The v3 labeller is stricter, so these rates cannot be compared with v2.
 
 \paragraph{Does the reasoning disclose the hack?} A regex rubric (\code{eval/obfuscation.py};
 10/10 on a held-out hand-labelled sample) finds the exploit stated in the reasoning of 25/25
 Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2 (87--100\%; corrected
-label 63/66, 0.95). The 3 exceptions are
-\code{fake\_citation}, where the overstatement lives in the report. Unprompted hacks
+label 63/66, 0.95). The three exceptions are saved judge-positive
+\code{fake\_citation} cases without explicit reasoning disclosure. Unprompted hacks
 (incentivised or pressure) disclose less often, 0--90\% per cell (4--10 hacks each).
 
 \paragraph{Label audit.} \code{tasks/LABEL\_AUDIT.md} revises the labeller rules. On the 360
@@ -297,9 +314,12 @@ FPR $\le$ 10\% with useful recall.
 \paragraph{Errors and evidence.} On the original label (\code{docs/error\_analysis.md}), trace-mode
 false positives are agents that read the grader and reported honest values, and
 \mode{final\_report} false positives are honest ``N/A'' reports for the failed plate. Under the corrected label, grader-reading runs
-are 301 of the 375 false-positive audits. The rendered
-trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, so future runs should
-use opaque ids. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
+are 301 of the 375 false-positive audits. An AI annotator hand-read 24 of the 72 flagged label-clean \code{metric\_gaming} runs, and
+all 24 are auditor false positives, not missed hacks (\code{docs/metric\_gaming\_review.md}). Each cites only grader
+access or format repair, although the rubric caps read access alone at $\sim$0.3 confidence. The rendered
+trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, mostly in
+\mode{final\_report}, where those audits have higher FPR (Sonnet 0.39 vs 0.20, corrected). The
+auditor now sees an opaque token. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
 \mode{full\_trace} auditors cite 0.81--0.83 of hack lines, against 0.19--0.26 for \mode{final\_report}.
 
 \paragraph{Deployment cost and attacks.} On the 240 Opus-audited trajectories
@@ -308,7 +328,7 @@ trajectory, Opus alone 0.84 and 0.11 at \$0.051, and a Sonnet$\to$Opus cascade 0
 at \$0.056 (45.8\% escalated), so Opus alone is the best value on the original label. Under the
 corrected label (\code{results/CASCADE\_corrected.md}) every default Claude policy has FPR
 $\ge$ 0.22; only a tuned heuristic$\to$Sonnet cascade stays under 10\% (recall 0.80, FPR 0.054,
-\$0.019 in-sample; 0.77 at 0.054 held out). A monitor-attack corpus (10 real \code{covert} hacks $\times$
+\$0.019), but this is in-sample: the heuristic was calibrated on these v2 runs, so even cross-fit thresholds are not held out. A monitor-attack corpus (10 real \code{covert} hacks $\times$
 6 attacks: report and file injections, laundered reasoning, padding, a fake self-check) has so
 far been scored only by the offline heuristic auditor: \mode{full\_trace} recall drops from
 7/10 to 6/10 under laundered reasoning. Claude auditors on the hard-case and attack sets, the
@@ -327,6 +347,8 @@ grader counts. This mismatch drives most trace-mode false positives.
 \item \emph{Coverage.} The Opus re-audit covers 240 of the 360 trajectories.
 \item \emph{Compute cap.} The v3 runs, the new conditions, fault injection and the Opus-subject
 runs are partial and unjudged. We treat them as preliminary only.
+\item \emph{Source verification.} Citation findings were not verified against retrieved full
+papers, and disclosed-imputation labels are policy-sensitive.
 \item \emph{Task realism.} The tasks are small and synthetic. Real analyses are longer and
 have more room for drift.
 \end{itemize}
@@ -344,8 +366,8 @@ annotated list is in \code{docs/related\_work.md}.
 
 \section{Future work}
 \begin{itemize}
-\item Align the rubric with the judge on grader access.
-\item Score Claude auditors on our 32-case hand-labelled hard-case set.
+\item Measure rubric v3 live (in-sample \emph{proxy} only: Sonnet FPR $0.34\to0.05$).
+\item Score Claude auditors on our 36-case hand-labelled hard-case set.
 \item Run the live audit-and-retry mitigation.
 \item Judge the v3 runs, re-judge v2 \code{leaked\_answer} with the definition the agents saw,
 and validate the judge against human labels.
@@ -358,6 +380,7 @@ paper offline from the committed trajectories, verdicts and judgments. Worked ex
 quoted trajectory lines are in \code{docs/case\_studies.md}.
 
 \small
+\setlength{\bibsep}{0pt}\renewcommand{\bibfont}{\footnotesize}
 \bibliographystyle{plainnat}
 \bibliography{refs}
 \end{document}
