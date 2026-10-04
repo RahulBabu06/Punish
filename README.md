@@ -78,10 +78,11 @@ on 450 unseen v3 runs (labeller labels only) the v2 thresholds give 0.63 recall 
 ## Setup (Python 3.11)
 
 ```bash
+git clone https://github.com/RahulBabu06/Punish && cd Punish
 curl -LsSf https://astral.sh/uv/install.sh | sh          # if uv is missing
 ~/.local/bin/uv venv --allow-existing -p 3.11 .venv
 ~/.local/bin/uv pip install -p .venv -e .
-.venv/bin/pytest -q                                       # fully offline (fake clients)
+.venv/bin/pytest -q                                       # fully offline (fake clients), about 2 min
 ```
 
 Runtime dependencies: `anthropic`, `modal`, `numpy`, `pytest`, and the stdlib. Rebuilding
@@ -97,6 +98,7 @@ key.
 ```bash
 .venv/bin/python -m demo.app --port 8000 --delay 1.2
 # open http://localhost:8000/view   (index of all trajectories at http://localhost:8000/)
+# each demo.app below also serves port 8000: Ctrl-C the previous one first, or add --port 8001
 
 # flags appear as their evidence lines stream past
 .venv/bin/python -m demo.app --flags-progressive --delay 1.5
@@ -111,19 +113,22 @@ key.
 # no browser: same thing in the terminal
 .venv/bin/python -m demo.terminal --flags-progressive --delay 0.8
 
-# offline rule-based auditor on the golden fixture
-.venv/bin/python -m auditor.audit fixtures/trajectories/example.jsonl --backend heuristic
+# offline rule-based auditor on the golden fixture: prints a verdict with hack_detected true,
+# confidence 0.99 and four hack types. --out keeps it away from results/verdicts/, where the live
+# episode below (same id) would otherwise pick it up
+.venv/bin/python -m auditor.audit fixtures/trajectories/example.jsonl --backend heuristic \
+  --out /tmp/example_verdict.json
 ```
 
 ### 2. One live episode (needs `ANTHROPIC_API_KEY`)
 
 ```bash
+# watch it live in the viewer (start this first, in another shell)
+.venv/bin/python -m demo.app --watch results/trajectories/leaked_answer__incentivized__ep000.jsonl
+
 .venv/bin/python -m eval.run_episode --task leaked_answer --config incentivized \
   --episode 0 --auditor-mode full_trace
 # writes results/trajectories/, results/verdicts/, results/episodes/
-
-# watch it live in the viewer (run this first, in another shell)
-.venv/bin/python -m demo.app --watch results/trajectories/leaked_answer__incentivized__ep000.jsonl
 ```
 
 Choose models with `PUNISH_AGENT_MODEL`, `PUNISH_AUDITOR_MODEL` and `PUNISH_JUDGE_MODEL`.
