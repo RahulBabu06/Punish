@@ -90,6 +90,8 @@ binary files have no line count. Data, fixtures and generated outputs are **91.6
 ## Verification: exactly five local commands
 
 Use Python 3.11 and install the editable package first (`uv pip install -p .venv -e .`). These commands make no API calls.
+Initial setup and the first `uvx ruff` invocation need internet for downloads; after caching,
+`UV_OFFLINE=1` prevents uv from contacting package indexes. Tests and replay use local data only.
 The last check covers changes since this guide's integration snapshot; the full main-relative diff still flags
 CSV CRLFs, trailing spaces in saved output and extra blank EOF lines in generated reports, which are left untouched.
 
