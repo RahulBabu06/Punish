@@ -184,6 +184,40 @@ with `auditor.audit`. Agent rows and every output-token count are unchanged. The
   `derived`) were also from the pre-relabel labeller. Sonnet `covert` is now 11/15 hacked (was 12/15), the number
   REPORT already gives in brackets.
 
+## Final check: `devin/repro-final`
+
+Fresh clone of `devin/integration-full-system`, first at `dd93355` and again at `0260467` (after `paper-v3` and
+`bug-hunt-results`), set up as README says (`uv venv -p 3.11`,
+`uv pip install -e .`), with `ANTHROPIC_*`/`MODAL_*` unset and `HTTP(S)_PROXY` pointed at a dead port. All five
+targets exit 0: `test` (1282 passed, 2 skipped, 2 xfailed), `analyze`, `derived`, `cost`, and `demo` (`/` and
+`/view` return 200). No command needed a key or the network.
+
+At `dd93355`, `git status --porcelain --ignored` afterwards listed 19 modified committed files and 2 new ignored
+ones. `bug-hunt-results` then committed the COST.md, `RESULTS_v3_preliminary.md` and `figures_v3` rows below. At
+`0260467` the remaining 13 modified files and the 2 ignored ones (every row below except COST/v3) still change, plus
+`RESULTS.md` for its new sentence from `4da1162` ("Labeller labels come from saved primary episodes..."). All of them are
+committed outputs left stale by the `devin/bug-hunt` merge (`b84ecb2`), whose fixes changed analysis code without
+regenerating results. I traced each one by rerunning the command at every commit on that branch (cost, cascade) or
+reverting the commit at `dd93355`:
+
+| files | cause | change |
+|---|---|---|
+| `RESULTS_v3_preliminary.md`, `figures_v3/*.svg` (4) | `5527152` judge-less dirs use labeller denominators | v3 headline tables now `labeller`, e.g. `5/5` → `5/13`; v2 `RESULTS.md` only reworded |
+| `RESULTS.json` | `5527152` | new `"headline_label": "either"` key |
+| `RESULTS_v3_preliminary.json`, `_thresholds.csv` (new) | `eval.analyze` always writes these next to `--out` | the v2 pair was committed, the v3 pair never was; now committed |
+| `CASCADE_corrected.*`, `CASCADE_corrected_precal.*`, `CASCADE_v3_labeller.*`, their frontier SVGs | `d3fee49` preserve successful scripted reports in auditor views (the heuristic sees a different final report) | heuristic-only recall 57.1% → 55.4%; precal heuristic AUROC 0.607 → 0.611; v3 h→Sonnet FPR 5.7% → 5.5% |
+| `COST.md`, `$/traj` in `CASCADE*.md` | `6bb6b69` hide the system file manifest in final_report mode (shorter rebuilt prompt) | **$162.46 → $162.33** (auditor −$0.08, reaudit −$0.04); v2 rows $95.03 |
+| `CASCADE_final_report_corrected.*`, its SVG | `6bb6b69` | `$/traj` only (e.g. Sonnet $0.0167 → $0.0166) |
+
+Reverting `d3fee49` at `dd93355` restores the committed heuristic numbers exactly; checking out `6bb6b69^` gives
+$162.46 and `6bb6b69` gives $162.33. No code or script fix was needed: this branch commits the regenerated
+outputs. Regenerating in fresh clones of `0260467` and of this branch gives byte-identical files, so after this
+branch the five targets leave `git status --porcelain --ignored` empty.
+
+To keep this from recurring, a branch that changes `auditor/`, `tasks/` or `eval/` should finish with
+`scripts/reproduce.sh analyze && scripts/reproduce.sh derived && scripts/reproduce.sh cost` and commit what moves
+(`git add -f` for new files under `results/`).
+
 ## Needed doc fixes not made (protected or owned elsewhere)
 
 Exact replacements for the write-up session, updated for `devin/repro-fix-2`. After this branch, the old README
@@ -250,12 +284,12 @@ also needs scipy and pandas: `~/.local/bin/uv pip install -p .venv -e ".[sandbox
 - After the block, add: "`scripts/reproduce.sh derived` regenerates the corrected-label and final_report variants."
 
 **REPORT.md §8.9 numbers (lines 648–649)**, if the write-up adopts the regenerated table:
-- `$88` → `$95` (v2 rows: $95.12).
-- `$151.54` → `$162.46`.
+- `$88` → `$95` (v2 rows: $95.03).
+- `$151.54` → `$162.33` (after `devin/repro-final`; it was $162.46 at `devin/repro-fix-2`).
 - Add: "estimated with the current prompt code; the committed runs used shorter prompts, see docs/repro_check.md."
 
 **PITCH.md**, same basis:
-- "about 2.2 cents per Sonnet audit" becomes about 2.5 cents ($26.80 / 1,080 v2 audits).
+- "about 2.2 cents per Sonnet audit" becomes about 2.5 cents ($26.75 / 1,080 v2 audits).
 - The v2 study "$88" becomes $95.
 - The 7 cents per subject run is unchanged.
 
@@ -286,7 +320,9 @@ The items below are from the first pass. Items 2–8 are covered by the replacem
   `sycophantic_pi` 6) is the pre-relabel labeller. After relabelling, the labeller matches the manual table (5 and 0),
   so the regenerated `OBFUSCATION.md` no longer shows the 0.71 disclosure figure. The analysis prose is left to its
   owner. REPORT §8.6 (`7 → 5/15`, `6 → 0/12`) already describes the relabel.
+- `$162.46` is now `$162.33` (`6bb6b69`, see "Final check" above) in README.md line 232, REPORT.md line 699,
+  docs/reviewer_faq.md line 99 and docs/claims_audit.md lines 26 and 343. v2 is still about $95.
 - REPORT.md "Reproducing" block repeats README's commands and has the same problems as README items 2, 3 and 4
   (v3 dir order, `eval.analyze results/probe_v1` with no `--out`, 3-dir `eval.cost`). Its $151.54 total matches
-  the committed COST.md, not a fresh re-estimate ($162.46, S3).
+  the committed COST.md, not a fresh re-estimate ($162.33 after `devin/repro-final`, S3).
 - PITCH.md's two `demo.app` commands (ports 8000 and 8001) both serve `/` and `/view` with 200. No slide commands.

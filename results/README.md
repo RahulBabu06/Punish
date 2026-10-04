@@ -91,8 +91,7 @@ Column notes:
   per-role breakdown is in [`COST.md`](COST.md) (**$162.33** in total). The requests are rebuilt with the current
   auditor and judge prompt code, so the estimate changes whenever that code does; the call count (8,519) and prices
   do not. The previous COST.md ($151.54) predated the provenance Facts block (+$9.55), the injection-hardening rubric
-  (+$1.12) and the Facts citation wording (+$0.31) (details in [`docs/repro_check.md`](../docs/repro_check.md)); the
-  recovered reports and evidence fixes in [`docs/bug_hunt.md`](../docs/bug_hunt.md) then moved it from $162.46 to $162.33.
+  (+$1.12) and the Facts citation wording (+$0.31); hiding the file manifest in final_report mode (`6bb6b69`) then took off $0.13 (details in [`docs/repro_check.md`](../docs/repro_check.md)).
   `COST.md` and the `$/traj` columns of `CASCADE*.md` are byte-for-byte reproducible at a given commit with
   `scripts/reproduce.sh cost` and `scripts/reproduce.sh derived`. `cost` is exactly:
 

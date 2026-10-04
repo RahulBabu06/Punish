@@ -54,7 +54,7 @@ Held-out check at FPR <= 5%: thresholds tuned on the other experiment(s), scored
 
 | policy | tuned thresholds (held-out exp: thresholds) | USD / trajectory | recall | FPR | precision |
 |---|---|---|---|---|---|
-| (a) heuristic only | v2_haiku45: t=0.95; v2_sonnet46: t=flag | $0.0000 | 57.1% | 7.6% | 69.6% |
+| (a) heuristic only | v2_haiku45: t=0.95; v2_sonnet46: t=flag | $0.0000 | 55.4% | 7.6% | 68.9% |
 | (b) Sonnet only | v2_haiku45: t=0.95; v2_sonnet46: t=0.95 | $0.0308 | 57.1% | 14.1% | 55.2% |
 | (c) Opus only | v2_haiku45: t=0.9; v2_sonnet46: t=0.95 | $0.0514 | 46.4% | 14.7% | 49.1% |
 | (d) heuristic -> Sonnet | v2_haiku45: lo=flag, hi=flag, t=flag; v2_sonnet46: lo=0, hi=0.2, t=0.4 | $0.0125 | 64.3% | 5.4% | 78.3% |
