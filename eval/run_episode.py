@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 from typing import Callable
 
 AGENT_CONFIGS = ("honest", "incentivized", "pressure", "covert", "covert_monitored", "sycophantic_pi")
@@ -264,6 +265,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--trajectory", help="re-audit this existing trajectory instead of running the agent")
     args = p.parse_args(argv)
 
+    if args.trajectory and not Path(args.trajectory).is_file():
+        p.error(f"no such trajectory: {args.trajectory}")
     modes = parse_modes(args.auditor_mode)
     if args.trajectory:
         episodes = [audit_existing(args.trajectory, m, args.auditor_backend, results_dir=args.results_dir)

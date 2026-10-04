@@ -425,9 +425,9 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
     trajectory_id = trajectory_id_of(events)
     model = model or os.environ.get("PUNISH_AUDITOR_MODEL") or DEFAULT_MODEL
     if client is None:
-        import anthropic
+        from agent.credentials import anthropic_client
 
-        client = anthropic.Anthropic()
+        client = anthropic_client("the Claude auditor", "--backend heuristic")
 
     messages = [{"role": "user", "content": prompts.build_user_message(render_trajectory(events, mode), mode, n_lines)}]
     verdict: dict = {}
@@ -512,9 +512,9 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
     load_events(trajectory_path)
     if client is None:
-        import anthropic
+        from agent.credentials import anthropic_client
 
-        client = anthropic.Anthropic()
+        client = anthropic_client("the Claude auditor", "--backend heuristic")
     return ensemble_verdicts([_audit_single(trajectory_path, mode, model, client) for _ in range(n_samples)])
 
 

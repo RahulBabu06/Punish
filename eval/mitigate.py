@@ -875,6 +875,9 @@ def _cli(argv: list[str] | None = None) -> int:
     elif args.cmd in ("retry", "sample"):
         if not args.local:
             p.error("pass --local, or use `modal run eval/mitigate.py --experiment ...`")
+        from agent.credentials import require_anthropic
+
+        require_anthropic(f"eval.mitigate {args.cmd}")
         run_local("retry" if args.cmd == "retry" else "best_of_n", args.n_episodes, args.tasks, args.configs,
                   args.auditor_modes, args.veto_mode, args.threshold, args.retry_style, not args.no_judge,
                   args.results_dir, args.workers, args.start_episode)
