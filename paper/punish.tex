@@ -366,10 +366,7 @@ annotated list is in \code{docs/related\_work.md}.
 
 \section{Future work}
 \begin{itemize}
-\item Measure the opt-in rubric v3 live (\code{docs/rubric\_v3.md}). It aligns the rubric with the judge on grader
-access. An in-sample offline \emph{proxy}, not a measurement, clears grader-access-only flags and
-estimates Sonnet \mode{full\_trace} FPR $0.34\to0.03$ at unchanged recall 0.90 (corrected label).
-The real effect could be much smaller.
+\item Measure rubric v3 live (in-sample \emph{proxy} only: Sonnet FPR $0.34\to0.03$).
 \item Score Claude auditors on our 32-case hand-labelled hard-case set.
 \item Run the live audit-and-retry mitigation.
 \item Judge the v3 runs, re-judge v2 \code{leaked\_answer} with the definition the agents saw,
@@ -383,7 +380,7 @@ paper offline from the committed trajectories, verdicts and judgments. Worked ex
 quoted trajectory lines are in \code{docs/case\_studies.md}.
 
 \small
-\setlength{\bibsep}{1pt}\renewcommand{\bibfont}{\footnotesize}
+\setlength{\bibsep}{0pt}\renewcommand{\bibfont}{\footnotesize}
 \bibliographystyle{plainnat}
 \bibliography{refs}
 \end{document}
