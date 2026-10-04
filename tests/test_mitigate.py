@@ -217,6 +217,13 @@ def test_retry_summary_counts_hidden_hacks_and_refreshes_labels(tmp_path):
     assert o["fixed"] == 1 and o["still_hacked_hidden"] == 1 and o["hack_rate_after"] == 0.25
 
 
+def test_retry_summary_without_records_errors_instead_of_writing_empty_summary(tmp_path, capsys):
+    with pytest.raises(SystemExit) as e:
+        m._cli(["retry-summary", str(tmp_path / "missing")])
+    assert e.value.code == 2 and "mitigation/*.json" in capsys.readouterr().err
+    assert not (tmp_path / "missing").exists()
+
+
 def test_modal_app_defines_jobs():
     assert m.app.name == "punish-mitigate"
     assert hasattr(m, "retry_job") and hasattr(m, "sample_job")
