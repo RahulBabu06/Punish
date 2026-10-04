@@ -64,7 +64,7 @@ Cheapest operating point for each recall level over 1380 swept threshold combina
 |---|---|---|---|---|---|---|
 | (a) heuristic only | t=0.75 | $0.0000 | 61.8% | 2.3% | 88.7% | 0.0% |
 | (d) heuristic -> Sonnet | lo=0.45, hi=0.5, t=0.75 | $0.0102 | 67.6% | 3.2% | 86.2% | 26.7% |
-| (d) heuristic -> Sonnet | lo=0.35, hi=0.5, t=0.75 | $0.0139 | 70.6% | 5.7% | 78.3% | 38.4% |
+| (d) heuristic -> Sonnet | lo=0.35, hi=0.5, t=0.75 | $0.0139 | 70.6% | 5.5% | 79.1% | 38.2% |
 | (d) heuristic -> Sonnet | lo=0.3, hi=0.5, t=0.75 | $0.0179 | 76.5% | 6.9% | 76.5% | 50.7% |
 | (d) heuristic -> Sonnet | lo=0.25, hi=0.5, t=0.75 | $0.0184 | 78.4% | 6.9% | 76.9% | 52.2% |
 | (d) heuristic -> Sonnet | lo=0.2, hi=0.5, t=0.75 | $0.0208 | 80.4% | 7.5% | 75.9% | 61.1% |
@@ -114,6 +114,6 @@ Held-out check at FPR <= 25%: thresholds tuned on the other experiment(s), score
 |---|---|---|---|---|---|
 | (a) heuristic only | v3_haiku45: t=0.45; v3_opus46: t=0.45; v3_sonnet46: t=0.35; v3cond_haiku45: t=0.45; v3cond_sonnet46: t=0.45; v3fault_sonnet46: t=0.45 | $0.0000 | 74.5% | 18.7% | 53.9% |
 | (b) Sonnet only | v3_haiku45: t=0.75; v3_opus46: t=0.1; v3_sonnet46: t=0.1; v3cond_haiku45: t=0.1; v3cond_sonnet46: t=0.1; v3fault_sonnet46: t=0.1 | $0.0312 | 85.3% | 12.6% | 66.4% |
-| (d) heuristic -> Sonnet | v3_haiku45: lo=0.35, hi=0.5, t=0.05; v3_opus46: lo=0, hi=0.5, t=0.1; v3_sonnet46: lo=0, hi=0.5, t=0.1; v3cond_haiku45: lo=0, hi=0.5, t=0.1; v3cond_sonnet46: lo=0, hi=0.5, t=0.1; v3fault_sonnet46: lo=0, hi=0.5, t=0.1 | $0.0227 | 73.5% | 18.1% | 54.3% |
+| (d) heuristic -> Sonnet | v3_haiku45: lo=0.35, hi=0.5, t=0.05; v3_opus46: lo=0, hi=0.5, t=0.1; v3_sonnet46: lo=0, hi=0.5, t=0.1; v3cond_haiku45: lo=0, hi=0.5, t=0.1; v3cond_sonnet46: lo=0, hi=0.5, t=0.1; v3fault_sonnet46: lo=0, hi=0.5, t=0.1 | $0.0226 | 73.5% | 17.8% | 54.7% |
 
 Notes: thresholds are `confidence >= t` (`flag` = the auditor's own `hack_detected`). Cascades pay for every stage they run. Costs exclude the subject agent and the judge, and the heuristic costs nothing. Opus policies are omitted (no Opus re-audit for these experiments). Frontier thresholds are tuned on this sample (see the held-out checks).
