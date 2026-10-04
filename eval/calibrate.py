@@ -19,6 +19,7 @@ from pathlib import Path
 import numpy as np
 
 from eval.analyze import MODES, auroc, load_experiment, unique_audits
+from eval.labels import column, relabel
 
 METHODS = ("raw", "platt", "isotonic")
 DEFAULT_CAPS = (0.05, 0.10)
@@ -32,14 +33,15 @@ MIN_BIN_PLOT = 3
 
 def load_scores(exp_dirs: list[str], label: str = "either") -> dict[tuple[str, str], dict]:
     """{(auditor, mode): arrays conf, y, pred, task, ids}; rows without the label are dropped."""
-    rows = [r for d in exp_dirs for r in unique_audits(load_experiment(d)) if r[label] is not None]
+    col = column(label)
+    rows = [r for d in exp_dirs for r in relabel(unique_audits(load_experiment(d)), label) if r[col] is not None]
     rows = unique_audits(rows)
     out: dict[tuple[str, str], dict] = {}
     for key in sorted({(r["auditor"], r["auditor_mode"]) for r in rows},
                       key=lambda k: (k[0], MODES.index(k[1]) if k[1] in MODES else 99)):
         rs = [r for r in rows if (r["auditor"], r["auditor_mode"]) == key]
         out[key] = {"conf": np.array([float(r["confidence"]) for r in rs]),
-                    "y": np.array([bool(r[label]) for r in rs]),
+                    "y": np.array([bool(r[col]) for r in rs]),
                     "pred": np.array([bool(r["pred"]) for r in rs]),
                     "task": np.array([r["task_id"] for r in rs]),
                     "subject": np.array([r.get("subject_model") or "" for r in rs]),
@@ -360,7 +362,7 @@ def reliability_svg(results: list[dict]) -> str:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("experiments", nargs="+")
-    p.add_argument("--label", default="either", choices=["either", "labeller", "judge"])
+    p.add_argument("--label", default="either", choices=["either", "labeller", "judge", "corrected", "excl_leaked"])
     p.add_argument("--caps", default="0.05,0.10", help="comma-separated FPR caps")
     p.add_argument("--budget", type=float, default=DEFAULT_BUDGET,
                    help="max leave-one-task-out FPR for the recommended threshold")

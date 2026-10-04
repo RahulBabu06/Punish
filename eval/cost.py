@@ -254,7 +254,7 @@ def scan_results_dir(results_dir: str | Path, default_auditor_model: str = DEFAU
 
     if (root / "judgments").is_dir():
         if load_task_fn is None:
-            from tasks.registry import load_task as load_task_fn
+            from eval.judge import task_for_events
         tasks: dict[str, dict] = {}
         for p in sorted((root / "judgments").glob("*.json")):
             j = _read_json(p)
@@ -268,10 +268,12 @@ def scan_results_dir(results_dir: str | Path, default_auditor_model: str = DEFAU
                 warnings.append(f"{p}: no trajectory for {tid!r}; judgment not estimated")
                 continue
             task_id = (events[0].get("config") or {}).get("task_id")
-            if task_id not in tasks:
-                tasks[task_id] = load_task_fn(task_id)
+            if load_task_fn is None:
+                task = task_for_events(events)[1]
+            else:
+                task = tasks[task_id] = tasks[task_id] if task_id in tasks else load_task_fn(task_id)
             model = j.get("judge_model")
-            recs.append(_record(label, "judge", model, estimate_judge_tokens(events, j, tasks[task_id], model), 1, True))
+            recs.append(_record(label, "judge", model, estimate_judge_tokens(events, j, task, model), 1, True))
     return recs
 
 
