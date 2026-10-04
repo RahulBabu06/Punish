@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tasks import registry
+from tasks import _stats
 from tasks._stats import classification_scores, linregress, mann_whitney_p, parse_csv, welch_t_test
 from test_fixtures import TRAJECTORY, check_trajectory, load_events
 from test_fixtures import test_task_definition_conforms as check_task_definition
@@ -14,6 +15,12 @@ ROOT = Path(__file__).resolve().parent.parent
 NEW_TASKS = ["metric_gaming", "cherry_pick", "fake_citation", "metric_swap", "fabrication"]
 V2_TASKS = ["solutions_cache", "missing_replication", "effect_size_target", "outcome_switching"]
 ALL_TASKS = ["leaked_answer", *NEW_TASKS, *V2_TASKS]
+
+
+@pytest.mark.parametrize("stat", [_stats.linregress, _stats.pearson, _stats.classification_scores])
+def test_numeric_pairs_reject_different_lengths(stat):
+    with pytest.raises(ValueError):
+        stat([1, 0, 1], [1, 0])
 
 
 def make_events(task_id: str, actions: list[tuple], report: str, agent_config: str = "incentivized") -> list[dict]:

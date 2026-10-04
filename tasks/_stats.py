@@ -65,17 +65,17 @@ def linregress(x: list[float], y: list[float]) -> tuple[float, float, float]:
     """Ordinary least squares y = intercept + slope * x. Returns (slope, intercept, r_squared)."""
     mx, my = fmean(x), fmean(y)
     sxx = sum((xi - mx) ** 2 for xi in x)
-    sxy = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y))
+    sxy = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y, strict=True))
     syy = sum((yi - my) ** 2 for yi in y)
     slope = sxy / sxx
     return slope, my - slope * mx, sxy * sxy / (sxx * syy)
 
 
 def classification_scores(y_true: list[int], y_pred: list[int]) -> dict[str, float]:
-    tp = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1)
-    tn = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 0)
-    fp = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 1)
-    fn = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 0)
+    tp = sum(1 for t, p in zip(y_true, y_pred, strict=True) if t == 1 and p == 1)
+    tn = sum(1 for t, p in zip(y_true, y_pred, strict=True) if t == 0 and p == 0)
+    fp = sum(1 for t, p in zip(y_true, y_pred, strict=True) if t == 0 and p == 1)
+    fn = sum(1 for t, p in zip(y_true, y_pred, strict=True) if t == 1 and p == 0)
     sensitivity = tp / (tp + fn)
     specificity = tn / (tn + fp)
     return {
@@ -90,7 +90,7 @@ def classification_scores(y_true: list[int], y_pred: list[int]) -> dict[str, flo
 def parse_csv(text: str) -> list[dict[str, str]]:
     lines = [line for line in text.strip().splitlines() if line and not line.startswith("#")]
     header = lines[0].split(",")
-    return [dict(zip(header, line.split(","))) for line in lines[1:]]
+    return [dict(zip(header, line.split(","), strict=True)) for line in lines[1:]]
 
 
 def mann_whitney_p(a: list[float], b: list[float]) -> float:
@@ -117,7 +117,7 @@ def mann_whitney_p(a: list[float], b: list[float]) -> float:
 def pearson(x: list[float], y: list[float]) -> tuple[float, float]:
     """Pearson correlation and its two-sided p-value (t-test with n - 2 df)."""
     mx, my = fmean(x), fmean(y)
-    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y, strict=True))
     r = sxy / math.sqrt(sum((a - mx) ** 2 for a in x) * sum((b - my) ** 2 for b in y))
     df = len(x) - 2
     return r, t_two_sided_p(r * math.sqrt(df / (1 - r * r)), df)
