@@ -9,8 +9,8 @@ python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 --out results/RESU
 Writes RESULTS.md, RESULTS.json (statistics), RESULTS_thresholds.csv, and optionally four SVGs.
 Use --json PATH for an additional raw-row export, --seed and --bootstrap-samples for reproducibility.
 --exclude-task TASK (repeatable) drops a task from every table, e.g. for sensitivity analyses.
-An experiment directory may contain re-audits in <exp>/reaudit_<name>/episodes; they are included as
-extra auditors named by the verdicts' auditor model (plus "+rubric_<v>" for opt-in rubric re-audits).
+An experiment directory may contain re-audits in any immediate child's episodes/ directory. They are
+named by model plus non-default rubric/backend and ensemble-size suffixes; conflicts are rejected.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ import json
 import math
 import os
 import random
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -47,10 +48,36 @@ def _subject_model(traj_path: str, cache: dict) -> str:
 
 
 def _auditor_name(ep: dict, default: str) -> str:
-    """The auditor model, suffixed "+rubric_<v>" for opt-in rubric re-audits so they never merge with default ones."""
-    name = ep.get("auditor_model") or default
-    suffix = f"+rubric_{ep['auditor_rubric']}" if ep.get("auditor_rubric") else ""
-    return name if name.endswith(suffix) else name + suffix
+    """Stable identity: model, non-default rubric/backend and ensemble size."""
+    from eval.cost import canonical_model
+
+    verdict = ep.get("verdict") or {}
+    name = canonical_model(ep.get("auditor_model") or (verdict.get("usage") or {}).get("model") or default)
+    suffixes = []
+    rubric = ep.get("auditor_rubric", "default")
+    if rubric != "default":
+        suffixes.append(f"rubric_{rubric}")
+    backend = ep.get("auditor_backend", "claude")
+    if backend != "claude":
+        suffixes.append(f"backend_{backend}")
+    match = re.search(r"\[ensemble: hack votes \d+/(\d+);", verdict.get("auditor_notes") or "")
+    samples = ep.get("auditor_n_samples", verdict.get("n_samples", int(match[1]) if match else 1))
+    if samples != 1:
+        suffixes.append(f"samples_{samples}")
+    for suffix in suffixes:
+        if f"+{suffix}" not in name:
+            name += f"+{suffix}"
+    return name
+
+
+def _audit_sources(exp: Path) -> list[tuple[str, Path]]:
+    from eval.cost import DEFAULT_AUDITOR_MODEL
+
+    return [(DEFAULT_AUDITOR_MODEL, exp / "episodes")] + [
+        (d.name.removeprefix("reaudit_") if d.name.removeprefix("reaudit_").startswith("claude-")
+         else DEFAULT_AUDITOR_MODEL, d / "episodes")
+        for d in sorted(exp.iterdir()) if d.is_dir() and (d / "episodes").is_dir()
+    ]
 
 
 def load_experiment(exp_dir: str) -> list[dict]:
@@ -60,8 +87,7 @@ def load_experiment(exp_dir: str) -> list[dict]:
         raise ValueError(f"{exp}: missing episodes directory")
     judgments = {p.stem: _load_json(p) for p in (exp / "judgments").glob("*.json")}
     model_cache: dict = {}
-    sources = [("claude-sonnet-4-6", exp / "episodes")]
-    sources += [(d.name.removeprefix("reaudit_"), d / "episodes") for d in sorted(exp.glob("reaudit_*")) if d.is_dir()]
+    sources = _audit_sources(exp)
     # Re-audits recompute the labeller with the current task definitions; the original episode's label is the
     # one that matches the data the agent actually saw.
     primary_labels = {}
@@ -72,7 +98,7 @@ def load_experiment(exp_dir: str) -> list[dict]:
     for auditor, ep_dir in sources:
         for p in sorted(ep_dir.glob("*.json")):
             ep = _load_json(p)
-            if ep.get("auditor_backend", "claude") != "claude":
+            if ep.get("auditor_backend", "claude") not in ("claude", "agentic"):
                 continue
             tid = ep["episode_id"]
             j = judgments.get(tid)

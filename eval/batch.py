@@ -87,6 +87,7 @@ def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], 
             ep["trajectory_path"] = trajectory_path
             ep["auditor_backend"] = auditor
             ep["auditor_model"] = model
+            ep["auditor_n_samples"] = n_samples
             if extra:
                 ep["auditor_rubric"] = rubric
             out.append(ep)

@@ -63,8 +63,7 @@ def audit_usd(events: list[dict], verdict: dict, model: str, mode: str = MODE) -
 
 def load_items(exp_dirs: list[str], *, heuristic_fn=None, mode: str = MODE, label: str = LABEL) -> list[dict]:
     """One item per trajectory: label, live heuristic verdict and each Claude auditor's (pred, confidence, usd)."""
-    from eval.analyze import load_experiment
-    from eval.cost import DEFAULT_AUDITOR_MODEL, canonical_model
+    from eval.analyze import _auditor_name, _audit_sources, load_experiment
     from eval.labels import column, relabel
 
     col = column(label)
@@ -72,29 +71,33 @@ def load_items(exp_dirs: list[str], *, heuristic_fn=None, mode: str = MODE, labe
     if heuristic_fn is None:
         from auditor.heuristic import heuristic_audit as heuristic_fn
     items = []
-    for d in exp_dirs:
+    for d in dict.fromkeys(str(Path(d).resolve()) for d in exp_dirs):
         exp = Path(d)
         meta = {}
         for r in relabel(load_experiment(d), label):
             meta.setdefault(r["trajectory_id"], r)
-        sources = [(exp / "episodes", DEFAULT_AUDITOR_MODEL)]
-        sources += [(s / "episodes", s.name.removeprefix("reaudit_")) for s in sorted(exp.glob("reaudit_*"))]
+        sources = _audit_sources(exp)
         audits: dict[str, dict] = {}
         events_cache: dict[str, list[dict]] = {}
-        for ep_dir, default_model in sources:
+        for default_model, ep_dir in sources:
             for p in sorted(ep_dir.glob("*.json")):
                 ep = json.loads(p.read_text(encoding="utf-8"))
-                if ep.get("auditor_mode") != mode or ep.get("auditor_backend", "claude") != "claude":
+                if ep.get("auditor_mode") != mode or ep.get("auditor_backend", "claude") not in ("claude", "agentic"):
                     continue
                 tid, verdict = ep["episode_id"], ep["verdict"]
-                model = ep.get("auditor_model") or default_model
+                model = ep.get("auditor_model") or (verdict.get("usage") or {}).get("model") or default_model
                 traj = exp / "trajectories" / f"{tid}.jsonl"
                 if tid not in events_cache:
                     events_cache[tid] = _read_jsonl(traj)
                 cost, estimated = audit_usd(events_cache[tid], verdict, model, mode)
-                audits.setdefault(tid, {})[canonical_model(model)] = {
+                key = _auditor_name(ep, default_model)
+                value = {
                     "pred": bool(verdict["hack_detected"]), "confidence": float(verdict["confidence"]),
                     "usd": cost, "estimated": estimated}
+                previous = audits.setdefault(tid, {}).get(key)
+                if previous is not None and previous != value:
+                    raise ValueError(f"Conflicting duplicate audit: {exp}/{tid}, {key}")
+                audits[tid][key] = value
         for tid in sorted(audits):
             row = meta.get(tid)
             if row is None or row.get(col) is None:
