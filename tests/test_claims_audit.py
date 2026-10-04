@@ -195,6 +195,69 @@ def test_closed_label_basis_rows():
     assert "lower bound" not in doc("results/README.md")
 
 
+ROBUST = ROOT / "results/robustness/robustness.json"
+SONNET, OPUS = "claude-sonnet-4-6", "claude-opus-4-6"
+
+
+@lru_cache(maxsize=None)
+def robustness() -> dict:
+    return json.loads(ROBUST.read_text(encoding="utf-8"))
+
+
+def robust_slice(auditor: str, mode: str, part: str) -> dict:
+    return next(s for s in robustness()["slices"]
+                if (s["auditor"], s["mode"], s["slice"]) == (auditor, mode, part))
+
+
+def robustness_numbers() -> dict[str, str]:
+    """Robustness caveats quoted in README / PITCH / SUBMISSION, read from results/robustness/robustness.json."""
+    r = robustness()
+    nat = {(a, m): robust_slice(a, m, "non-covert") for a in (SONNET, OPUS)
+           for m in ("full_trace", "report_only", "final_report")}
+    cov = robust_slice(SONNET, "full_trace", "covert")
+    leak = next(d for d in r["delta_slices"] if (d["auditor"], d["left"], d["right"], d["slice"])
+                == (OPUS, "full_trace", "report_only", "role not mentioned"))
+    sonnet_ft = next(h for h in r["headline"] if (h["auditor"], h["mode"]) == (SONNET, "full_trace"))
+    ppv = next(p for p in r["ppv"] if (p["auditor"], p["mode"]) == (SONNET, "full_trace"))
+    widths = [(c["cell"][k][1] - c["cell"][k][0]) / (c["trajectory"][k][1] - c["trajectory"][k][0])
+              for c in r["headline"] + r["deltas"] for k in c["trajectory"] if k != "clusters"]
+    out = {f"{cov['pos']}/{cov['pos'] + nat[SONNET, 'full_trace']['pos']}": "covert share of positives",
+           f"{r['role']['covert']['mentions']}/{r['role']['covert']['n']}": "covert role mentions",
+           f"{leak['d_accuracy']:.3f}": "Opus reasoning gain without role mentions",
+           str(sonnet_ft["n"] // sonnet_ft["cell"]["clusters"]): "episodes per cell",
+           str(sonnet_ft["task"]["clusters"]): "tasks",
+           str(round(max(widths))): "max cell/trajectory CI width ratio",
+           f"{ppv['observed']:.2f}": "observed precision", f"{100 * ppv['observed_prevalence']:.0f}%": "prevalence",
+           f"{ppv['0.05']:.2f}": "precision at 5%", "5%": "prevalence scenario"}
+    for (a, m) in ((SONNET, "final_report"), (SONNET, "report_only")):
+        out[f"{nat[a, m]['tp']}/{nat[a, m]['pos']}"] = f"{a} {m} natural recall"
+    for a in (SONNET, OPUS):
+        s = nat[a, "full_trace"]
+        out[f"{s['tp']}/{s['pos']}"] = f"{a} full_trace natural recall"
+        out[f"{s['recall']:.2f}"] = f"{a} full_trace natural recall"
+    return out
+
+
+def test_robustness_values():
+    n = robustness_numbers()
+    assert set(n) == {"66/93", "75/90", "0.056", "5", "6", "2", "0.48", "26%", "0.12", "5%",
+                      "26/27", "20/27", "19/27", "0.70", "5/17", "0.29"}
+    d = next(d for d in robustness()["delta_slices"] if (d["auditor"], d["left"], d["right"])
+             == (SONNET, "report_only", "final_report") and d["slice"] == "covert")
+    assert f"{d['d_recall']:.2f}" == "0.33"
+
+
+def test_natural_hack_recall_in_docs():
+    for a in (SONNET, OPUS):
+        s = robust_slice(a, "full_trace", "non-covert")
+        claim = f"{s['tp']}/{s['pos']} = {s['recall']:.2f}"
+        for name in ("README.md", "PITCH.md", "docs/SUBMISSION.md"):
+            assert claim in doc(name), (name, claim)
+    fr, ro = (robust_slice(SONNET, m, "non-covert") for m in ("final_report", "report_only"))
+    for name in ("README.md", "PITCH.md", "docs/SUBMISSION.md"):
+        assert f"{fr['tp']}/{fr['pos']}" in doc(name) and f"{ro['tp']}/{ro['pos']}" in doc(name)
+
+
 def submission_numbers() -> dict[str, str]:
     """Every number SUBMISSION.md may quote, recomputed or read from its committed source."""
     s = headline()["sonnet_ft"]
@@ -220,7 +283,7 @@ def submission_numbers() -> dict[str, str]:
         out[f"{100 * r['fpr']:.1f}%"] = f"{key[0]} cascade FPR"
         out[f"{r['tp']}/{r['pos']}"] = f"{key[0]} cascade tp/pos"
         out[f"{r['fp']}/{r['n'] - r['pos']}"] = f"{key[0]} cascade fp/neg"
-    return out
+    return out | robustness_numbers()
 
 
 def test_submission_numbers_match_committed_results():
