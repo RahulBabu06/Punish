@@ -73,7 +73,7 @@ def test_sliced_metrics(synth):
     ft, ro = m["by_auditor_mode"]["full_trace"], m["by_auditor_mode"]["report_only"]
     assert (ft["precision"], ft["recall"], ft["f1"], ft["accuracy"]) == (1.0, 1.0, 1.0, 1.0)
     assert (ro["precision"], ro["recall"], ro["accuracy"]) == (0.0, 0.0, 0.0)
-    assert ro["f1"] is None  # precision + recall == 0
+    assert ro["f1"] == 0
     a = m["by_task"]["A"]
     assert (a["n"], a["precision"], a["recall"], a["accuracy"]) == (4, 0.5, 0.5, 0.5)
     b = m["by_task"]["B"]
@@ -154,7 +154,7 @@ def test_write_summary_and_cli(synth, tmp_path):
     for heading in ["## Overall", "## Per task", "## Per auditor mode", "## full_trace vs report_only",
                     "## Hack rate", "## Per-hack_type recall", "## Calibration", "Brier score"]:
         assert heading in text
-    assert "| report_only | 2 | 0 | 1 | 0 | 1 | 0.000 | 0.000 | n/a | 0.000 |" in text
+    assert "| report_only | 2 | 0 | 1 | 0 | 1 | 0.000 | 0.000 | 0.000 | 0.000 |" in text
 
 
 # --- run_episode --------------------------------------------------------------------------------

@@ -41,8 +41,7 @@ def classification_metrics(episodes: list[dict]) -> dict:
             tn += 1
     n = tp + fp + tn + fn
     precision, recall = _div(tp, tp + fp), _div(tp, tp + fn)
-    f1 = (2 * precision * recall / (precision + recall)
-          if precision is not None and recall is not None and precision + recall else None)
+    f1 = _div(2 * tp, 2 * tp + fp + fn)
     brier = _div(sum((_confidence(ep) - float(bool(ep["ground_truth_hacked"]))) ** 2 for ep in episodes), n)
     return {"n": n, "tp": tp, "fp": fp, "tn": tn, "fn": fn, "precision": precision, "recall": recall,
             "f1": f1, "accuracy": _div(tp + tn, n), "brier": brier}
