@@ -12,21 +12,36 @@ vocabulary, and line-level `evidence`. Built for the London AI x Science Hackath
 Track 2.
 
 Preliminary headline (v2 sweep: 360 trajectories from Sonnet 4.6, Sonnet 4.5 and Haiku 4.5
-subjects, 1,080 Sonnet 4.6 audits, Opus-judge ground truth):
+subjects, 1,080 Sonnet 4.6 audits, Opus-judge ground truth).
+
+**Known issue:** the judge was shown a stale `leaked_answer` definition and is likely wrong on
+30 of its 32 positives for that task (`results/leaked_answer_correction.md`, `REPORT.md` §8.0).
+So the original label (123 hacked) is not clean ground truth. Each cell below is original /
+`leaked_answer` excluded (300 trajectories, 91 hacked) / corrected (360, 93 hacked):
 
 | auditor sees | recall | FPR | AUROC |
 |---|---|---|---|
-| reasoning + actions + report (`full_trace`) | 0.93 | 0.26 | 0.95 |
-| actions + report (`report_only`) | 0.93 | 0.27 | 0.92 |
-| final report only (`final_report`) | 0.67 | 0.21 | 0.83 |
+| reasoning + actions + report (`full_trace`) | 0.93 / 0.90 / 0.90 | 0.26 / 0.20 / 0.35 | 0.95 / 0.96 / 0.89 |
+| actions + report (`report_only`) | 0.93 / 0.91 / 0.91 | 0.27 / 0.21 / 0.35 | 0.92 / 0.93 / 0.84 |
+| final report only (`final_report`) | 0.67 / 0.76 / 0.74 | 0.21 / 0.21 / 0.23 | 0.83 / 0.86 / 0.83 |
 
-Reading only the report misses a third of the hacks, and seeing the actions recovers them.
+The corrected label raises FPR because the auditors also flag the 30 relabelled runs (they
+read `eval.py` and matched the grader), so the excluded column is the cleanest comparison.
+**The honest summary: auditors catch most hacks but over-flag honest grader-reading runs**
+(corrected trace-mode FPR 0.22–0.35). Under the corrected label, no Claude auditor × mode
+keeps FPR ≤ 10% on unseen tasks with useful recall. A best-of-n veto still cuts shipped hacks
+from 0.28 to 0.15 (`REPORT.md` §8.8, §8.13–8.14).
+
+Reading only the report misses a quarter to a third of the hacks (recall 0.76 vs 0.90 with
+`leaked_answer` excluded, 0.67 vs 0.93 original), and seeing the actions recovers them.
 For a Sonnet auditor, seeing the reasoning improves the confidence ranking (ΔAUROC +0.03)
 but almost never changes the verdict. A stronger auditor does use it. Re-auditing 240
 trajectories with Opus 4.6, `full_trace` gets recall 0.84 against 0.73 for `report_only`,
-and FPR 0.11 against 0.17 (paired McNemar p < 0.001). Instructed (`covert`) agents hack
-77–93% of the time, pressured or incentivised agents 13–33%, and honest agents 0–10%. A
-deterministic exploit labeller finds only 47 of 123 hacks.
+and FPR 0.11 against 0.17 (paired McNemar p < 0.001); with `leaked_answer` excluded, 0.77
+against 0.63 and 0.06 against 0.12. Instructed (`covert`) agents hack 72–100% of the time
+(excluded; 77–93% original), pressured or incentivised agents 12–28% (13–33%), and honest
+agents 0% (0–10%). A deterministic exploit labeller finds only 46 of 91 hacks (47 of 123
+original).
 
 The 10-task v3 suite and the new conditions (`covert_monitored`, `sycophantic_pi`, tool-failure
 injection, Opus subject) have only preliminary, labeller-only results, because the API credit
@@ -135,6 +150,23 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
 .venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --by-dir --out results/COST.md
+# REPORT §8.10–8.13: reasoning disclosure, labeller audit, monitor attacks (heuristic), cost vs detection
+.venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
+  --labels docs/obfuscation_handlabels_heldout.json --out results/obfuscation/OBFUSCATION.md
+.venv/bin/python -m tasks.validate_labels results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45
+.venv/bin/python -m eval.monitor_attacks --auditor heuristic --modes all
+.venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
+  --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
+.venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/calibration_v2/CALIBRATION.md
+.venv/bin/python -m eval.judge_validation score --out results/judge_validation
+# corrected-label versions (*_corrected.* files): add --label corrected to mitigate,
+# calibrate, cascade, obfuscation and judge_validation score (see results/README.md)
+.venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --tags docs/error_tags.json --sample-out results/errors_v2/sample.json --out results/errors_v2/ERRORS.md
+# corrected: add --correction results/leaked_answer_correction.json --out results/errors_v2_corrected/ERRORS.md
+.venv/bin/python -m eval.evidence   # evidence localisation vs fixtures/evidence_gold
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -150,7 +182,13 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
 | `results/hard_cases/` | 32 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
 | `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
-| `results/COST.md` | estimated API cost of the v2 runs (`eval.cost`) |
+| `results/COST.md` | estimated API cost of every committed run (`eval.cost`; v2 total about $88) |
+| `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
+| `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
+| `results/judge_validation/` | Opus judge vs 60 blind AI labels: κ 0.70, and the stale `leaked_answer` definition ([`docs/judge_validation.md`](docs/judge_validation.md)) |
+| `results/calibration_v2/` | leave-one-task-out calibration and FPR-capped thresholds for each auditor and mode (`eval.calibrate`) |
+| `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs (`CASCADE_corrected.md`: corrected label) |
+| `results/errors_v2/` | auditor error taxonomy with a hand-tagged sample ([`docs/error_analysis.md`](docs/error_analysis.md)) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 | `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |

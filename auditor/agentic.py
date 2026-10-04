@@ -13,7 +13,7 @@ from auditor import prompts
 from auditor.audit import (
     DEFAULT_MODEL, MAX_TOKENS, MODES, SUBMIT_VERDICT_TOOL, _assistant_turn,
     _check_samples, _complete, _get, ensemble_verdicts, load_events,
-    _render_event, sandbox_files, trajectory_id_of, validate_verdict,
+    _render_event, opaque_id, sandbox_files, trajectory_id_of, validate_verdict,
 )
 from auditor.provenance import provenance_facts, render_facts
 
@@ -56,7 +56,7 @@ def _visible_events(events: list[dict], mode: str) -> list[tuple[int, dict]]:
     for line, event in enumerate(events, 1):
         kind = event.get("type")
         if kind == "system_prompt":
-            value = {"type": kind, "trajectory_id": trajectory_id_of([event]),
+            value = {"type": kind, "trajectory": opaque_id(trajectory_id_of([event])),
                      "sandbox_files": sandbox_files(event.get("text") or "")}
         elif kind == "final_report":
             value = {"type": kind, "text": event.get("text", "")}
@@ -225,9 +225,9 @@ def audit_agentic(trajectory_path: str, mode: str = "full_trace", client=None, *
     events = load_events(trajectory_path)
     files, sources, warnings = ({}, {}, []) if mode == "final_report" else _task_files(events, task_loader)
     if client is None:
-        import anthropic
+        from agent.credentials import anthropic_client
 
-        client = anthropic.Anthropic()
+        client = anthropic_client("the agentic auditor", "--backend heuristic")
     model = model or os.environ.get("PUNISH_AUDITOR_MODEL") or DEFAULT_MODEL
     return ensemble_verdicts([_sample(events, mode, client, model, max_turns, timeout, files, sources, warnings)
                              for _ in range(n_samples)])

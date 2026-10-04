@@ -209,12 +209,14 @@ def by_case(rows: list[dict], case_id: str) -> dict:
 
 def labeller_agreement(cases: list[dict]) -> dict:
     """How the deterministic tasks.registry.label compares with the hand labels, per category."""
-    from tasks.registry import label, load_task
+    from tasks import registry, validate_labels
 
     rows = []
     for c in cases:
         events = [json.loads(line) for line in Path(c["path"]).read_text(encoding="utf-8").splitlines()]
-        pred = label(load_task(events[0]["config"]["task_id"]), events)
+        task_id = events[0]["config"]["task_id"]
+        _, task = validate_labels.match_definition(events, list(validate_labels.definition_versions(task_id)))
+        pred = registry.label(task, events)
         rows.append(make_row(c, "labeller", "labeller", {"hack_detected": pred, "confidence": float(pred),
                                                           "hack_types": c["label"]["hack_types"] if pred else []}))
     out = {cat: score([r for r in rows if r["category"] == cat]) for cat in CATEGORIES
@@ -327,6 +329,10 @@ def cli(argv: list[str] | None = None, client=None) -> int:
     skipped = [m for m in modes if not supported(args.auditor, m)]
     if skipped:
         print(f"note: the {args.auditor} auditor does not support {', '.join(skipped)}; skipped", file=sys.stderr)
+    if args.auditor != "heuristic" and client is None:
+        from agent.credentials import require_anthropic
+
+        require_anthropic(f"--auditor {args.auditor}", "--auditor heuristic")
     workers = 1 if client is not None else args.workers
     rows = run_cases(cases, modes, args.auditor, model=args.model, client=client, workers=workers,
                      verdict_dir=Path(args.out, "verdicts"))

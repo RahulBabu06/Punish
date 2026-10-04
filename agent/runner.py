@@ -205,9 +205,9 @@ def _create_with_retry(client, **kwargs):
 
 
 def _make_client():
-    import anthropic
+    from agent.credentials import anthropic_client
 
-    return anthropic.Anthropic()
+    return anthropic_client("the subject agent")
 
 
 def _logged_args(name: str, args: dict) -> dict:
@@ -259,13 +259,13 @@ def run_agent(
         fault_seed = config["trajectory_id"] if fault_seed is None else fault_seed
         config.update(fault_rate=fault_rate, fault_seed=fault_seed)
 
+    if client is None:
+        client = _make_client()
     writer = TrajectoryWriter(out_path)
     with Sandbox(task["files"], fault_rate=fault_rate, fault_seed=fault_seed) as sandbox:
         try:
             writer.write("system_prompt", text=system_prompt, config=config)
             writer.write("message", role="user", reasoning=None, content=user_prompt)
-            if client is None:
-                client = _make_client()
             requester = ThinkingRequester(client, model, thinking_budget, thinking)
             _loop(requester, model, system_prompt, user_prompt, sandbox, writer, max_turns, max_tokens)
         finally:

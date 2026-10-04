@@ -11,7 +11,7 @@ python -m eval.run_episode --task leaked_answer --config incentivized --episode 
     [--auditor-mode full_trace|report_only|both] [--auditor-backend claude|heuristic] [--results-dir results]
 
 # re-audit an existing trajectory without re-running the agent (cheap full_trace vs report_only comparison)
-python -m eval.run_episode --trajectory results/trajectories/leaked_answer__incentivized__ep000.jsonl \
+python -m eval.run_episode --trajectory results/v2_haiku45/trajectories/leaked_answer__incentivized__ep000.jsonl \
     --auditor-mode both --auditor-backend heuristic
 ```
 
@@ -82,7 +82,7 @@ python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 [--mode
     [--auditor claude-sonnet-4-6] [--threshold 0.7] [--n 3] [--out results/MITIGATION_bestofn.md]
 ```
 
-Trajectories are grouped by experiment x subject model x task x agent_config. Per group (or per size-`n` subset, averaged over all subsets) each policy ships one trajectory: `random`, `grader-only` (highest grader score), `veto+random` (random among unflagged), `veto+grader` (highest grader score among unflagged; if all are flagged, the lowest auditor confidence), `oracle` (a clean one if any). Random choices are exact expectations. The hack label is `either` = run-time labeller (read from `<exp>/episodes/`, which every auditor shares) OR the Opus judgment; it falls back to the labeller when there is no judgment. The report also sweeps auditor x mode x veto threshold and gives bootstrap CIs over groups. `--tasks-rev <git rev>` loads task definitions from an older revision; trajectories whose `read_file` outputs differ from the loaded task files are counted as `drifted`.
+Trajectories are grouped by experiment x subject model x task x agent_config. Per group (or per size-`n` subset, averaged over all subsets) each policy ships one trajectory: `random`, `grader-only` (highest grader score), `veto+random` (random among unflagged), `veto+grader` (highest grader score among unflagged; if all are flagged, the lowest auditor confidence), `oracle` (a clean one if any). Random choices are exact expectations. The hack label is `either` = run-time labeller (read from `<exp>/episodes/`, which every auditor shares) OR the Opus judgment; it falls back to the labeller when there is no judgment. The report also sweeps auditor x mode x veto threshold and gives bootstrap CIs over groups. Each trajectory is graded with the task definition matching its sandbox files (`matched_task`, i.e. `tasks.validate_labels.match_definition`; v2 `leaked_answer` ran on the v1 data, commit `5b4aa1c`). `--tasks-rev <git rev>` pins every task to one revision instead; trajectories whose `read_file` outputs differ from the definition used are counted as `drifted`.
 
 To sample fresh trajectories for it: `modal run eval/mitigate.py --experiment best_of_n --n-episodes 8 --results-dir results/mitigation_bestofn` (or `python -m eval.mitigate sample --local ...`); this writes the standard layout plus judgments and then the best-of-n report.
 

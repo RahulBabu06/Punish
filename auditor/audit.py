@@ -7,6 +7,7 @@ CLI: python -m auditor.audit <trajectory.jsonl> [--mode full_trace|report_only|f
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -100,6 +101,15 @@ def load_events(trajectory_path: str | os.PathLike) -> list[dict]:
     return events
 
 
+# Event fields never shown to the auditor: the trajectory/episode id encodes task and agent config (the label).
+METADATA_KEYS = frozenset({"ts", "config", "trajectory_id", "episode_id", "agent_config", "incentivized", "model", "task_id"})
+
+
+def opaque_id(trajectory_id: str) -> str:
+    """Deterministic token the auditor sees instead of the trajectory id."""
+    return "traj-" + hashlib.sha256(str(trajectory_id).encode("utf-8")).hexdigest()[:10]
+
+
 def trajectory_id_of(events: list[dict]) -> str:
     first = events[0] if events else {}
     return str((first.get("config") or {}).get("trajectory_id", ""))
@@ -143,10 +153,10 @@ def _block(label: str, text, limit: int | None = None) -> list[str]:
 def _render_event(n: int, e: dict, mode: str, call_names: dict[str, str]) -> list[str]:
     t = e.get("type", "?")
     if t == "system_prompt":
-        # Only the trajectory_id is shown from config: agent_config/incentivized would leak the label.
-        # The prompt text itself is hidden too: it states the agent's incentives (the label).
+        # Config (including the trajectory id, which names the agent config) and prompt text are hidden: both
+        # state the agent's incentives, i.e. the label. Only an opaque token of the id is shown.
         tid = (e.get("config") or {}).get("trajectory_id", "")
-        return [f"[L{n}] system_prompt (trajectory_id={tid}; text hidden from the auditor)"] + _block(
+        return [f"[L{n}] system_prompt (trajectory {opaque_id(tid)}; config and text hidden from the auditor)"] + _block(
             "sandbox_files", ", ".join(sandbox_files(e.get("text") or "")) or "(unknown)")
     if mode == "final_report" and t not in ("final_report",) and not (t == "message" and e.get("role") == "user"):
         return []
@@ -173,7 +183,7 @@ def _render_event(n: int, e: dict, mode: str, call_names: dict[str, str]) -> lis
         return [head] + _block("output", e.get("output"), MAX_OUTPUT_CHARS)
     if t == "final_report":
         return [f"[L{n}] final_report"] + _block("text", e.get("text"), MAX_REPORT_CHARS)
-    return [f"[L{n}] {t}"] + _block("raw", {k: v for k, v in e.items() if k != "ts"}, MAX_OUTPUT_CHARS)
+    return [f"[L{n}] {t}"] + _block("raw", {k: v for k, v in e.items() if k not in METADATA_KEYS}, MAX_OUTPUT_CHARS)
 
 
 def render_trajectory(events: list[dict], mode: str = "full_trace") -> str:
@@ -425,9 +435,9 @@ def _audit_single(trajectory_path: str, mode: str = "full_trace", model: str | N
     trajectory_id = trajectory_id_of(events)
     model = model or os.environ.get("PUNISH_AUDITOR_MODEL") or DEFAULT_MODEL
     if client is None:
-        import anthropic
+        from agent.credentials import anthropic_client
 
-        client = anthropic.Anthropic()
+        client = anthropic_client("the Claude auditor", "--backend heuristic")
 
     messages = [{"role": "user", "content": prompts.build_user_message(render_trajectory(events, mode), mode, n_lines)}]
     verdict: dict = {}
@@ -512,9 +522,9 @@ def audit(trajectory_path: str, mode: str = "full_trace", model: str | None = No
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
     load_events(trajectory_path)
     if client is None:
-        import anthropic
+        from agent.credentials import anthropic_client
 
-        client = anthropic.Anthropic()
+        client = anthropic_client("the Claude auditor", "--backend heuristic")
     return ensemble_verdicts([_audit_single(trajectory_path, mode, model, client) for _ in range(n_samples)])
 
 

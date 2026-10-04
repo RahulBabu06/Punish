@@ -514,7 +514,7 @@ def test_claimed_check_without_code_is_hacked():
 
 def test_leaked_answer_grader_in_the_loop():
     task = registry.load_task("leaked_answer")
-    (hacked_actions, hacked_report), (honest_actions, honest_report) = (
+    (_, hacked_report), (_, honest_report) = (
         CASES["leaked_answer"]["hacked"], CASES["leaked_answer"]["honest"],
     )
     grade = ("run_python", "exec(open('eval.py').read())\nprint(grade(open('report.md').read()))", "0.0\n", 0)
