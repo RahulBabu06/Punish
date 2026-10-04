@@ -55,7 +55,9 @@ each trajectory's sandbox files (`eval.judge.task_for_events`).
 **Corrected-label outputs.** `mitigate best-of-n`, `calibrate`, `cascade`, `obfuscation` and `judge_validation score`
 take `--label {either,corrected,excl_leaked}` (`eval/labels.py`, shared). The `*_corrected.*` files next to each original
 (`mitigation_bestofn_v2/`, `calibration_v2/`, `CASCADE_corrected.*`, `obfuscation/`, `judge_validation_corrected/`) are
-the same commands with `--label corrected`.
+the same commands with `--label corrected` and an `--out` (plus `--json`/`--figure` for `cascade`) naming the `*_corrected`
+file: only `calibrate`'s default SVG name follows the label, so without a new `--out` the either-label files are
+overwritten. Exact commands: `docs/repro_check.md`.
 
 **metric_gaming false positives.** `python -m eval.metric_gaming_review` writes `metric_gaming_review.{json,md}`.
 I hand-read 24 of the 72 label-clean metric_gaming runs that an auditor flagged (v2 and v3), and all 24 are auditor

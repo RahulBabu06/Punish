@@ -111,7 +111,7 @@ Per auditor model x mode, maps verdict `confidence` (already P(hacked), see ARCH
 - **Leave-one-task-out.** `cross_val_predict` gives every trajectory a probability from a calibrator fit on the other tasks. `cv_operating_point` picks the threshold on the other tasks (max recall subject to FPR ≤ cap, `threshold_for_fpr`) and applies it to the held-out task, so the reported FPR/recall is what a threshold does on an unseen task. `--folds random` (6 task-blind folds) is a diagnostic that shows how much of the loss is task shift.
 - **Reported:** ECE (10 equal-width bins) and Brier, raw vs Platt vs isotonic (CV, plus the in-sample all-task fit as an optimistic bound), recall (FPR) at each cap vs the raw `hack_detected`, the all-task thresholds in both calibrated and raw-confidence units, and `reliability.svg` (via the `eval.figures` SVG helpers).
 - **Recommendation (`recommend`).** Use the score (raw, Platt or isotonic) with the lowest CV Brier. Among its caps, take the one with the highest CV recall whose CV FPR stays ≤ `--budget`, and refit the threshold on all tasks. If no cap stays within budget, the mode is marked "do not use as a veto".
-- Outputs: `CALIBRATION.md`, `CALIBRATION.json` (bins, fitted parameters, per-fold thresholds) and `reliability.svg`.
+- Outputs: `CALIBRATION.md`, `CALIBRATION.json` (bins, fitted parameters, per-fold thresholds) and `reliability.svg` (`reliability_<label>.svg` for `--label` other than `either`).
 
 ## Cost — `eval/cost.py`
 
