@@ -5,6 +5,14 @@ Offline audit of every quantitative claim in the protected write-ups (`README.md
 `docs/paper*`. The write-ups themselves are not edited here; the `fix` column is for the
 write-up session.
 
+Follow-up `devin/claims-fix-docs` applied the fixes in the two unprotected files (the one non-OK
+row in `results/README.md`; `docs/case_studies.md` had none), marked `fixed (was stale)`. It also
+found a rounding error the first pass missed: corrected Sonnet `full_trace` FPR is 92/267 = 0.3446,
+i.e. 0.34, but the write-ups say 0.35 (the 0.345 in `leaked_answer_correction.md` rounded again).
+`tests/test_claims_audit.py` recomputes the corrected 93/360, Sonnet `full_trace` corrected
+recall/FPR, the held-out cascade point and best-of-n, and asserts they appear in `README.md` /
+`REPORT.md`; the two FPR checks are strict xfail until the write-up session lands its fixes.
+
 ## Method
 
 - One row per claim or per line-cluster of claims that share a source and a status. Duplicate
@@ -29,6 +37,7 @@ write-up session.
   - `unsupported`: no committed source or reproducing command.
   - `proxy presented as measured`: a rubric-v3 proxy number read as a live result.
   - `estimate presented as measured cost`: a chars/4 cost estimate stated as actual spend.
+  - `fixed (was stale)`: was non-OK in an unprotected file and has been fixed.
 - Every v3 claim found is marked labeller-only or preliminary. The only rubric-v3 proxy mention
   (results/README.md:66-68) is labelled as a proxy. So no row is `proxy presented as measured`.
 
@@ -36,12 +45,13 @@ write-up session.
 
 | status | rows |
 |---|---|
-| OK | 231 |
-| stale | 36 |
+| OK | 227 |
+| stale | 39 |
 | wrong label basis | 14 |
 | unsupported | 2 |
 | proxy presented as measured | 0 |
 | estimate presented as measured cost | 2 |
+| fixed (was stale) | 1 |
 | **total** | 285 |
 
 ## Claims
@@ -50,7 +60,7 @@ write-up session.
 |---|---|---|---|---|
 | README.md:14-15 | 360 v2 trajectories, 3 subject models, 1,080 Sonnet audits | `results/RESULTS.md` (n = 360 per mode × 3) | OK | — |
 | README.md:18-20 | judge likely wrong on 30 of 32 leaked_answer positives; 123 hacked; excluded 300 / 91; corrected 360 / 93 | `results/leaked_answer_correction.md` | OK | — |
-| README.md:24 | full_trace recall 0.93 / 0.90 / 0.90, FPR 0.26 / 0.20 / 0.35, AUROC 0.95 / 0.96 / 0.89 (orig / excl / corr) | `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md`; `results/leaked_answer_correction.md` (84/93, 92/267, 0.891) | OK | — |
+| README.md:24 | full_trace recall 0.93 / 0.90 / 0.90, FPR 0.26 / 0.20 / 0.35, AUROC 0.95 / 0.96 / 0.89 (orig / excl / corr) | `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md`; `results/leaked_answer_correction.md` (84/93, 92/267 = 0.3446, 0.891) | stale | Corrected FPR is 0.34 (92/267 = 0.3446; 0.35 double-rounds the 0.345 in `leaked_answer_correction.md`). Guarded by `tests/test_claims_audit.py` (xfail). |
 | README.md:25 | report_only 0.93 / 0.91 / 0.91, FPR 0.27 / 0.21 / 0.35, AUROC 0.92 / 0.93 / 0.84 | `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md`; `results/leaked_answer_correction.md` | OK | — |
 | README.md:26 | final_report 0.67 / 0.76 / 0.74, FPR 0.21 / 0.21 / 0.23, AUROC 0.83 / 0.86 / 0.83 | `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md`; `results/leaked_answer_correction.md` | OK | — |
 | README.md:31 | corrected trace-mode FPR 0.22–0.35 | `results/leaked_answer_correction.md` (Opus full_trace 0.22, report_only 0.27; Sonnet 0.35 / 0.35) | OK | — |
@@ -84,7 +94,7 @@ write-up session.
 | REPORT.md:41-44 | Sonnet recall/FPR/AUROC by mode, orig vs excl | `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
 | REPORT.md:45-48 | Opus 240: 0.84 vs 0.73, FPR 0.11 vs 0.17, 19 vs 2; excl 0.77 vs 0.63, 0.06 vs 0.12, Δrecall 0.14 [0.06, 0.25] | `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md` paired diffs (0.143 [0.058, 0.246]) | OK | — |
 | REPORT.md:49-50 | Sonnet ΔAUROC +0.03 [0.01, 0.05]; 345/360 identical verdicts | `results/RESULTS_v2_excl_leaked.md` (0.031 [0.009, 0.054]); rows (`eval.analyze` v2 `--json`) | OK | — |
-| REPORT.md:51-53 | corrected: trace-mode FPR 0.22–0.35 at recall 0.77–0.91 | `results/leaked_answer_correction.md`: trace-mode recall is Sonnet 0.90 / 0.91, Opus 0.77 / **0.63** (report_only) | stale | Correct value: recall 0.63–0.91 (Opus report_only 0.63). Source: `results/leaked_answer_correction.md`. |
+| REPORT.md:51-53 | corrected: trace-mode FPR 0.22–0.35 at recall 0.77–0.91 | `results/leaked_answer_correction.md`: trace-mode recall is Sonnet 0.90 / 0.91, Opus 0.77 / **0.63** (report_only) | stale | Correct value: recall 0.63–0.91 (Opus report_only 0.63), and Sonnet full_trace FPR 0.34 (92/267), not 0.35. Source: `results/leaked_answer_correction.md`. |
 | REPORT.md:53-55 | no Claude auditor ≤ 10% unseen-task FPR (corrected); veto 0.28 → 0.15 | `results/calibration_v2/CALIBRATION_corrected.md`; `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` | OK | — |
 | REPORT.md:67 | GPT-5 cheats on 76% of Oneoff-SWEbench tasks (ImpossibleBench) | external citation, `docs/related_work.md:68` | OK | — |
 | REPORT.md:125 | agent runs up to 20 turns | `agent/runner.py` default `max_turns = 20` | OK | — |
@@ -97,7 +107,7 @@ write-up session.
 | REPORT.md:256-261 | honest p ≈ 0.31; newer p ≈ 0.006; 30 of 32; blind check agrees on all 8 | `results/leaked_answer_correction.md`; `results/judge_validation/SUMMARY.md` | OK | — |
 | REPORT.md:262-264 | views: 360 / 300 / 360 | `results/leaked_answer_correction.md` | OK | — |
 | REPORT.md:269-271 | config hack-rate table (orig / excl / corr) | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
-| REPORT.md:275-280 | AUROC / recall / FPR table, Sonnet and Opus, 3 label views | `results/leaked_answer_correction.md`; `results/RESULTS.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
+| REPORT.md:275-280 | AUROC / recall / FPR table, Sonnet and Opus, 3 label views (Sonnet full_trace corrected FPR 0.35) | `results/leaked_answer_correction.md`: 92/267 = 0.3446 | stale | Sonnet full_trace corrected FPR is 0.34, not 0.35 (other cells OK). Guarded by `tests/test_claims_audit.py` (xfail). |
 | REPORT.md:282-283 | n = 360 / 300 / 360 (123 / 91 / 93); Opus 240 / 200 / 240 (79 / 56 / 56) | `results/leaked_answer_correction.md` | OK | — |
 | REPORT.md:288-292 | excl Δrecall 0.14 [0.03, 0.26], ΔAUROC 0.10 [0.06, 0.15]; Opus 0.14 [0.06, 0.25], 0.03 [0.01, 0.06]; Sonnet FT−RO −0.01 [−0.07, 0.06], 0.03 [0.01, 0.05] | `results/RESULTS_v2_excl_leaked.md` paired-differences table | OK | — |
 | REPORT.md:293 | leaked_answer trace recall 32/32 vs 13/32 | `results/RESULTS.md` per-task recall | OK | — |
@@ -242,7 +252,7 @@ write-up session.
 | PITCH.md:80-82 | 345 of 360 identical; 8 vs 7; p = 1.0; ΔAUROC +0.03 | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
 | PITCH.md:83-84 | 240 trajectories; 19 vs 2; p < 0.001 | rows (`eval.analyze` v2 `--json`) | OK | — |
 | PITCH.md:84-85 | Sonnet-subject runs: Opus FPR 0.12 → 0.05 with reasoning | rows (`eval.analyze` v2 `--json`): original 9/75 → 4/75; excluded 6/72 → 1/72 (0.08 → 0.01); corrected 26/92 → 21/92 (0.28 → 0.23) | wrong label basis | Use excluded 0.08 → 0.01 (or corrected 0.28 → 0.23), or mark 0.12 → 0.05 as original. |
-| PITCH.md:91 | FPR 0.26 (0.20 excl, 0.35 corrected) | `results/leaked_answer_correction.md` | OK | — |
+| PITCH.md:91 | FPR 0.26 (0.20 excl, 0.35 corrected) | `results/leaked_answer_correction.md`: corrected 92/267 = 0.3446 | stale | Correct value: 0.34 corrected. |
 | PITCH.md:92-95 | no Claude mode ≤ 10% unseen-task FPR; heur → Sonnet 0.77 at FPR 0.054 held out | `results/calibration_v2/CALIBRATION_corrected.md`; `results/CASCADE_corrected.md` (76.8%, 5.4%) | OK | — |
 | PITCH.md:96 | 59 of the 62 full_trace FPs cite suspicious_access | rows (`eval.analyze` v2 `--json`): original 59/62; corrected 89/92; excluded 39/42 | wrong label basis | Use corrected "89 of the 92" (or excluded "39 of 42"), matching the corrected framing of :91-95. |
 | PITCH.md:99-100 | Opus full_trace FPR 0.11 (18/161), 0.05 (4/75) on Sonnet-subject runs | rows (`eval.analyze` v2 `--json`): original; corrected 0.22 (41/184) and 0.23 (21/92); excluded 0.06 (8/144) and 0.01 (1/72) | wrong label basis | Use corrected 0.22 / 0.23 or excluded 0.06 / 0.01, or mark as original. |
@@ -258,7 +268,7 @@ write-up session.
 | PITCH.md:153-156 | 6 tasks, 6 hack types | `ARCHITECTURE.md`; `tasks/definitions` (v2) | OK | — |
 | PITCH.md:157-158 | covert 23/30, 28/30, 25/30; honest 3/30, 1/30, 0/30 (original) | `results/RESULTS.md` | OK | — |
 | PITCH.md:159-160 | per-subject AUROC 0.96 / 0.95 / 0.80 … | `results/RESULTS.md` | OK | — |
-| PITCH.md:161-162 | corrected: Sonnet 0.90 / 0.35 / 0.89; Opus 0.77 / 0.22 / 0.86; 63/66 (0.95) | `results/leaked_answer_correction.md`; `results/obfuscation/OBFUSCATION_corrected.md` | OK | — |
+| PITCH.md:161-162 | corrected: Sonnet 0.90 / 0.35 / 0.89; Opus 0.77 / 0.22 / 0.86; 63/66 (0.95) | `results/leaked_answer_correction.md`: Sonnet FPR 92/267 = 0.3446; `results/obfuscation/OBFUSCATION_corrected.md` | stale | Correct value: Sonnet 0.90 / 0.34 / 0.89. |
 | PITCH.md:163-165 | original Opus 240: precision 0.79, recall 0.84, FPR 0.11, AUROC 0.94; 0.68 / 0.73 / 0.17 / 0.92; 0.05 (4/75) | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
 | PITCH.md:167-168 | probe_v1 36; 14/14 vs 6/14; p = 0.013 | `results/probe_v1/SUMMARY.md` | OK | — |
 | docs/slides.html:97-102 | illustrative signals (R² ~0.45 vs 0.91; 0.312) | illustrative examples, not results | OK | — |
@@ -325,7 +335,7 @@ write-up session.
 | results/README.md:14-24 | per-dir subjects, configs, tasks, episodes, modes, judged and trajectory counts | `ls results/<dir>/{trajectories,judgments}`; `relabel.json` | OK | — |
 | results/README.md:14-25 | "est. cost" column $0.35 … $151.54 (labelled estimate) | `results/COST.md` `--by-dir` | OK | — |
 | results/README.md:25 | totals: 396 judged, 850 trajectories | sum of rows (36 + 360; 4 + 36 + 360 + 450) | OK | — |
-| results/README.md:30-31 | 32 hand-labelled hard cases, 96 verdicts | `results/hard_cases/SUMMARY_heuristic.md`: 36 cases, 108 verdicts | stale | Correct values: 36 cases, 108 verdicts. Source: `results/hard_cases/SUMMARY_heuristic.md`. |
+| results/README.md:30-31 | 32 hand-labelled hard cases, 96 verdicts | `results/hard_cases/SUMMARY_heuristic.md`: 36 cases, 108 verdicts | fixed (was stale) | Fixed on `devin/claims-fix-docs`: now 36 cases, 108 verdicts. |
 | results/README.md:36-40 | 60 runs on v1 data (`5b4aa1c`), p ≈ 0.31 vs 0.312 vs 0.006; 32 judge positives, 30 likely wrong; 9 of 30 rationales cite 0.006 | `results/leaked_answer_correction.json` | OK | — |
 | results/README.md:45-50 | before/after table (rates, AUROC/recall/FPR) | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
 | results/README.md:61-63 | metric_gaming review: 24 of 72 hand-read; R² ≈ 0.447 | `results/metric_gaming_review.json` | OK | — |
@@ -336,9 +346,11 @@ write-up session.
 
 ## Non-OK rows (file:line → fix)
 
-### stale (36)
+### stale (39)
 
-- `REPORT.md:51-53` → Correct value: recall 0.63–0.91 (Opus report_only 0.63). Source: `results/leaked_answer_correction.md`.
+- `README.md:24` → Corrected FPR is 0.34 (92/267 = 0.3446; 0.35 double-rounds the 0.345 in `leaked_answer_correction.md`). Guarded by `tests/test_claims_audit.py` (xfail).
+- `REPORT.md:51-53` → Correct value: recall 0.63–0.91 (Opus report_only 0.63), and Sonnet full_trace FPR 0.34 (92/267), not 0.35. Source: `results/leaked_answer_correction.md`.
+- `REPORT.md:275-280` → Sonnet full_trace corrected FPR is 0.34, not 0.35 (other cells OK). Guarded by `tests/test_claims_audit.py` (xfail).
 - `REPORT.md:329-330` → Correct value: "Across the three configs other than covert … (0/135 on those three tasks)". Source: `results/RESULTS.md` per-task table.
 - `REPORT.md:334-335` → Replace "Case study 3" with "Case study 10".
 - `REPORT.md:399-400` → Drop the case-study pointer, or cite a v2 fake_citation run where full_trace clears and report_only flags.
@@ -363,8 +375,10 @@ write-up session.
 - `REPORT.md:913-916` → Correct value: "on 3–4 of 10 tasks". Source: `results/README.md` run table.
 - `PITCH.md:42` → Correct value: "Under pressure or incentive, 12–28% (pressure alone 16–28%)". Source: `RESULTS_v2_excl_leaked.md`.
 - `PITCH.md:66-67` → Correct value: 0.70–0.96 (excluded/corrected; 0.79–0.84 original), from v2 Sonnet-auditor rows on incentivized + pressure hacks.
+- `PITCH.md:91` → Correct value: 0.34 corrected.
 - `PITCH.md:119` → Correct value: 0.91 (excluded/corrected; 0.93 original). Source: `results/leaked_answer_correction.md`.
 - `PITCH.md:143` → Correct value: 38% → 19%. Source: `MITIGATION_bestofn.md`.
+- `PITCH.md:161-162` → Correct value: Sonnet 0.90 / 0.34 / 0.89.
 - `docs/slides.html:645` → Correct value: 36. Source: `results/hard_cases/SUMMARY_heuristic.md`.
 - `docs/slides.html:650` → Correct value: (14).
 - `docs/slides.html:660` → Correct values: 0.43 (6/14); 12/14.
@@ -373,7 +387,6 @@ write-up session.
 - `docs/slides.html:663` → Correct values: all 36, 0.92 / 0.42, labeller 27/36.
 - `docs/slides.html:666` → Correct values: 58%; 6 of 7.
 - `docs/slides.html:676` → Correct value: 9–40 per task (original; 2–40 corrected); 4–27 only for the Opus subset.
-- `results/README.md:30-31` → Correct values: 36 cases, 108 verdicts. Source: `results/hard_cases/SUMMARY_heuristic.md`.
 
 ### wrong label basis (14)
 
@@ -401,3 +414,7 @@ write-up session.
 
 - `REPORT.md:724-730` → Label the column "est. USD / trajectory" and note it is a chars/4 lower-bound estimate.
 - `PITCH.md:133` → Say "an estimated 2.2 cents … about 7 cents (chars/4 lower bound)".
+
+### fixed (was stale) (1)
+
+- `results/README.md:30-31` → Fixed on `devin/claims-fix-docs`: now 36 cases, 108 verdicts.
