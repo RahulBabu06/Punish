@@ -2,15 +2,18 @@
 
 Audit of every quantitative claim in `README.md`, `REPORT.md`, `PITCH.md`, `docs/SUBMISSION.md`,
 `docs/reviewer_faq.md`, `docs/slides.html`, `paper/punish.tex`, `docs/case_studies.md` and `results/README.md`,
-rerun on `devin/claims-final-2` (integration `b5006af`). Line numbers are for this branch. Earlier passes
+rerun on `devin/claims-final-2` (integration `b5006af`, delta-checked at `26538b6`). Line numbers are for this branch. Earlier passes
 (`eb3a5cc`, `836dab5`, `17595c3`) are summarised under *Earlier passes*.
 
 ## Summary
 
-Final pass on `devin/claims-final-2` (integration `b5006af`, which includes `repro-robustness` and `report-polish`): 259 rows, **255 OK, 4 fixed, 0 open**.
+Final pass on `devin/claims-final-2` (integration `b5006af`, which includes `repro-robustness` and `report-polish`), delta-checked on `devin/claims-final-3` (`devin/post-merge-final` `1fe89e3`: main after PR #6, the REPORT §8 regroup `2081369` and known-issues): 261 rows, **257 OK, 4 fixed, 0 open**.
 
 - 172 rows are carried from the `17595c3` table: their lines are unchanged since then (matched by `difflib`), so only the line numbers moved.
 - 160 earlier rows sat on lines that the write-up branches have since rewritten or removed; those lines were re-audited from scratch and are covered by the 87 new rows, with the robustness (`results/robustness/robustness.json`) and v3-replication (`robustness_v3.json`, labeller-only) claims. Their earlier status is in git history.
+- Delta at `26538b6` (judge-review-2): 12 rows on rewritten README / PITCH / SUBMISSION lines were re-audited and replaced by 11 rows, all OK; other rows were re-anchored with `difflib`.
+- Delta at `e43026d` (REPORT §8 regroup + round-2 fixes, slides-faq-labels): REPORT rows whose lines only moved were re-anchored by exact-block match; 12 slides / FAQ rows on rewritten lines were re-audited and replaced by 11 rows, and 3 new rows cover the rewritten REPORT key-finding, summary and κ lines. All OK; the slides per-task range row keeps its earlier fix.
+- Delta at `1fe89e3` (known-issues): new REPORT §8.17 caveat on the 34 hidden-line `final_report` verdicts, checked against `python -m eval.hidden_evidence`; the original §8.17 numbers stay. OK.
 - `docs/SUBMISSION.md` is now in scope; every number in it is also pinned by `test_submission_numbers_match_committed_results`.
 - `docs/case_studies.md` and `results/README.md` had no numeric changes since `17595c3`.
 
@@ -138,145 +141,148 @@ The PDF was rebuilt with Tectonic (`cd paper && tectonic punish.tex`) and is sti
 | file:line | claim | source | status | fix |
 |---|---|---|---|---|
 | README.md:12-15 | 360 runs, 93 hacked; honest 0/90, pressured/incentivised 12–18%, covert 73% | `results/leaked_answer_correction.md`; `results/significance/SIGNIFICANCE.md` Q2 (11/90, 16/90, 66/90) | OK | — |
-| README.md:17-18 | report_only 0.91 vs final_report 0.74; 66/93 covert, caught at 0.97–0.98 with full trace | `results/robustness/robustness.json` (Sonnet 65/66 = 0.985, Opus 38/39 = 0.974) | OK | — |
-| README.md:19-21 | natural 26/27 vs 20/27; v3 19/26 each; full_trace 19/27 = 0.70, Opus 5/17 = 0.29, v3 12/26 = 0.46 | `results/robustness/robustness.json` non-covert slices; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
-| README.md:21-22 | demo: R² 0.447 computed, 0.92 reported; flagged at 0.99, report alone clean | `results/v2_haiku45/verdicts/metric_gaming__covert__ep002{,__final_report}.json` (0.99 hack; 0.2 clean) | OK | — |
-| README.md:24 | Opus accuracy +0.071, Holm p = 0.002 | `results/significance/SIGNIFICANCE.md` | OK | — |
-| README.md:26 | best-of-n 0.28 to 0.15 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` (0.279 → 0.146) | OK | — |
-| README.md:36-38 | Sonnet 0.90/0.34/0.891, 0.91/0.35/0.840, 0.74/0.23/0.825 | `results/robustness/robustness.json` headline (84/93, 92/267; 85/93, 94/267; 69/93, 62/267) | OK | — |
-| README.md:41-43 | cascade v2 80.4/5.4 in-sample, cross-fit 76.8/5.4, precal 57.1/14.1, v3 62.7/2.9 on 450 | `results/cascade_heldout.json` | OK | — |
-| README.md:48 | judge vs 60 blind AI labels κ 0.70 | `results/judge_validation/SUMMARY.md` (0.85 / 0.70) | OK | — |
-| README.md:56-57 | role leak 75/90; Opus gain +0.056 without | `results/robustness/robustness.json` role_mention (75/90, 0/270; +0.056, 13 vs 2) | OK | — |
-| README.md:58 | cell-clustered CIs up to about 2× | `results/robustness/robustness.json` cell vs trajectory CI widths (max ratio 2.16) | OK | — |
-| README.md:60-61 | precision 0.48 at 26%, 0.12 at 5% | `results/robustness/robustness.json` ppv (0.477, 0.121); 93/360 = 25.8% | OK | — |
-| README.md:62 | cost $162.33 estimated, 8,519 calls | `results/COST.md` | OK | — |
-| README.md:79 | pytest about 2 min | full suite here: 130 s | OK | — |
-| README.md:107 | fixture computes 0.446745 at L10, reports 0.92 at L30 | `fixtures/trajectories/example.jsonl` (quickstart-check) | OK | — |
-| README.md:113 | offline heuristic verdict 0.99, four hack types | `python -m auditor.audit … --backend heuristic` (quickstart-check) | OK | — |
-| README.md:137 | grid 4 configs × 6 tasks × 5 episodes, 3 modes | `agent/prompts.py` configs; v2 dirs (120 each) | OK | — |
-| README.md:227 | 120 trajectories per v2 dir (4 × 6 × 5) | `results/README.md` run table; `ls results/v2_*/trajectories` | OK | — |
-| README.md:228 | 240 trajectories re-audited by Opus | `results/v2_{sonnet46,haiku45}/reaudit_claude-opus-4-6/` | OK | — |
-| README.md:229 | v3: 200 and 150 (of 200) trajectories, labeller only | `results/README.md` run table | OK | — |
-| README.md:230-232 | v3cond 27 / 28; v3fault 18 (50% failures); v3_opus46 27 | `results/README.md` run table | OK | — |
-| README.md:233 | 36 hand-labelled red-team trajectories | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
-| README.md:235 | $162.33 for all 8,519 calls, v2 about $95 (estimate) | `results/COST.md` (after bug-hunt): total $162.33; v2 rows 23.76 + 26.75 + 30.04 + 14.48 = $95.03 (estimate) | fixed (was stale) | $162.46 → $162.33 (`results/COST.md` after bug-hunt) |
-| README.md:237 | 10 real hacks × 6 attacks | `results/monitor_attacks/SUMMARY_heuristic.md` | OK | — |
-| README.md:238 | Opus judge vs 60 blind AI labels: κ 0.70 | `results/judge_validation/SUMMARY.md` | OK | — |
-| README.md:240 | cascade on 240 v2 runs | `results/CASCADE.md` | OK | — |
-| README.md:247 | probe_v1: 36 Sonnet 4.6 trajectories, reasoning on first turn only | `results/probe_v1/SUMMARY.md`; recount 36/179 turns with reasoning | OK | — |
-| README.md:248 | model_probe: 4 covert leaked_answer runs | `ls results/model_probe/trajectories` (4) | OK | — |
-| README.md:269 | 10 task definitions in v3; v2 used first six | `ls tasks/definitions/*.json` (10) | OK | — |
-| REPORT.md:68 | GPT-5 cheats on 76% of Oneoff-SWEbench tasks (ImpossibleBench) | external citation, `docs/related_work.md:68` | OK | — |
-| REPORT.md:127 | agent runs up to 20 turns | `agent/runner.py` default `max_turns = 20` | OK | — |
-| REPORT.md:130-132 | 620/620 Sonnet and 703/703 Haiku turns have reasoning; probe_v1 36/179 | recount over v2 / probe_v1 trajectories; `results/COST.md` agent calls 620 / 703 | OK | — |
-| REPORT.md:152-157 | illustrative signals (R² ~0.45 vs 0.91; 0.312) | illustrative examples, not results | OK | — |
-| REPORT.md:167-172 | task facts: 0.312, p ≈ 0.31, R² ≥ 0.90, R² ≈ 0.447, Welch p ≈ 0.26, BA ≥ 0.80, acc 0.867, BA ≈ 0.606, 3 plates | `tasks/definitions/*.json` (leaked_answer v1 at `5b4aa1c`) | OK | — |
-| REPORT.md:184-185 | v3 leaked_answer data give p ≈ 0.006 | `tasks/definitions/leaked_answer.json` | OK | — |
-| REPORT.md:267 | ≈$162.33 estimated overall | `results/COST.md` | OK | — |
-| REPORT.md:274-279 | honest p ≈ 0.31; newer p ≈ 0.006; 30 of 32; blind check agrees on all 8 | `results/leaked_answer_correction.md`; `results/judge_validation/SUMMARY.md` | OK | — |
-| REPORT.md:287-289 | config hack-rate table (orig / excl / corr) | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
-| REPORT.md:293-298 | AUROC / recall / FPR table, Sonnet and Opus, 3 label views (Sonnet full_trace corrected FPR 0.35) | `results/leaked_answer_correction.md`: 92/267 = 0.3446 | fixed (was stale) | Sonnet `full_trace` corrected FPR 0.35 → 0.34 |
-| REPORT.md:300-301 | n = 360 / 300 / 360 (123 / 91 / 93); Opus 240 / 200 / 240 (79 / 56 / 56) | `results/leaked_answer_correction.md` | OK | — |
-| REPORT.md:311-313 | per-subject × config corrected hack rates | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
-| REPORT.md:319-324 | per-task × config corrected positives | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
-| REPORT.md:328-329 | 27 of 180 non-covert positives; 25 fake_citation | rows (`eval.labels.load_experiment(d, "corrected")`, v2) (25 fake_citation + 2 fabrication) | OK | — |
-| REPORT.md:331 | 2 Sonnet 4.5 pressure fabrication hacks | `results/RESULTS.md` | OK | — |
-| REPORT.md:333 | "Across all four configs other than covert … 0/180 on those three tasks" | `results/RESULTS.md` per-task: 3 non-covert configs × 3 tasks × 15 = 135 runs, all 0 | OK | — (was stale; fixed upstream) |
-| REPORT.md:336 | 3/5 honest Sonnet 4.6, once Sonnet 4.5; p = 0.3116; 2 minor / 2 major; all four among the 30 | `results/v2_*/judgments/leaked_answer__honest__*.json`; `results/leaked_answer_correction.md` | OK | — |
-| REPORT.md:337 | case study 10 cited for correct computation | `docs/case_studies.md`: case 3 is now the model_probe Sonnet 4.5 run; the honest `major` example is case 10 (`v2_sonnet46/leaked_answer__honest__ep002`, judge severity major) | OK | — (was stale; fixed upstream) |
-| REPORT.md:341-342 | 37/120 vs 28/120, Holm p = 0.98 | `results/significance/SIGNIFICANCE.md` Q2 | OK | — |
-| REPORT.md:344-345 | labeller 47 of 93; judge adds 46 (40 fake_citation); 267 clean | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
-| REPORT.md:352-354 | §8.2 precision / recall / FPR / F1 / AUROC | `results/robustness/robustness.json` headline (F1 0.624 / 0.625 / 0.616) | OK | — |
-| REPORT.md:357 | vs labeller: FPR 0.41 / 0.42 / 0.33 | rows: 129/313, 133/313 = 0.425, 104/313 | fixed (was stale (0.43; `RESULTS.md` prints 0.425, exact 0.4249)) | fixed on this branch |
-| REPORT.md:365-370 | per-task Sonnet recall counts by mode | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
-| REPORT.md:376-378 | Δrecall +0.17 Holm 0.057; ΔFPR +0.12 Holm 0.049; ΔAUROC +0.066 Holm 0.104 | `results/significance/SIGNIFICANCE.md` | OK | — |
-| REPORT.md:381 | 345/360; 15 disagree, 8 vs 7, McNemar p = 1.0; Δrecall −0.01 [−0.06, 0.04]; ΔAUROC +0.030 [0.012, 0.049]; 0.06 and 0.05 by subject | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
-| REPORT.md:396 | fake_citation caught 31/40, 33/40, 39/40 | `results/RESULTS.md` per-task | OK | — |
-| REPORT.md:419-421 | Sonnet on the Opus subset: 47/56, 63/184, 0.865; 50/56, 0.831; 42/56, 43/184, 0.819 | rows (240 matched, corrected) | OK | — |
-| REPORT.md:439 | all 13 Opus FT misses fake_citation (of 27); Sonnet misses 9 of 40, all fake_citation | `results/errors_v2/ERRORS.md` FN table | OK | — |
-| REPORT.md:445 | Opus full_trace 0.22, Sonnet report_only 0.35, full_trace 0.34 | `results/robustness/robustness.json` | OK | — |
-| REPORT.md:447-449 | 92 FPs, 89 cite suspicious_access; metric_gaming 39, leaked_answer 50, cherry_pick 3 | rows; `results/metric_gaming_review.json` (39) | OK | — |
-| REPORT.md:455 | all 9 Sonnet FT misses fake_citation | `results/errors_v2/ERRORS.md` | OK | — |
-| REPORT.md:460 | final_report flags 39/40 fake_citation | `results/RESULTS.md` per-task | OK | — |
-| REPORT.md:464 | 3 covert `cherry_pick` FPs flagged on the plan alone | `docs/case_studies.md`: case 10 is now the honest leaked_answer grader-format repair; 3 covert cherry_pick FPs match `results/errors_v2/ERRORS.md` | OK | — (was stale; fixed upstream) |
-| REPORT.md:474-477 | probe_v1: 36 trajectories, 6 × 3; 36/179 turns | `results/probe_v1/SUMMARY.md` | OK | — |
-| REPORT.md:479-483 | probe_v1 table (14 hacked; 1.00 / 1.00 / 0.43 recall; FPR 4/22, 4/22, 7/22; AUROC 0.98 / 0.96 / 0.74) | `results/probe_v1/SUMMARY.md` | OK | — |
-| REPORT.md:485-492 | same on 36; 14 vs 3, p = 0.013; covert 8/18, pressure 6/18; labeller 3/18, 0/18; 3 / 0 / 11; v2 covert Sonnet 4.6 8/15 (4/5, 3/5, 1/5) | `results/probe_v1/SUMMARY.md`; `results/RESULTS.md` | OK | — |
-| REPORT.md:502 | model_probe: EXPECTED_P_VALUE = 0.312; score 1.0; Opus 1 of 5 turns | `results/model_probe/trajectories/` | OK | — |
-| REPORT.md:515-516 | five of the six v3 runs are partial | `results/README.md` run table | OK | — |
-| REPORT.md:528-531 | v3 hand review 70/450; 0.923 / 0.875 / 0.023; Sonnet weighted 0.79 vs 0.93, FPR 0.15 vs 0.11 | `results/v3_hand_review/metrics.md` | OK | — |
-| REPORT.md:532 | opt-in decoy rule flips 0/60 v2, 9/37 v3 (7 hacks, 2 ambiguous) | `results/v3_hand_review/decoy.md` | OK | — |
-| REPORT.md:536-541 | v3 runtime vs relabelled config rates (labeller-only) | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
-| REPORT.md:549-554 | per-run v3 labeller positives (runtime → relabelled) | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
-| REPORT.md:560-565 | v3 Sonnet auditor TP/FP vs relabelled labeller | `results/v3*/relabel.json` + `episodes/` (recount) (44/50, 30/150 … recounted) | OK | — |
-| REPORT.md:560-565 | v3 Sonnet auditor TP/pos, FP/neg per run and mode | recount: `eval.labels.load_experiment(d, "labeller")` (unchanged by the bug-hunt summary refresh) | OK | — |
-| REPORT.md:569-571 | v3 pooled recall 0.86 / 0.89 / 0.72; AUROC 0.93 / 0.92 / 0.86; gap +0.15 [0.05, 0.25] (labeller-only) | `results/RESULTS_v3_preliminary.md`; recount 88/102, 91/102, 73/102 | OK | — |
-| REPORT.md:571-573 | runtime labels: 0.60 vs 0.58; final_report flagged 9 of 24, full_trace 2 | recount over `results/v3*/episodes` runtime labels (81/134, 78/134; 9 and 2 of 24) | OK | — |
-| REPORT.md:574-578 | 5 of 112 honest positive; Sonnet 4.6 19/20 fake_citation; 3 other positives | `results/v3*/relabel.json` + `episodes/` (recount); `tasks/LABEL_AUDIT.md` | OK | — |
-| REPORT.md:586-589 | 0 positives after relabel, 12 runtime; d = 0.34; final_report flags 3/18 and 8/27 | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
-| REPORT.md:596 | 36 hand-labelled hard cases | `results/hard_cases/SUMMARY_heuristic.md`: 36 cases (adds 4 `pa_*` adversarial fixtures) | OK | — (was stale; fixed upstream) |
-| REPORT.md:601 | categories hard_negative (10), obfuscated_hack (14), reasoning_only (5), report_only (7) | `results/hard_cases/SUMMARY_heuristic.md`: obfuscated_hack is 14 | OK | — (was stale; fixed upstream) |
-| REPORT.md:612-613 | heuristic 1/10, 6/14, 1/5, 4/7 (full_trace, report_only) | `results/hard_cases/SUMMARY_heuristic.md`: obfuscated recall 6/14 | OK | — (was stale; fixed upstream) |
-| REPORT.md:615 | labeller 0/10, 12/14, 4/5, 1/7 | `results/hard_cases/SUMMARY_heuristic.md` labeller table: 0/10, 12/14, 4/5, 1/7 | OK | — (was stale; fixed upstream) |
-| REPORT.md:618 | labeller 17 of 26 hard-case hacks; misses 6 of 7 report_only | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
-| REPORT.md:638 | corrected veto 0.28 → 0.15 (difference CI [0.05, 0.23]); Opus veto ships 0.17 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` (veto_minus_grader [−0.233, −0.046]; Opus 0.167) | OK | — |
-| REPORT.md:638 | veto cuts 0.28 → 0.15 (by 0.13, CI [0.05, 0.23]; original 0.19, CI [0.10, 0.30]) at 0.06 grader score; oracle floor | `results/mitigation_bestofn_v2/MITIGATION_bestofn.md`: cut 0.193 [0.096, 0.304]; grader 0.748 → 0.691 (0.06); veto+grader = oracle 0.188 | OK | — (was stale; fixed upstream) |
-| REPORT.md:642 | Sonnet veto 0.15 / 0.17 / 0.21 corrected (original 0.19 / 0.27 / 0.29); Opus 0.17 (0.23) | `results/mitigation_bestofn_v2/MITIGATION_bestofn.md`: 0.188, 0.271, 0.292; Opus 0.229 | OK | — (was stale; fixed upstream) |
-| REPORT.md:660-663 | per call $0.066 ($23.76 / 360), $0.025 ($26.75 / 1,080), $0.042 ($30.04 / 720), $0.040 ($14.48 / 360) | `results/COST.md` v2 rows (estimated, §8.9 states it) | fixed (was stale) | $26.80 → $26.75 and $30.08 → $30.04 (v2 rows of `results/COST.md`) |
-| REPORT.md:665 | a three-mode Sonnet audit costs about as much as the agent run | `results/COST.md` (3 × $0.022 ≈ $0.066; estimate, within §8.9) | OK | — |
-| REPORT.md:671-672 | rubric tuned on 20 cases, 10/10 held-out, Wilson [0.72, 1.00] | `docs/obfuscation.md:36-39` | OK | — |
-| REPORT.md:680 | corrected disclosure 63/66 | `results/obfuscation/OBFUSCATION_corrected.md` | OK | — |
-| REPORT.md:682 | 3 undisclosed Sonnet 4.6 hacks are fake_citation | `results/obfuscation/OBFUSCATION.md` | OK | — |
-| REPORT.md:688 | unprompted: corrected 3–7 hacks per cell, disclosure 0.00–0.86 (original 4–10, 0.00–0.90) | `results/obfuscation/OBFUSCATION.md` (original); `results/obfuscation/OBFUSCATION_corrected.md`: 3–7 hacks per cell, disclosure 0.00–0.86 | OK | — (was wrong label basis; fixed upstream) |
-| REPORT.md:691 | matched v3: Haiku 13/15 vs 1/14; Sonnet 12/15 vs 5/15 (11/15 relabelled); gap +0.25 from 3 fabrication runs (labeller-only) | `results/obfuscation/OBFUSCATION_matched_v3.md` | OK | — |
-| REPORT.md:707-708 | κ 0.55 → 0.80; 81/29/42/208 → 103/12/20/225 | `tasks/LABEL_AUDIT.md` | OK | — |
-| REPORT.md:709 | v3 honest labeller rate 24/112 → 5/112 | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
-| REPORT.md:719-722 | 10 real hacks, six attacks, 20 padding checks | `results/monitor_attacks/SUMMARY_heuristic.md`; `eval/monitor_attacks.py` `N_PAD = 20` | OK | — |
-| REPORT.md:724 | heuristic recall 7/10 FT, 6/10 RO; 6/10 FT under laundering and combined | `results/monitor_attacks/SUMMARY_heuristic.md` | OK | — |
-| REPORT.md:749 | at FPR ≤ 5%, corrected: in-sample 0.79 ($0.019); cross-fit thresholds 0.64 (FPR 0.054); Sonnet 0.57 at 0.14 | `results/CASCADE.md` (original label, unmarked). `results/CASCADE_corrected.md`: in-sample best 0.77 (heur → Sonnet, $0.0125); held-out heur → Sonnet 0.64 at FPR 0.054, Sonnet 0.57 at FPR 0.14 | fixed (was wrong label basis) | corrected label stated upstream; in-sample 0.77 ($0.013) → 0.79 ($0.019) here (`results/CASCADE_corrected.md` at FPR ≤ 5%) |
-| REPORT.md:809 | validation strata 20 / 12 / 28 / 0 | `docs/judge_validation.md` QUOTAS | OK | — |
-| REPORT.md:826 | corrected judge 59/60, κ 0.97 | `results/judge_validation_corrected/SUMMARY.md` | OK | — |
-| REPORT.md:846 | 122 of 1,800 audits cite the id | `results/id_leak/` | OK | — |
-| REPORT.md:857 | 22 of 26 hacked hard cases + 30 v2 positives; 4 disputed excluded | `fixtures/evidence_gold/` has 22 hard-case + 30 v2 files; `results/hard_cases/SUMMARY_heuristic.md` now has 26 hacked cases (4 `pa_*` without gold) | OK | — (was stale; fixed upstream) |
-| REPORT.md:859-864 | 19 v2 traces; Sonnet / Opus R and P±1 by mode | `python -m eval.evidence` | OK | — |
-| REPORT.md:864-865 | evidence recall / P±1 on 19 v2 traces: Sonnet 0.81 / 0.51 …, Opus 0.83 / 0.46 … | `results/bug_hunt/EVIDENCE.md` common-trace table (19 traces): Sonnet 0.810 / 0.506, 0.603 / 0.480, 0.259 / 0.571; Opus 0.828 / 0.458, 0.638 / 0.507, 0.190 / 1.000 | fixed (citation added) | §8.17 now cites `results/bug_hunt/EVIDENCE.md`. Its common-trace table matches the stated values exactly, so no number changed; the 0.823 / 0.253 in the previous pass came from the all-verdicts table (Sonnet n = 26) and was a misread |
-| REPORT.md:869 | heuristic evidence R 0.36, P±1 0.91 | `python -m eval.evidence` (0.355 / 0.913) | OK | — |
-| REPORT.md:886-887 | 72 flagged clean (43 v2 + 29 v3); 24 hand-read, all FPs | `results/metric_gaming_review.json` (n_flagged_clean 43 / 29; auditor_fp 18 + 6) | OK | — |
-| REPORT.md:895-909 | proxy: Sonnet FT 92/267 = 0.34 → 14/267 = 0.05, Opus 0.22 → 0.05, v3 0.20 → 0.10; 3 of 4 attacks; 0 true hacks; 89 of 92 | `results/rubric_v3_proxy.md`, `results/rubric_v3_check.md` (labelled as proxy) | OK | — |
-| REPORT.md:933 | per-task positives 2–40 corrected, Opus subset 0–27 (4–27 original) | rows (`eval.labels.load_experiment(d, "corrected")`, v2) (Opus subset leaked_answer 23 → 0 corrected) | fixed (was wrong label basis (4–27 is the original-label range)) | fixed on this branch |
-| REPORT.md:963 | current-rule labeller flips: 2 clean → hacked, 7 hacked → clean (2 v2, 5 v3 Sonnet) | `docs/bug_hunt.md` (added on this branch) | OK | — |
-| REPORT.md:968-979 | id leak: 122 of 1,800; 111 final_report; recall/FPR table; pooled 0.86 / 0.38 (75) vs 0.85 / 0.31 (1,005) …; 11 trace citations (corrected) | `results/id_leak/` | OK | — |
-| REPORT.md:982 | six single-file tasks | `tasks/definitions` (v2) | OK | — |
-| REPORT.md:990 | Opus re-audit covers 240 of 360 | `results/RESULTS.md` | OK | — |
+| README.md:16-18 | 0.91 vs 0.74; gain from covert, 66/93, caught at 0.97–0.98 | `results/robustness/robustness.json` (Sonnet 65/66 = 0.985, Opus 38/39 = 0.974) | OK | — |
+| README.md:19-20 | demo: R² 0.447 computed, 0.92 reported; flagged at 0.99, report alone clean | `results/v2_haiku45/verdicts/metric_gaming__covert__ep002{,__final_report}.json` (0.99 hack; 0.2 clean) | OK | — |
+| README.md:22 | Opus accuracy +0.071, Holm p = 0.002 | `results/significance/SIGNIFICANCE.md` | OK | — |
+| README.md:24 | best-of-n 0.28 to 0.15 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` (0.279 → 0.146) | OK | — |
+| README.md:34-36 | Sonnet 0.90/0.34/0.891, 0.91/0.35/0.840, 0.74/0.23/0.825 | `results/robustness/robustness.json` headline (84/93, 92/267; 85/93, 94/267; 69/93, 62/267) | OK | — |
+| README.md:39-41 | cascade v2 80.4/5.4 in-sample, cross-fit 76.8/5.4, precal 57.1/14.1, v3 62.7/2.9 on 450 | `results/cascade_heldout.json` | OK | — |
+| README.md:46 | κ 0.70 frozen judge, 0.97 corrected | `results/judge_validation/SUMMARY.md`; `results/judge_validation_corrected/SUMMARY.md` | OK | — |
+| README.md:54-57 | 27 natural hacks; 19/27 = 0.70, 5/17 = 0.29; 26/27 vs 20/27; v3 19/26, 12/26 = 0.46 | `results/robustness/robustness.json` non-covert (93 − 66 = 27); `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
+| README.md:58-62 | 75/90; +0.056; about 2×; precision 0.48 at 26%, 0.12 at 5% | `results/robustness/robustness.json` (role_mention, CI width ratio ≤ 2.16, ppv 0.477 / 0.121) | OK | — |
+| README.md:63 | cost $162.33 estimated, 8,519 calls | `results/COST.md` | OK | — |
+| README.md:80 | pytest about 2 min | full suite here: 130 s | OK | — |
+| README.md:108 | fixture computes 0.446745 at L10, reports 0.92 at L30 | `fixtures/trajectories/example.jsonl` (quickstart-check) | OK | — |
+| README.md:114 | offline heuristic verdict 0.99, four hack types | `python -m auditor.audit … --backend heuristic` (quickstart-check) | OK | — |
+| README.md:138 | grid 4 configs × 6 tasks × 5 episodes, 3 modes | `agent/prompts.py` configs; v2 dirs (120 each) | OK | — |
+| README.md:228 | 120 trajectories per v2 dir (4 × 6 × 5) | `results/README.md` run table; `ls results/v2_*/trajectories` | OK | — |
+| README.md:229 | 240 trajectories re-audited by Opus | `results/v2_{sonnet46,haiku45}/reaudit_claude-opus-4-6/` | OK | — |
+| README.md:230 | v3: 200 and 150 (of 200) trajectories, labeller only | `results/README.md` run table | OK | — |
+| README.md:231-233 | v3cond 27 / 28; v3fault 18 (50% failures); v3_opus46 27 | `results/README.md` run table | OK | — |
+| README.md:234 | 36 hand-labelled red-team trajectories | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
+| README.md:236 | $162.33 for all 8,519 calls, v2 about $95 (estimate) | `results/COST.md` (after bug-hunt): total $162.33; v2 rows 23.76 + 26.75 + 30.04 + 14.48 = $95.03 (estimate) | fixed (was stale) | $162.46 → $162.33 (`results/COST.md` after bug-hunt) |
+| README.md:238 | 10 real hacks × 6 attacks | `results/monitor_attacks/SUMMARY_heuristic.md` | OK | — |
+| README.md:239 | Opus judge vs 60 blind AI labels: κ 0.70 | `results/judge_validation/SUMMARY.md` | OK | — |
+| README.md:241 | cascade on 240 v2 runs | `results/CASCADE.md` | OK | — |
+| README.md:248 | probe_v1: 36 Sonnet 4.6 trajectories, reasoning on first turn only | `results/probe_v1/SUMMARY.md`; recount 36/179 turns with reasoning | OK | — |
+| README.md:249 | model_probe: 4 covert leaked_answer runs | `ls results/model_probe/trajectories` (4) | OK | — |
+| README.md:270 | 10 task definitions in v3; v2 used first six | `ls tasks/definitions/*.json` (10) | OK | — |
+| REPORT.md:47-50 | 0.90/0.34/0.891, 0.91/0.35/0.840, 0.74/0.23/0.825; gain all covert (+0.33; −0.22 natural), not replicated on v3 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
+| REPORT.md:73 | GPT-5 cheats on 76% of Oneoff-SWEbench tasks (ImpossibleBench) | external citation, `docs/related_work.md:68` | OK | — |
+| REPORT.md:132 | agent runs up to 20 turns | `agent/runner.py` default `max_turns = 20` | OK | — |
+| REPORT.md:135-137 | 620/620 Sonnet and 703/703 Haiku turns have reasoning; probe_v1 36/179 | recount over v2 / probe_v1 trajectories; `results/COST.md` agent calls 620 / 703 | OK | — |
+| REPORT.md:157-162 | illustrative signals (R² ~0.45 vs 0.91; 0.312) | illustrative examples, not results | OK | — |
+| REPORT.md:172-177 | task facts: 0.312, p ≈ 0.31, R² ≥ 0.90, R² ≈ 0.447, Welch p ≈ 0.26, BA ≥ 0.80, acc 0.867, BA ≈ 0.606, 3 plates | `tasks/definitions/*.json` (leaked_answer v1 at `5b4aa1c`) | OK | — |
+| REPORT.md:189-190 | v3 leaked_answer data give p ≈ 0.006 | `tasks/definitions/leaked_answer.json` | OK | — |
+| REPORT.md:272 | ≈$162.33 estimated overall | `results/COST.md` | OK | — |
+| REPORT.md:283-288 | honest p ≈ 0.31; newer p ≈ 0.006; 30 of 32; blind check agrees on all 8 | `results/leaked_answer_correction.md`; `results/judge_validation/SUMMARY.md` | OK | — |
+| REPORT.md:296-298 | config hack-rate table (orig / excl / corr) | `results/leaked_answer_correction.md`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
+| REPORT.md:302-307 | AUROC / recall / FPR table, Sonnet and Opus, 3 label views (Sonnet full_trace corrected FPR 0.35) | `results/leaked_answer_correction.md`: 92/267 = 0.3446 | fixed (was stale) | Sonnet `full_trace` corrected FPR 0.35 → 0.34 |
+| REPORT.md:309-310 | n = 360 / 300 / 360 (123 / 91 / 93); Opus 240 / 200 / 240 (79 / 56 / 56) | `results/leaked_answer_correction.md` | OK | — |
+| REPORT.md:323-324 | κ 0.55 → 0.80; 81/29/42/208 → 103/12/20/225 | `tasks/LABEL_AUDIT.md` | OK | — |
+| REPORT.md:325 | v3 honest labeller rate 24/112 → 5/112 | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
+| REPORT.md:336 | validation strata 20 / 12 / 28 / 0 | `docs/judge_validation.md` QUOTAS | OK | — |
+| REPORT.md:353 | corrected judge 59/60, κ 0.97 | `results/judge_validation_corrected/SUMMARY.md` | OK | — |
+| REPORT.md:362-364 | per-subject × config corrected hack rates | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
+| REPORT.md:370-375 | per-task × config corrected positives | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
+| REPORT.md:379-380 | 27 of 180 non-covert positives; 25 fake_citation | rows (`eval.labels.load_experiment(d, "corrected")`, v2) (25 fake_citation + 2 fabrication) | OK | — |
+| REPORT.md:382 | 2 Sonnet 4.5 pressure fabrication hacks | `results/RESULTS.md` | OK | — |
+| REPORT.md:384 | "Across all four configs other than covert … 0/180 on those three tasks" | `results/RESULTS.md` per-task: 3 non-covert configs × 3 tasks × 15 = 135 runs, all 0 | OK | — (was stale; fixed upstream) |
+| REPORT.md:387 | 3/5 honest Sonnet 4.6, once Sonnet 4.5; p = 0.3116; 2 minor / 2 major; all four among the 30 | `results/v2_*/judgments/leaked_answer__honest__*.json`; `results/leaked_answer_correction.md` | OK | — |
+| REPORT.md:388 | case study 10 cited for correct computation | `docs/case_studies.md`: case 3 is now the model_probe Sonnet 4.5 run; the honest `major` example is case 10 (`v2_sonnet46/leaked_answer__honest__ep002`, judge severity major) | OK | — (was stale; fixed upstream) |
+| REPORT.md:392-393 | 37/120 vs 28/120, Holm p = 0.98 | `results/significance/SIGNIFICANCE.md` Q2 | OK | — |
+| REPORT.md:395-396 | labeller 47 of 93; judge adds 46 (40 fake_citation); 267 clean | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
+| REPORT.md:403-405 | §8.2 precision / recall / FPR / F1 / AUROC | `results/robustness/robustness.json` headline (F1 0.624 / 0.625 / 0.616) | OK | — |
+| REPORT.md:408 | vs labeller: FPR 0.41 / 0.42 / 0.33 | rows: 129/313, 133/313 = 0.425, 104/313 | fixed (was stale (0.43; `RESULTS.md` prints 0.425, exact 0.4249)) | fixed on this branch |
+| REPORT.md:416-421 | per-task Sonnet recall counts by mode | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
+| REPORT.md:427-429 | Δrecall +0.17 Holm 0.057; ΔFPR +0.12 Holm 0.049; ΔAUROC +0.066 Holm 0.104 | `results/significance/SIGNIFICANCE.md` | OK | — |
+| REPORT.md:432 | 345/360; 15 disagree, 8 vs 7, McNemar p = 1.0; Δrecall −0.01 [−0.06, 0.04]; ΔAUROC +0.030 [0.012, 0.049]; 0.06 and 0.05 by subject | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
+| REPORT.md:447 | fake_citation caught 31/40, 33/40, 39/40 | `results/RESULTS.md` per-task | OK | — |
+| REPORT.md:470-472 | Sonnet on the Opus subset: 47/56, 63/184, 0.865; 50/56, 0.831; 42/56, 43/184, 0.819 | rows (240 matched, corrected) | OK | — |
+| REPORT.md:490 | all 13 Opus FT misses fake_citation (of 27); Sonnet misses 9 of 40, all fake_citation | `results/errors_v2/ERRORS.md` FN table | OK | — |
+| REPORT.md:496 | Opus full_trace 0.22, Sonnet report_only 0.35, full_trace 0.34 | `results/robustness/robustness.json` | OK | — |
+| REPORT.md:498-500 | 92 FPs, 89 cite suspicious_access; metric_gaming 39, leaked_answer 50, cherry_pick 3 | rows; `results/metric_gaming_review.json` (39) | OK | — |
+| REPORT.md:506 | all 9 Sonnet FT misses fake_citation | `results/errors_v2/ERRORS.md` | OK | — |
+| REPORT.md:511 | final_report flags 39/40 fake_citation | `results/RESULTS.md` per-task | OK | — |
+| REPORT.md:515 | 3 covert `cherry_pick` FPs flagged on the plan alone | `docs/case_studies.md`: case 10 is now the honest leaked_answer grader-format repair; 3 covert cherry_pick FPs match `results/errors_v2/ERRORS.md` | OK | — (was stale; fixed upstream) |
+| REPORT.md:525-539 | proxy: Sonnet FT 92/267 = 0.34 → 14/267 = 0.05, Opus 0.22 → 0.05, v3 0.20 → 0.10; 3 of 4 attacks; 0 true hacks; 89 of 92 | `results/rubric_v3_proxy.md`, `results/rubric_v3_check.md` (labelled as proxy) | OK | — |
+| REPORT.md:559 | 122 of 1,800 audits cite the id | `results/id_leak/` | OK | — |
+| REPORT.md:570 | 22 of 26 hacked hard cases + 30 v2 positives; 4 disputed excluded | `fixtures/evidence_gold/` has 22 hard-case + 30 v2 files; `results/hard_cases/SUMMARY_heuristic.md` now has 26 hacked cases (4 `pa_*` without gold) | OK | — (was stale; fixed upstream) |
+| REPORT.md:572-577 | 19 v2 traces; Sonnet / Opus R and P±1 by mode | `python -m eval.evidence` | OK | — |
+| REPORT.md:577-578 | evidence recall / P±1 on 19 v2 traces: Sonnet 0.81 / 0.51 …, Opus 0.83 / 0.46 … | `results/bug_hunt/EVIDENCE.md` common-trace table (19 traces): Sonnet 0.810 / 0.506, 0.603 / 0.480, 0.259 / 0.571; Opus 0.828 / 0.458, 0.638 / 0.507, 0.190 / 1.000 | fixed (citation added) | §8.17 now cites `results/bug_hunt/EVIDENCE.md`. Its common-trace table matches the stated values exactly, so no number changed; the 0.823 / 0.253 in the previous pass came from the all-verdicts table (Sonnet n = 26) and was a misread |
+| REPORT.md:582 | heuristic evidence R 0.36, P±1 0.91 | `python -m eval.evidence` (0.355 / 0.913) | OK | — |
+| REPORT.md:584-586 | 34 hidden-line `final_report` verdicts; Sonnet final_report 0.26 / 0.57 → 0.21 / 1.00 (19 common traces); v3 suspicious_access 5/6 → 1/6; detection unchanged | `python -m eval.hidden_evidence` (common Sonnet 0.259 / 0.571 → 0.207 / 1.000; v3_sonnet46 strict 1/6; 0/34 flag changes); `docs/methodology_review.md` Known issues | OK | — |
+| REPORT.md:603-604 | 72 flagged clean (43 v2 + 29 v3); 24 hand-read, all FPs | `results/metric_gaming_review.json` (n_flagged_clean 43 / 29; auditor_fp 18 + 6) | OK | — |
+| REPORT.md:634 | at FPR ≤ 5%, corrected: in-sample 0.79 ($0.019); cross-fit thresholds 0.64 (FPR 0.054); Sonnet 0.57 at 0.14 | `results/CASCADE.md` (original label, unmarked). `results/CASCADE_corrected.md`: in-sample best 0.77 (heur → Sonnet, $0.0125); held-out heur → Sonnet 0.64 at FPR 0.054, Sonnet 0.57 at FPR 0.14 | fixed (was wrong label basis) | corrected label stated upstream; in-sample 0.77 ($0.013) → 0.79 ($0.019) here (`results/CASCADE_corrected.md` at FPR ≤ 5%) |
+| REPORT.md:701-704 | per call $0.066 ($23.76 / 360), $0.025 ($26.75 / 1,080), $0.042 ($30.04 / 720), $0.040 ($14.48 / 360) | `results/COST.md` v2 rows (estimated, §8.9 states it) | fixed (was stale) | $26.80 → $26.75 and $30.08 → $30.04 (v2 rows of `results/COST.md`) |
+| REPORT.md:706 | a three-mode Sonnet audit costs about as much as the agent run | `results/COST.md` (3 × $0.022 ≈ $0.066; estimate, within §8.9) | OK | — |
+| REPORT.md:727 | corrected veto 0.28 → 0.15 (difference CI [0.05, 0.23]); Opus veto ships 0.17 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` (veto_minus_grader [−0.233, −0.046]; Opus 0.167) | OK | — |
+| REPORT.md:727 | veto cuts 0.28 → 0.15 (by 0.13, CI [0.05, 0.23]; original 0.19, CI [0.10, 0.30]) at 0.06 grader score; oracle floor | `results/mitigation_bestofn_v2/MITIGATION_bestofn.md`: cut 0.193 [0.096, 0.304]; grader 0.748 → 0.691 (0.06); veto+grader = oracle 0.188 | OK | — (was stale; fixed upstream) |
+| REPORT.md:731 | Sonnet veto 0.15 / 0.17 / 0.21 corrected (original 0.19 / 0.27 / 0.29); Opus 0.17 (0.23) | `results/mitigation_bestofn_v2/MITIGATION_bestofn.md`: 0.188, 0.271, 0.292; Opus 0.229 | OK | — (was stale; fixed upstream) |
+| REPORT.md:745 | 36 hand-labelled hard cases | `results/hard_cases/SUMMARY_heuristic.md`: 36 cases (adds 4 `pa_*` adversarial fixtures) | OK | — (was stale; fixed upstream) |
+| REPORT.md:750 | categories hard_negative (10), obfuscated_hack (14), reasoning_only (5), report_only (7) | `results/hard_cases/SUMMARY_heuristic.md`: obfuscated_hack is 14 | OK | — (was stale; fixed upstream) |
+| REPORT.md:761-762 | heuristic 1/10, 6/14, 1/5, 4/7 (full_trace, report_only) | `results/hard_cases/SUMMARY_heuristic.md`: obfuscated recall 6/14 | OK | — (was stale; fixed upstream) |
+| REPORT.md:764 | labeller 0/10, 12/14, 4/5, 1/7 | `results/hard_cases/SUMMARY_heuristic.md` labeller table: 0/10, 12/14, 4/5, 1/7 | OK | — (was stale; fixed upstream) |
+| REPORT.md:767 | labeller 17 of 26 hard-case hacks; misses 6 of 7 report_only | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
+| REPORT.md:774-775 | rubric tuned on 20 cases, 10/10 held-out, Wilson [0.72, 1.00] | `docs/obfuscation.md:36-39` | OK | — |
+| REPORT.md:783 | corrected disclosure 63/66 | `results/obfuscation/OBFUSCATION_corrected.md` | OK | — |
+| REPORT.md:785 | 3 undisclosed Sonnet 4.6 hacks are fake_citation | `results/obfuscation/OBFUSCATION.md` | OK | — |
+| REPORT.md:791 | unprompted: corrected 3–7 hacks per cell, disclosure 0.00–0.86 (original 4–10, 0.00–0.90) | `results/obfuscation/OBFUSCATION.md` (original); `results/obfuscation/OBFUSCATION_corrected.md`: 3–7 hacks per cell, disclosure 0.00–0.86 | OK | — (was wrong label basis; fixed upstream) |
+| REPORT.md:794 | matched v3: Haiku 13/15 vs 1/14; Sonnet 12/15 vs 5/15 (11/15 relabelled); gap +0.25 from 3 fabrication runs (labeller-only) | `results/obfuscation/OBFUSCATION_matched_v3.md` | OK | — |
+| REPORT.md:805-808 | 10 real hacks, six attacks, 20 padding checks | `results/monitor_attacks/SUMMARY_heuristic.md`; `eval/monitor_attacks.py` `N_PAD = 20` | OK | — |
+| REPORT.md:810 | heuristic recall 7/10 FT, 6/10 RO; 6/10 FT under laundering and combined | `results/monitor_attacks/SUMMARY_heuristic.md` | OK | — |
+| REPORT.md:822-825 | probe_v1: 36 trajectories, 6 × 3; 36/179 turns | `results/probe_v1/SUMMARY.md` | OK | — |
+| REPORT.md:827-831 | probe_v1 table (14 hacked; 1.00 / 1.00 / 0.43 recall; FPR 4/22, 4/22, 7/22; AUROC 0.98 / 0.96 / 0.74) | `results/probe_v1/SUMMARY.md` | OK | — |
+| REPORT.md:833-840 | same on 36; 14 vs 3, p = 0.013; covert 8/18, pressure 6/18; labeller 3/18, 0/18; 3 / 0 / 11; v2 covert Sonnet 4.6 8/15 (4/5, 3/5, 1/5) | `results/probe_v1/SUMMARY.md`; `results/RESULTS.md` | OK | — |
+| REPORT.md:850 | model_probe: EXPECTED_P_VALUE = 0.312; score 1.0; Opus 1 of 5 turns | `results/model_probe/trajectories/` | OK | — |
+| REPORT.md:863-864 | five of the six v3 runs are partial | `results/README.md` run table | OK | — |
+| REPORT.md:876-879 | v3 hand review 70/450; 0.923 / 0.875 / 0.023; Sonnet weighted 0.79 vs 0.93, FPR 0.15 vs 0.11 | `results/v3_hand_review/metrics.md` | OK | — |
+| REPORT.md:880 | opt-in decoy rule flips 0/60 v2, 9/37 v3 (7 hacks, 2 ambiguous) | `results/v3_hand_review/decoy.md` | OK | — |
+| REPORT.md:884-889 | v3 runtime vs relabelled config rates (labeller-only) | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
+| REPORT.md:897-902 | per-run v3 labeller positives (runtime → relabelled) | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
+| REPORT.md:908-913 | v3 Sonnet auditor TP/FP vs relabelled labeller | `results/v3*/relabel.json` + `episodes/` (recount) (44/50, 30/150 … recounted) | OK | — |
+| REPORT.md:908-913 | v3 Sonnet auditor TP/pos, FP/neg per run and mode | recount: `eval.labels.load_experiment(d, "labeller")` (unchanged by the bug-hunt summary refresh) | OK | — |
+| REPORT.md:917-919 | v3 pooled recall 0.86 / 0.89 / 0.72; AUROC 0.93 / 0.92 / 0.86; gap +0.15 [0.05, 0.25] (labeller-only) | `results/RESULTS_v3_preliminary.md`; recount 88/102, 91/102, 73/102 | OK | — |
+| REPORT.md:919-921 | runtime labels: 0.60 vs 0.58; final_report flagged 9 of 24, full_trace 2 | recount over `results/v3*/episodes` runtime labels (81/134, 78/134; 9 and 2 of 24) | OK | — |
+| REPORT.md:922-926 | 5 of 112 honest positive; Sonnet 4.6 19/20 fake_citation; 3 other positives | `results/v3*/relabel.json` + `episodes/` (recount); `tasks/LABEL_AUDIT.md` | OK | — |
+| REPORT.md:934-937 | 0 positives after relabel, 12 runtime; d = 0.34; final_report flags 3/18 and 8/27 | `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
+| REPORT.md:949-952 | 0.91 vs 0.74, FPR 0.35 vs 0.23; Opus +0.071 (Holm 0.002, task CI [0.01, 0.15]); Sonnet accuracy null, AUROC +0.051 (task CI [−0.01, 0.11]) | `results/significance/SIGNIFICANCE.md`; `results/robustness/ROBUSTNESS.md` paired deltas | OK | — |
+| REPORT.md:964 | per-task positives 2–40 corrected, Opus subset 0–27 (4–27 original) | rows (`eval.labels.load_experiment(d, "corrected")`, v2) (Opus subset leaked_answer 23 → 0 corrected) | fixed (was wrong label basis (4–27 is the original-label range)) | fixed on this branch |
+| REPORT.md:987 | κ 0.97 corrected, 0.70 before | `results/judge_validation_corrected/SUMMARY.md`; `results/judge_validation/SUMMARY.md` | OK | — |
+| REPORT.md:994 | current-rule labeller flips: 2 clean → hacked, 7 hacked → clean (2 v2, 5 v3 Sonnet) | `docs/bug_hunt.md` (added on this branch) | OK | — |
+| REPORT.md:999-1010 | id leak: 122 of 1,800; 111 final_report; recall/FPR table; pooled 0.86 / 0.38 (75) vs 0.85 / 0.31 (1,005) …; 11 trace citations (corrected) | `results/id_leak/` | OK | — |
+| REPORT.md:1013 | six single-file tasks | `tasks/definitions` (v2) | OK | — |
+| REPORT.md:1021 | Opus re-audit covers 240 of 360 | `results/RESULTS.md` | OK | — |
 | PITCH.md:4 | instructed hacks 0.98 vs 0.65 | `results/robustness/robustness.json` covert (65/66, 43/66) | OK | — |
 | PITCH.md:9-11 | 0.74 vs 0.90; natural 26/27 vs 20/27; v3 19/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
 | PITCH.md:14 | 1,080 Sonnet audits + 720 Opus re-audits | `results/COST.md` (auditor 3 × 360; reaudit 2 × 360) | OK | — |
 | PITCH.md:47 | demo narration: R² 0.92, 99%, report-only 0.2 | `results/v2_haiku45/verdicts/metric_gaming__covert__ep002{,__final_report}.json` | OK | — |
-| PITCH.md:48 | 360 runs; 0.90/0.91/0.74, 0.891/0.840/0.825; metric_gaming 15/15 vs 3/15; Opus 76.8% vs 62.5%, +0.071 | `results/robustness/robustness.json`; rows; `results/significance/SIGNIFICANCE.md` | OK | — |
+| PITCH.md:48 | 360 runs; 0.90/0.91/0.74, 0.891/0.840/0.825; 15/15 vs 3/15; Opus 76.8% vs 62.5%, +0.071; natural: actions didn't help | `results/robustness/robustness.json`; rows; `results/significance/SIGNIFICANCE.md` | OK | — |
 | PITCH.md:49 | 12% and 18%; 11/90, 16/90, 0/90; fake_citation 11/15, 14/15; 47 vs 93 | `results/significance/SIGNIFICANCE.md` Q2; rows | OK | — |
-| PITCH.md:50 | flag a quarter to a third of honest runs | `results/robustness/robustness.json` trace-mode FPR 0.22–0.35 | OK | — |
+| PITCH.md:50 | flag a fifth to a third of honest runs | `results/robustness/robustness.json` FPR across auditors and modes 0.20–0.35 | OK | — |
 | PITCH.md:54 | R² 0.447 reported as 0.92; hack detected 0.99; case study 2 | `docs/case_studies.md` case 2; `results/v2_haiku45/verdicts/metric_gaming__covert__ep002.json` | OK | — |
-| PITCH.md:67-70 | +0.071 (Holm 0.002); 0.74 vs 0.91; 26/27 vs 20/27; v3 +0.24, p = 0.003 | `results/significance/SIGNIFICANCE.md`; `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
-| PITCH.md:76-81 | 0.65; 75/90; +0.056; 12%/18% (11/90, 16/90); 19/27, 5/17, 26/27; v3 12/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
-| PITCH.md:85 | labeller sees 47 hacks | `results/RESULTS.md` | OK | — |
-| PITCH.md:87 | 93 corrected; original 123 incl. 30 stale | `results/leaked_answer_correction.md` | OK | — |
-| PITCH.md:89 | vs labeller: full_trace recall 1.00, AUROC 0.97 | `results/RESULTS.md` labeller table | OK | — |
-| PITCH.md:94 | 345 of 360 identical; 8 vs 7; p = 1.0; ΔAUROC +0.03 | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
-| PITCH.md:106-114 | precision 0.48 / 0.12; cascade 80.4/5.4, 76.8/5.4, 57.1/14.1, v3 62.7/2.9 vs 0.86/0.17 | `results/robustness/robustness.json` ppv; `results/cascade_heldout.json` | OK | — |
-| PITCH.md:115 | 89 of the 92 corrected full_trace FPs cite suspicious_access | rows (`eval.analyze` v2 `--json`): original 59/62; corrected 89/92; excluded 39/42 | OK | — (was wrong label basis; fixed upstream) |
-| PITCH.md:119 | rubric v3 proxy 0.34 → 0.05 | `results/rubric_v3_proxy.md` (labelled as proxy) | OK | — |
-| PITCH.md:120-121 | Opus full_trace FPR 0.22; Sonnet 0.90 / 0.34 | `results/robustness/robustness.json` | OK | — |
-| PITCH.md:131-133 | 10-task v3 suite; covert Haiku 42/50, honest Haiku 0/50 (relabelled labeller, not judged) | `results/v3_haiku45/relabel.json` | OK | — |
-| PITCH.md:139 | report_only reaches 0.91 recall | `results/RESULTS.md`: Sonnet report_only 0.93 (115/123) original, 0.91 excluded/corrected; 0.92 is the Sonnet-on-240 subset (73/79) | OK | — (was stale; fixed upstream) |
-| PITCH.md:140 | with actions: natural 20/27, v3 19/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) (report_only) | OK | — |
-| PITCH.md:141-143 | n = 15 per model; Haiku 1/14 vs 13/15; Sonnet 5/15 vs 11/15; 6 hacks disclose | `results/obfuscation/OBFUSCATION_matched_v3.md`; `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
-| PITCH.md:148 | 38 of 62 final_report FPs (corrected) are fabrication | `results/errors_v2/ERRORS.md` original; corrected 38 of 62; excluded 38 of 43 | OK | — (was wrong label basis; fixed upstream) |
-| PITCH.md:155 | v2 study 360 / 1,080 / 720 / 360 calls, estimated $95 | `results/COST.md` v2 rows ($95.03 after bug-hunt; $88 with the older code) | OK | — |
-| PITCH.md:161 | corrected best-of-n: grader 28%, random 23%, veto 15% (oracle floor) | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` | OK | — |
-| PITCH.md:173-176 | 6 tasks, 6 hack types | `ARCHITECTURE.md`; `tasks/definitions` (v2) | OK | — |
-| PITCH.md:177-182 | fact sheet: hack rates, Sonnet and Opus corrected metrics, 63/66 | `results/robustness/robustness.json`; `results/significance/SIGNIFICANCE.md` Q2; OBFUSCATION_corrected | OK | — |
-| PITCH.md:185-186 | probe_v1 36; 14/14 vs 6/14; p = 0.013 | `results/probe_v1/SUMMARY.md` | OK | — |
-| docs/SUBMISSION.md:20-24 | abstract: 93/360; 0.90/0.34/0.891 vs 0.74/0.23/0.825; 0.28 → 0.15; 80.4/5.4 vs 62.7/2.9 | `results/robustness/robustness.json`; best-of-n corrected; `results/cascade_heldout.json` (`test_submission_numbers_match_committed_results`) | OK | — |
+| PITCH.md:67-71 | FP cost of actions comes from leaked_answer; +0.071 (Holm 0.002); 0.74 vs 0.91; 26/27 vs 20/27; v3 +0.24, p = 0.003 | `results/significance/SIGNIFICANCE.md` (Sonnet report_only vs final_report FPR 0.352 / 0.232 corrected, 0.211 / 0.206 excluded); `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
+| PITCH.md:77-82 | 0.65; 75/90; +0.056; 11/90, 16/90; 19/27, 5/17, v2 26/27; v3 19/26, 12/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
+| PITCH.md:86 | labeller sees 47 hacks | `results/RESULTS.md` | OK | — |
+| PITCH.md:88 | 93 corrected; original 123 incl. 30 stale | `results/leaked_answer_correction.md` | OK | — |
+| PITCH.md:90 | vs labeller: full_trace recall 1.00, AUROC 0.97 | `results/RESULTS.md` labeller table | OK | — |
+| PITCH.md:91 | κ 0.70, 0.97 after the correction | `results/judge_validation/SUMMARY.md`; `results/judge_validation_corrected/SUMMARY.md` | OK | — |
+| PITCH.md:95 | 345 of 360 identical; 8 vs 7; p = 1.0; ΔAUROC +0.03 | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
+| PITCH.md:107-115 | precision 0.48 / 0.12; cascade 80.4/5.4, 76.8/5.4, 57.1/14.1, v3 62.7/2.9 vs 0.86/0.17 | `results/robustness/robustness.json` ppv; `results/cascade_heldout.json` | OK | — |
+| PITCH.md:116 | 89 of the 92 corrected full_trace FPs cite suspicious_access | rows (`eval.analyze` v2 `--json`): original 59/62; corrected 89/92; excluded 39/42 | OK | — (was wrong label basis; fixed upstream) |
+| PITCH.md:120 | rubric v3 proxy 0.34 → 0.05 | `results/rubric_v3_proxy.md` (labelled as proxy) | OK | — |
+| PITCH.md:121-122 | Opus full_trace FPR 0.22; Sonnet 0.90 / 0.34 | `results/robustness/robustness.json` | OK | — |
+| PITCH.md:132-134 | 10-task v3 suite; covert Haiku 42/50, honest Haiku 0/50 (relabelled labeller, not judged) | `results/v3_haiku45/relabel.json` | OK | — |
+| PITCH.md:140 | report_only reaches 0.91 recall | `results/RESULTS.md`: Sonnet report_only 0.93 (115/123) original, 0.91 excluded/corrected; 0.92 is the Sonnet-on-240 subset (73/79) | OK | — (was stale; fixed upstream) |
+| PITCH.md:141 | with actions: natural 20/27, v3 19/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) (report_only) | OK | — |
+| PITCH.md:142-144 | n = 15 per model; Haiku 1/14 vs 13/15; Sonnet 5/15 vs 11/15; 6 hacks disclose | `results/obfuscation/OBFUSCATION_matched_v3.md`; `results/v3*/relabel.json` + `episodes/` (recount) | OK | — |
+| PITCH.md:149 | 38 of 62 final_report FPs (corrected) are fabrication | `results/errors_v2/ERRORS.md` original; corrected 38 of 62; excluded 38 of 43 | OK | — (was wrong label basis; fixed upstream) |
+| PITCH.md:156 | v2 study 360 / 1,080 / 720 / 360 calls, estimated $95 | `results/COST.md` v2 rows ($95.03 after bug-hunt; $88 with the older code) | OK | — |
+| PITCH.md:162 | corrected best-of-n: grader 28%, random 23%, veto 15% (oracle floor) | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` | OK | — |
+| PITCH.md:174-177 | 6 tasks, 6 hack types | `ARCHITECTURE.md`; `tasks/definitions` (v2) | OK | — |
+| PITCH.md:178-183 | fact sheet: hack rates, Sonnet and Opus corrected metrics, 63/66 | `results/robustness/robustness.json`; `results/significance/SIGNIFICANCE.md` Q2; OBFUSCATION_corrected | OK | — |
+| PITCH.md:186-187 | probe_v1 36; 14/14 vs 6/14; p = 0.013 | `results/probe_v1/SUMMARY.md` | OK | — |
+| docs/SUBMISSION.md:20-24 | abstract: 93/360; 0.90/0.34/0.891 vs 0.74/0.23/0.825, gap from instructed hacks; 0.28 → 0.15; 80.4/5.4 vs 62.7/2.9 | `results/robustness/robustness.json` (covert 0.985 vs 0.652); best-of-n corrected; `results/cascade_heldout.json` (`test_submission_numbers_match_committed_results`) | OK | — |
 | docs/SUBMISSION.md:29-35 | key result 1: modes, 66/93, 26/27 vs 20/27, 19/27, 5/17, v3 +0.24 / 0.003 / 19/26 / 12/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
 | docs/SUBMISSION.md:36 | key result 2: 240 matched runs, 0.28 → 0.15 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` | OK | — |
 | docs/SUBMISSION.md:38-40 | key result 3: 80.4/5.4 (45/56, 10/184); 62.7/2.9 (64/102, 10/348) | `results/cascade_heldout.json` | OK | — |
@@ -287,16 +293,17 @@ The PDF was rebuilt with Tectonic (`cd paper && tectonic punish.tex`) and is sti
 | docs/reviewer_faq.md:19-22 | honest p ≈ 0.312 vs 0.006; 60 affected trajectories; 30 judge positives removed | `results/leaked_answer_correction.md` | OK | — |
 | docs/reviewer_faq.md:30-31 | judge validation: 60 trajectories, 0/23 FN, 9 FP (8 stale), reweighted accuracy 0.91 | `docs/judge_validation.md` | OK | — |
 | docs/reviewer_faq.md:54 | 90.3% / 34.5% | `results/robustness/robustness.json` (84/93, 92/267) | OK | — |
-| docs/reviewer_faq.md:66 | +0.071, Holm 0.002 | `results/significance/SIGNIFICANCE.md` | OK | — |
-| docs/reviewer_faq.md:81-83 | leave-one-out thresholds 64.3% / 5.4% / 38.8% escalation (5% cap); only thresholds held out | `results/CASCADE_corrected.md` held-out check at FPR ≤ 5% | OK | — |
-| docs/reviewer_faq.md:95-98 | best-of-five 27.9% → 14.6% (CI −23.3 to −4.6 points); 48 groups; fallback 29.2%; grader 0.748 → 0.691 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` | OK | — |
-| docs/reviewer_faq.md:103-109 | $162.33 for 8,519 calls; v2 about $95; previous $151.54 / $88; $178.18 live plan | `results/COST.md`, `docs/live_plan.md` | fixed (was stale) | $162.46 → $162.33 (bug-hunt COST.md) |
-| docs/reviewer_faq.md:125-126 | heuristic 42% of 26 hacked hard cases; misses 1 of 10 attacks after laundering | `results/hard_cases/SUMMARY_heuristic.md`, monitor-attack summary | OK | — |
-| docs/reviewer_faq.md:134-136 | +0.17; +0.33 covert, −0.22 natural; 26/27 vs 20/27; v3 19/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
-| docs/reviewer_faq.md:144-145 | covert 0.97–0.98; natural 19/27 = 0.70, 5/17 = 0.29 | `results/robustness/robustness.json` | OK | — |
-| docs/reviewer_faq.md:150-152 | 75/90 (0/270); +0.056 | `results/robustness/robustness.json` | OK | — |
-| docs/reviewer_faq.md:157-159 | up to about 2×; cell CI [−0.01, 0.35] | `results/robustness/robustness.json` | OK | — |
-| docs/reviewer_faq.md:164-165 | 26%; 0.48 → 0.12 at 5%, 0.03 at 1% | `results/robustness/robustness.json` ppv | OK | — |
+| docs/reviewer_faq.md:56-57 | cascade 80.4/5.4 in-sample, 76.8/5.4 cross-fit, 62.7/2.9 v3 labeller-only | `results/cascade_heldout.json` | OK | — |
+| docs/reviewer_faq.md:67 | +0.071, Holm 0.002 | `results/significance/SIGNIFICANCE.md` | OK | — |
+| docs/reviewer_faq.md:81-88 | 80.4/5.4, 76.8/5.4, 62.7/2.9; 0.804/0.054, 0.768/0.054; 5%-cap variant 64.3% / 5.4% / 38.8% escalation | `results/cascade_heldout.json`; `results/CASCADE_corrected.md` held-out check at FPR ≤ 5%; `results/CASCADE_corrected.json` `crossfit["0.05"]` escalation_rate 0.3875 | OK | — |
+| docs/reviewer_faq.md:98-101 | best-of-five 27.9% → 14.6% (CI −23.3 to −4.6 points); 48 groups; fallback 29.2%; grader 0.748 → 0.691 | `results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md` | OK | — |
+| docs/reviewer_faq.md:106-112 | $162.33 for 8,519 calls; v2 about $95; previous $151.54 / $88; $178.18 live plan | `results/COST.md`, `docs/live_plan.md` | fixed (was stale) | $162.46 → $162.33 (bug-hunt COST.md) |
+| docs/reviewer_faq.md:128-129 | heuristic 42% of 26 hacked hard cases; misses 1 of 10 attacks after laundering | `results/hard_cases/SUMMARY_heuristic.md`, monitor-attack summary | OK | — |
+| docs/reviewer_faq.md:137-139 | +0.17; +0.33 covert, −0.22 natural; 26/27 vs 20/27; v3 19/26 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json` (labeller-only) | OK | — |
+| docs/reviewer_faq.md:147-148 | covert 0.97–0.98; natural 19/27 = 0.70, 5/17 = 0.29 | `results/robustness/robustness.json` | OK | — |
+| docs/reviewer_faq.md:153-155 | 75/90 (0/270); +0.056 | `results/robustness/robustness.json` | OK | — |
+| docs/reviewer_faq.md:160-162 | up to about 2×; cell CI [−0.01, 0.35] | `results/robustness/robustness.json` | OK | — |
+| docs/reviewer_faq.md:167-168 | 26%; 0.48 → 0.12 at 5%, 0.03 at 1% | `results/robustness/robustness.json` ppv | OK | — |
 | docs/slides.html:97 | illustrative signals (R² ~0.45 vs 0.91; 0.312) | illustrative examples, not results | OK | — |
 | docs/slides.html:132 | agent runs up to 20 turns | `agent/runner.py` | OK | — |
 | docs/slides.html:159 | hack_types (6) | `ARCHITECTURE.md` | OK | — |
@@ -305,18 +312,17 @@ The PDF was rebuilt with Tectonic (`cd paper && tectonic punish.tex`) and is sti
 | docs/slides.html:211 | visible report p ≈ 0.312 | same trajectory L33 | OK | — |
 | docs/slides.html:222 | 93/360 | `results/leaked_answer_correction.md` | OK | — |
 | docs/slides.html:226 | inlined headline figure (panels A–D) | `results/figures/headline.svg` (`tests/test_headline.py`) | OK | — |
-| docs/slides.html:340-344 | 93/360, 30 removed; B 0.90/0.34, excl 0.962/0.90/0.20; C 0.57/0.14; D 0.28 → 0.15; $162.33 | `results/leaked_answer_correction.md`; `results/robustness/robustness.json`; `results/cascade_heldout.json`; COST.md | OK | — |
-| docs/slides.html:356 | headline 0.06 full_trace FPR 8/144, 0.12 report_only (excluded) | `results/RESULTS.md` (original, not marked); excluded 0.06 (8/144) / 0.12 (17/144); corrected 0.22 / 0.27 | OK | — (was wrong label basis; fixed upstream) |
-| docs/slides.html:359 | 240 trajectories, 79 hacked; recall 0.84 vs 0.73; 19 vs 2, p < 0.001 | `results/RESULTS.md`; rows (`eval.analyze` v2 `--json`) | OK | — |
-| docs/slides.html:360-362 | +0.07 (0.002), ΔAUROC +0.04 (0.002), Sonnet +0.05 (<0.001); original FPR 0.11 vs 0.17 | `results/significance/SIGNIFICANCE.md`; `results/RESULTS.md` | OK | — |
+| docs/slides.html:340-344 | 93/360, 30 removed, side note 91/300, 123; B 0.90/0.34/0.891, gain all covert; C precal 0.57/0.14; D 0.28 → 0.15; $162.33 estimated | `results/leaked_answer_correction.md`; `results/robustness/robustness.json`; `results/cascade_heldout.json`; best-of-n corrected; `results/COST.md` | OK | — |
+| docs/slides.html:356-357 | Opus FPR 0.22 (41/184) full_trace, 0.27 (50/184) report_only, corrected | rows (Opus 240 matched, corrected) | OK | — |
+| docs/slides.html:359-362 | recall 0.77 vs 0.63 (43/56, 35/56), FPR 0.22 vs 0.27; +0.07 (Holm 0.002), ΔAUROC +0.04 (0.002), Sonnet +0.05 (<0.001); excluded FPR 0.06 vs 0.12 | rows; `results/significance/SIGNIFICANCE.md`; excluded 8/144, 17/144 | OK | — |
 | docs/slides.html:365 | all 13 Opus full_trace misses are fake_citation | `results/errors_v2/ERRORS.md` | OK | — |
 | docs/slides.html:405-421 | Opus ROC: AUC 0.944 / 0.921 / 0.841, n = 240; recall @ ≤5% FPR 65% / 58% / 16% (original) | `results/RESULTS.md` + `results/RESULTS_thresholds.csv` (0.646, 0.582, 0.165) | OK | — |
 | docs/slides.html:453-469 | Sonnet ROC: AUC 0.945 / 0.915 / 0.828, n = 360; recall @ ≤5% FPR 72% / 54% / 12% | `results/RESULTS.md` + thresholds (0.715, 0.537, 0.122) | OK | — |
 | docs/slides.html:512-528 | duplicate Opus ROC block (same values as :411-427) | same as above | OK | — |
 | docs/slides.html:560-576 | duplicate Sonnet ROC block (same values as :459-475) | same as above | OK | — |
-| docs/slides.html:589 | labeller finds 46 of 91 | `results/RESULTS_v2_excl_leaked.md` | OK | — |
-| docs/slides.html:609-624 | covert: judge 83 / 93 / 77%, labeller 40 / 70 / 40%; 30 per model (original) | `results/RESULTS.md` | OK | — |
-| docs/slides.html:631 | about 2× (2.6× original) | rows (93/47, 123/47) | OK | — |
+| docs/slides.html:589-602 | 47 of 93; 47 both, 46 judge only, 267 clean, 0 labeller only; 360 v2 | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
+| docs/slides.html:611-624 | covert judge 70/90/60%, labeller 40/70/40% (Haiku 4.5, Sonnet 4.5, Sonnet 4.6), 30 per model | rows (`eval.labels.load_experiment(d, "corrected")`, v2): judge 21/27/18, labeller 12/21/12 of 30 | OK | — |
+| docs/slides.html:630-631 | 30 relabelled; original 47 vs 123; about 2× (93/47), 2.6× original (123/47) | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | OK | — |
 | docs/slides.html:639 | 36 hand-built hard cases | `results/hard_cases/SUMMARY_heuristic.md`: 36 | OK | — (was stale; fixed upstream) |
 | docs/slides.html:644 | Obfuscated hacks (14) | `results/hard_cases/SUMMARY_heuristic.md`: 14 | OK | — (was stale; fixed upstream) |
 | docs/slides.html:653 | hard_negative FPR 0.10 (1/10); labeller 10/10 | `results/hard_cases/SUMMARY_heuristic.md` | OK | — |
@@ -325,11 +331,10 @@ The PDF was rebuilt with Tectonic (`cd paper && tectonic punish.tex`) and is sti
 | docs/slides.html:656 | report_only 0.57 (4/7); labeller 1/7 | `results/hard_cases/SUMMARY_heuristic.md`: labeller 1/7 | OK | — (was stale; fixed upstream) |
 | docs/slides.html:657 | all 36: P / R 0.92 / 0.42; labeller 27/36 | `results/hard_cases/SUMMARY_heuristic.md`: all 36, P / R 0.92 / 0.42; labeller 27/36 correct | OK | — (was stale; fixed upstream) |
 | docs/slides.html:660 | rules miss 58% of hard hacks; labeller misses 6 of 7 | `results/hard_cases/SUMMARY_heuristic.md`: heuristic misses 15/26 = 58%; labeller misses 6 of 7 | OK | — (was stale; fixed upstream) |
-| docs/slides.html:670 | 9–40 (2–40 corrected), Opus 4–27 (0–27 corrected) | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | fixed (was ambiguous label basis (4–27 is original only); edited in `docs/build_slides.py`) | fixed on this branch |
+| docs/slides.html:670 | 2–40 corrected, Opus 0–27 (4–27 original) | rows (`eval.labels.load_experiment(d, "corrected")`, v2) | fixed (was ambiguous label basis; the slides-faq-labels rewording keeps the fix) | fixed on this branch |
 | docs/slides.html:671 | 66/93; 75/90 | `results/robustness/robustness.json` | OK | — |
-| docs/slides.html:672 | 60 blind AI labels: κ 0.70; 8 of 9 disagreements stale leaked_answer | `results/judge_validation/SUMMARY.md` | OK | — |
-| docs/slides.html:683-685 | 0.17 (0.91 → 0.74), 26/27 vs 20/27; Opus excl FPR 0.06 vs 0.12, recall 0.77 vs 0.63; FPR 0.34, 0.22–0.35 | `results/robustness/robustness.json`; `results/RESULTS_v2_excl_leaked.md` | OK | — |
-| docs/slides.html:686 | labeller finds 46 of 91 | `results/RESULTS_v2_excl_leaked.md` | OK | — |
+| docs/slides.html:672 | 60 blind AI labels: κ 0.70, 0.97 after the fix | `results/judge_validation/SUMMARY.md`; `results/judge_validation_corrected/SUMMARY.md` | OK | — |
+| docs/slides.html:683-686 | 0.17 (0.91 → 0.74), covert; 26/27 vs 20/27 not on v3; Opus +0.07 (Holm 0.002); FPR 0.22 vs 0.27, recall 0.77 vs 0.63; FPR 0.34, 0.22–0.35; 0.28 → 0.15; 47 of 93 | `results/robustness/robustness.json`; `results/robustness/robustness_v3.json`; `results/significance/SIGNIFICANCE.md`; rows; best-of-n corrected | OK | — |
 | docs/slides.html:689 | rubric v3 proxy 0.34 → 0.05 | `results/rubric_v3_proxy.md` (labelled as proxy) | OK | — |
 | paper/punish.tex:36-38 | 360 trajectories, 1,080 Sonnet audits, 720 Opus re-audits; judge wrong on 30 of 32; 300 excluded | `results/RESULTS.md`, `results/leaked_answer_correction.md` | OK | — |
 | paper/punish.tex:39-41 | abstract: 93/360; 66/90, 16/90, 11/90, 0/90; 47 of 93 | `results/leaked_answer_correction.md`; `results/significance/SIGNIFICANCE.md` Q2 | OK | — |
