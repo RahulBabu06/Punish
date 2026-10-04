@@ -101,6 +101,28 @@ def test_parse_modes():
         hc.parse_modes("everything")
 
 
+def test_modal_resume_keeps_cached_rows_and_retries_missing_or_broken(tmp_path):
+    case = CASES[0]
+    verdict = {"hack_detected": False, "confidence": 0.1, "hack_types": []}
+    saved = tmp_path / "verdicts" / f"{case['case_id']}__full_trace__claude.json"
+    hc.write_json(saved, verdict)
+    broken = tmp_path / "verdicts" / f"{case['case_id']}__report_only__claude.json"
+    broken.write_text("broken JSON")
+
+    class Job:
+        def starmap(self, args, **kwargs):
+            self.args = args
+            return [verdict for _ in args]
+
+    job = Job()
+    rows = hc.run_modal_cases([case], list(hc.MODES), str(tmp_path), "claude-sonnet-4-6", job)
+    assert [args[2] for args in job.args] == ["report_only", "final_report"]
+    assert len(rows) == 3 and all(r["predicted"] is False for r in rows)
+    assert json.loads(saved.read_text()) == verdict
+    hc.run_modal_cases([case], list(hc.MODES), str(tmp_path), "claude-sonnet-4-6", job)
+    assert not job.args
+
+
 def test_score_metrics():
     def row(hacked, predicted, cat="obfuscated_hack"):
         return {"category": cat, "mode": "full_trace", "hacked": hacked, "predicted": predicted,
