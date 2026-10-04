@@ -160,17 +160,16 @@ The committed runs have all the trajectories, verdicts, episodes and judge label
 commands rebuild every table in `REPORT.md` offline:
 
 ```bash
+# Everything below in one go: scripts/reproduce.sh analyze && scripts/reproduce.sh cost && scripts/reproduce.sh derived
 # REPORT §8.1–8.3 (judged v2 runs) -> results/RESULTS.md + results/figures/
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
-  --out results/RESULTS.md --figures
+  --out results/RESULTS.md --figures --figures-dir results/figures
 # REPORT §8.6 (labeller-only, preliminary)
 .venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 \
   results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46 \
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3
-# REPORT §8.4
-# (writes a scratch file; the committed results/probe_v1/SUMMARY.md predates the current layout,
-# and without --out this would overwrite results/RESULTS.md)
-.venv/bin/python -m eval.analyze results/probe_v1 --out results/probe_v1/SUMMARY_regen.md
+# REPORT §8.4 (writes results/probe_v1/RESULTS.md; nothing committed is touched)
+.venv/bin/python -m eval.analyze results/probe_v1 --out results/probe_v1/RESULTS.md
 # REPORT §8.7–8.9: hard-case set (heuristic), best-of-n veto replay, API cost estimate
 .venv/bin/python -m eval.hard_cases --auditor heuristic
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
