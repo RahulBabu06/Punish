@@ -67,7 +67,7 @@ def test_recomputed_values():
 
 def test_corrected_positives_in_docs():
     h = headline()
-    assert f"corrected ({h['n']}, {h['pos']} hacked)" in doc("README.md")
+    assert f"sweep of {h['n']} runs, Sonnet 4.6 auditor, corrected labels: {h['pos']} hacked" in doc("README.md")
     assert f"| corrected | {h['n']} | {h['pos']} |" in doc("REPORT.md")
 
 
