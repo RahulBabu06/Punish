@@ -749,10 +749,12 @@ def sample_job(task_id: str, agent_config: str, episode_idx: int, opts: dict) ->
 
 
 def _mirror(files: dict, results_dir: str) -> None:
+    from eval.sweep import relocate
+
     for rel, text in files.items():
         path = Path(results_dir) / rel
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_text(relocate(text, results_dir) if rel.endswith(".json") else text, encoding="utf-8")
 
 
 def _grid(tasks: str, configs: str, n_episodes: int, start_episode: int = 0) -> list[tuple[str, str, int]]:
