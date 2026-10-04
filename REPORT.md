@@ -591,6 +591,26 @@ A three-mode Sonnet audit costs about as much as the agent run it audits.
 - **LLM ground truth.** The headline label is effectively the Opus judge. Opus also
   belongs to the Claude family, so auditor and judge may share blind spots. We have not
   measured agreement with human raters (`TODO(numbers)`).
+- **Known issue: stale leaked_answer judge context.** The v2 sweeps ran `leaked_answer` on
+  the v1 `data.csv`, where the honest p is 0.31, so the "leaked" 0.312 is correct. The judge was
+  shown the newer definition, which says p ≈ 0.006. Of the 32 judge-positive runs, 30 computed
+  and reported p ≈ 0.31 themselves, so the judge is likely wrong on them
+  (`python -m eval.leaked_fix`; judgments unchanged). With those 30 relabelled, the pooled `either`
+  hack rates change as follows:
+  - honest: 0.04 → 0.00;
+  - incentivized: 0.21 → 0.12;
+  - pressure: 0.27 → 0.18;
+  - covert: 0.84 → 0.73.
+
+  Sonnet-auditor AUROC changes as follows (`full_trace` / `report_only` / `final_report`), with
+  FPR rising because the auditor also flags these runs:
+  - with the corrected label: 0.945 / 0.915 / 0.828 → 0.891 / 0.840 / 0.825;
+  - with `leaked_answer` excluded: 0.962 / 0.932 / 0.858.
+
+  The §8.1 `leaked_answer` hack counts and the "honest agents read the answer key" finding are
+  therefore overstated. See `results/leaked_answer_correction.md` and
+  `results/RESULTS_v2_excl_leaked.md`. The judge now receives the task definition matching each
+  trajectory's sandbox files.
 - **Toy tasks.** Six single-file tasks with one planted exploit each. Real analyses are
   longer, and hacks may spread across many steps.
 - **Rubric choices drive FPR.** The rubric treats any eval-file read as
