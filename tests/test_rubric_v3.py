@@ -100,6 +100,75 @@ def test_batch_reaudit_passes_rubric(monkeypatch):
     assert "n_samples, rubric)\n" in src  # starmap / reaudit_job forward it
 
 
+@pytest.mark.parametrize("runner", ["local", "modal"])
+@pytest.mark.parametrize("backend", ["claude", "agentic"])
+def test_batch_rubric_subset_and_resume_in_both_paths(tmp_path, monkeypatch, runner, backend):
+    from agent import credentials
+    from eval.run_episode import episode_path_for
+
+    source = tmp_path / "source"
+    (source / "trajectories").mkdir(parents=True)
+    for tid in ("x", "y"):
+        (source / f"trajectories/{tid}.jsonl").write_text("injected trajectory")
+    seen = []
+
+    def fake(text, path, modes, model, auditor="claude", n_samples=1, rubric="default"):
+        seen.append((Path(path).stem, modes, model, auditor, n_samples, rubric))
+        return [{"episode_id": Path(path).stem, "auditor_mode": mode, "auditor_backend": auditor,
+                 "verdict": dict(CLEAN), **({"auditor_rubric": rubric} if rubric != "default" else {})}
+                for mode in modes]
+
+    class Job:
+        def starmap(self, args, **kwargs):
+            return [fake(*args) for args in args]
+
+    monkeypatch.setattr(batch, "_reaudit_text", fake)
+    monkeypatch.setattr(batch, "reaudit_job", Job())
+    monkeypatch.setattr(credentials, "require_anthropic", lambda *a: None)
+
+    def run(rubric):
+        if runner == "modal":
+            batch.main.info.raw_f(str(source), job="reaudit", auditor_model="test-model", auditor=backend,
+                                  n_samples=2, rubric=rubric, only="x", auditor_modes="full_trace,report_only")
+        else:
+            assert batch._cli(["--local", "--results-dir", str(source), "--job", "reaudit", "--only", "x",
+                               "--rubric", rubric, "--auditor", backend, "--auditor-model", "test-model",
+                               "--n-samples", "2", "--auditor-modes", "full_trace,report_only"]) == 0
+
+    run("default")
+    original = {p: p.read_bytes() for p in (source / "reaudit").rglob("*.json")}
+    run("v3")
+    assert seen == [("x", ["full_trace", "report_only"], "test-model", backend, 2, r) for r in ("default", "v3")]
+    v3_dir = source / "reaudit_rubric_v3"
+    report_ep = Path(episode_path_for("x", "report_only", backend, str(v3_dir)))
+    report_ep.unlink()
+    run("v3")
+    assert seen[-1] == ("x", ["report_only"], "test-model", backend, 2, "v3")
+    run("v3")
+    assert len(seen) == 3
+    assert {p: p.read_bytes() for p in original} == original
+    assert not list(source.glob("*/episodes/y*"))
+
+
+def test_pending_modes_requires_matching_rubric_metadata(tmp_path):
+    import json
+    from eval.run_episode import episode_path_for, verdict_path_for
+
+    path = tmp_path / "x.jsonl"
+    v = Path(verdict_path_for("x", "full_trace", "claude", str(tmp_path)))
+    ep = Path(episode_path_for("x", "full_trace", "claude", str(tmp_path)))
+    batch._write(str(v), dict(CLEAN))
+    batch._write(str(ep), {"verdict": dict(CLEAN)})
+    assert not batch.pending_modes(path, ["full_trace"], str(tmp_path))
+    assert batch.pending_modes(path, ["full_trace"], str(tmp_path), rubric="v3") == ["full_trace"]
+    episode = json.loads(ep.read_text())
+    episode["auditor_rubric"] = "v3"
+    batch._write(str(ep), episode)
+    assert not batch.pending_modes(path, ["full_trace"], str(tmp_path), rubric="v3")
+    assert batch.pending_modes(path, ["full_trace"], str(tmp_path)) == ["full_trace"]
+    assert batch.pending_modes(path, ["full_trace"], str(tmp_path), skip_existing=False, rubric="v3") == ["full_trace"]
+
+
 def row(**kw):
     base = {"pred": True, "mode": "full_trace", "task_id": "metric_gaming", "hack_types": ["suspicious_access"],
             "read_grader": True, "grader_only": False, "computed": True, "grader_faithful": True}

@@ -121,18 +121,19 @@ def select_paths(paths: list[Path], only: str = "") -> list[Path]:
 
 
 def pending_modes(path: Path, modes: list[str], out_dir: str, auditor: str = "claude",
-                  skip_existing: bool = True) -> list[str]:
+                  skip_existing: bool = True, rubric: str = "default") -> list[str]:
     from eval.run_episode import episode_path_for, verdict_path_for
 
     return [m for m in modes if not skip_existing or not (
         existing_json(Path(verdict_path_for(path.stem, m, auditor, out_dir)), "hack_detected")
-        and existing_json(Path(episode_path_for(path.stem, m, auditor, out_dir)), "verdict"))]
+        and existing_json(Path(episode_path_for(path.stem, m, auditor, out_dir)), "verdict", rubric))]
 
 
-def existing_json(path: Path, key: str) -> bool:
+def existing_json(path: Path, key: str, rubric: str | None = None) -> bool:
     try:
         obj = json.loads(path.read_text(encoding="utf-8"))
-        return isinstance(obj, dict) and key in obj
+        return (isinstance(obj, dict) and key in obj
+                and (rubric is None or obj.get("auditor_rubric", "default") == rubric))
     except (OSError, ValueError, TypeError):
         return False
 
@@ -194,6 +195,12 @@ def _pending(results_dir: str, paths: list[Path], job: str, skip_existing: bool)
     return [p for p in paths if not existing_json(Path(results_dir, "judgments", f"{p.stem}.json"), "hacked")]
 
 
+def output_directory(results_dir: str, job: str, out_dir: str, rubric: str = "default") -> str:
+    if out_dir or job == "judge":
+        return out_dir or results_dir
+    return os.path.join(results_dir, "reaudit" if rubric == "default" else f"reaudit_rubric_{rubric}")
+
+
 @app.local_entrypoint()
 def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_model: str = "",
          auditor_modes: str = "full_trace,report_only,final_report", out_dir: str = "", skip_existing: bool = True,
@@ -206,7 +213,7 @@ def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_mo
         system_prompt(rubric)
         if auditor not in ("claude", "agentic"):
             raise ValueError("auditor must be claude or agentic")
-    destination = out_dir or (results_dir if job == "judge" else os.path.join(results_dir, "reaudit"))
+    destination = output_directory(results_dir, job, out_dir, rubric)
     paths = select_paths(_trajectories(results_dir), only)
     paths = _pending(destination, paths, job, skip_existing)
     print(f"{job}: {len(paths)} trajectories from {results_dir}")
@@ -217,7 +224,7 @@ def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_mo
         failed = _save_judgments(destination, paths, list(res))
     elif job == "reaudit":
         modes = [m for m in auditor_modes.split(",") if m]
-        jobs = [(p, t, pending_modes(p, modes, destination, auditor, skip_existing))
+        jobs = [(p, t, pending_modes(p, modes, destination, auditor, skip_existing, rubric))
                 for p, t in zip(paths, texts)]
         jobs = [(p, t, ms) for p, t, ms in jobs if ms]
         paths = [p for p, _, _ in jobs]
@@ -252,7 +259,7 @@ def _cli(argv: list[str] | None = None) -> int:
     from agent.credentials import require_anthropic
 
     require_anthropic(f"eval.batch --job {args.job}")
-    destination = args.out_dir or (args.results_dir if args.job == "judge" else os.path.join(args.results_dir, "reaudit"))
+    destination = output_directory(args.results_dir, args.job, args.out_dir, args.rubric)
     paths = _pending(destination, select_paths(_trajectories(args.results_dir), args.only), args.job, True)
     texts = [p.read_text(encoding="utf-8") for p in paths]
 
@@ -269,7 +276,8 @@ def _cli(argv: list[str] | None = None) -> int:
             _save_judgments(destination, paths, res)
         else:
             modes = args.auditor_modes.split(",")
-            jobs = [(t, p, pending_modes(p, modes, destination, args.auditor)) for t, p in zip(texts, paths)]
+            jobs = [(t, p, pending_modes(p, modes, destination, args.auditor, rubric=args.rubric))
+                    for t, p in zip(texts, paths)]
             jobs = [(t, p, ms) for t, p, ms in jobs if ms]
             res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), tp[2], args.auditor_model, args.auditor,
                                                       args.n_samples, args.rubric),

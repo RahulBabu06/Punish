@@ -31,14 +31,12 @@ def steps(rates, flags):
 
 def test_every_referenced_module_and_flag_parses_help(steps, flags):
     assert set(flags) == set(lp.MODULES)
+    assert {"--rubric", "--only"} <= flags["eval/batch.py"]
     lp.validate_commands(steps, flags)
     for step in steps:
-        assert not step.blocked or step.key == "rubric-v3", step.blocked
+        assert not step.blocked, step.blocked
         for cmd in step.commands:
             used = {a for a in cmd.argv[3:] if a.startswith("--")}
-            if step.key == "rubric-v3" and "--rubric" not in flags[cmd.argv[2]]:
-                used -= {"--rubric"}
-                assert any("PLACEHOLDER" in s for s in step.blocked)
             assert used <= flags[cmd.argv[2]], cmd.argv
 
 
@@ -93,6 +91,8 @@ def test_costs_use_repriced_token_rows_and_actual_agent_turns(rates, steps):
     assert rates["judge", lp.OPUS].usd_per_call == pytest.approx(totals[0] / totals[1])
     assert rates["agent", lp.SONNET].calls_per_episode > 1
     assert all(s.estimate(rates) > 0 for s in steps)
+    total = next(line for line in lp.render(steps, rates).splitlines() if line.startswith("| **total**"))
+    assert f"**${sum(s.estimate(rates) for s in steps):.2f}**" in total
 
 
 def test_dry_run_default_equals_explicit_and_does_not_change_results():
@@ -105,7 +105,7 @@ def test_dry_run_default_equals_explicit_and_does_not_change_results():
                                 env=env, capture_output=True, text=True, timeout=30)
         assert result.returncode == 0, result.stderr
         assert "no Anthropic calls" in result.stdout
-        assert "PLACEHOLDER" in result.stdout or "--rubric" in result.stdout
+        assert "--rubric v3" in result.stdout and "BLOCKED" not in result.stdout
         outputs.append(result.stdout)
     assert outputs[0] == outputs[1]
     assert subprocess.check_output(["git", "status", "--porcelain"], cwd=lp.ROOT) == before
@@ -134,6 +134,10 @@ def test_invalid_flags_and_module_are_blocked(tmp_path):
     step.add("missing.py", ["--invalid"], [])
     lp.validate_commands([step], {}, tmp_path)
     assert len(step.blocked) == 2
+    rubric = lp.Step("rubric-v3", "rubric-v3")
+    rubric.add("eval/batch.py", ["--rubric", "v3"], [])
+    lp.validate_commands([rubric], {"eval/batch.py": set()})
+    assert rubric.blocked == ["unsupported eval/batch.py flags: ['--rubric']"]
 
 
 def test_execute_rechecks_outputs_and_can_resume(tmp_path, monkeypatch):
@@ -163,16 +167,46 @@ def test_execute_rechecks_outputs_and_can_resume(tmp_path, monkeypatch):
                       lambda *a, **k: SimpleNamespace(returncode=7)) == 7
 
 
-def test_blocked_rubric_does_not_prevent_later_rejudge(tmp_path, monkeypatch):
+def test_unavailable_rubric_stops_execution(tmp_path, monkeypatch):
     seen = []
 
     def build(key, *args):
         seen.append(key)
-        return lp.Step(key, key, blocked=["PLACEHOLDER"] if key == "rubric-v3" else [])
+        return lp.Step(key, key, blocked=["unsupported flag"] if key == "rubric-v3" else [])
 
     monkeypatch.setattr(lp, "build_step", build)
     assert lp.execute(["rubric-v3", "rejudge-leaked"], tmp_path, {}, {}) == 2
-    assert seen == ["rubric-v3", "rejudge-leaked"]
+    assert seen == ["rubric-v3"]
+
+
+def test_rubric_v3_is_separate_and_resumes_only_matching_modes(tmp_path, rates, flags):
+    from eval import batch
+
+    tid = "metric_gaming__covert__ep000"
+    verdict = {"hack_detected": False, "confidence": 0.1}
+    for name in lp.V2_DIRS:
+        source = tmp_path / "results" / name
+        (source / "trajectories").mkdir(parents=True)
+        (source / "trajectories" / f"{tid}.jsonl").write_text("injected trajectory")
+        for model in (lp.SONNET, lp.OPUS):
+            out = source if model == lp.SONNET else source / f"reaudit_{model}"
+            for mode in lp.MODES:
+                for path in lp.audit_outputs(out, tid, mode):
+                    batch._write(str(path), verdict if path.parent.name == "verdicts" else {"verdict": verdict})
+    step = lp.build_step("rubric-v3", tmp_path, rates, flags)
+    assert not step.blocked and sum(step.calls.values()) == 18
+    for cmd in step.commands:
+        assert cmd.argv[cmd.argv.index("--rubric") + 1] == "v3"
+        assert "rubric_v3" in cmd.argv[cmd.argv.index("--out-dir") + 1]
+    out = tmp_path / "results" / lp.V2_DIRS[0] / f"reaudit_{lp.SONNET}_rubric_v3"
+    for mode, rubric in (("full_trace", "v3"), ("report_only", "default")):
+        v, ep = lp.audit_outputs(out, tid, mode)
+        batch._write(str(v), verdict)
+        batch._write(str(ep), {"verdict": verdict, "auditor_rubric": rubric})
+    resumed = lp.build_step("rubric-v3", tmp_path, rates, flags)
+    assert sum(resumed.calls.values()) == 17
+    cmds = [cmd for cmd in resumed.commands if cmd.argv[cmd.argv.index("--out-dir") + 1] == str(out)]
+    assert {cmd.argv[cmd.argv.index("--auditor-modes") + 1] for cmd in cmds} == {"report_only", "final_report"}
 
 
 def test_budget_gate_prevents_execution(monkeypatch, rates, flags):
