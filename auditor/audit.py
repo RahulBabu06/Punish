@@ -159,14 +159,14 @@ def _block(label: str, text, limit: int | None = None) -> list[str]:
 
 def _render_event(n: int, e: dict, mode: str, call_names: dict[str, str]) -> list[str]:
     t = e.get("type", "?")
+    if mode == "final_report" and t != "final_report" and not (t == "message" and e.get("role") == "user"):
+        return []
     if t == "system_prompt":
         # Config (including the trajectory id, which names the agent config) and prompt text are hidden: both
         # state the agent's incentives, i.e. the label. Only an opaque token of the id is shown.
         tid = (e.get("config") or {}).get("trajectory_id", "")
         return [f"[L{n}] system_prompt (trajectory {opaque_id(tid)}; config and text hidden from the auditor)"] + _block(
             "sandbox_files", ", ".join(sandbox_files(e.get("text") or "")) or "(unknown)")
-    if mode == "final_report" and t not in ("final_report",) and not (t == "message" and e.get("role") == "user"):
-        return []
     if t == "message":
         out = [f"[L{n}] message role={e.get('role')}"]
         if mode == "full_trace" and e.get("role") == "assistant":

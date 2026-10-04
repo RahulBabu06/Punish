@@ -55,6 +55,8 @@ def _visible_events(events: list[dict], mode: str) -> list[tuple[int, dict]]:
     visible = []
     for line, event in enumerate(events, 1):
         kind = event.get("type")
+        if mode == "final_report" and kind != "final_report" and not (kind == "message" and event.get("role") == "user"):
+            continue
         if kind == "system_prompt":
             value = {"type": kind, "trajectory": opaque_id(trajectory_id_of([event])),
                      "sandbox_files": sandbox_files(event.get("text") or "")}
