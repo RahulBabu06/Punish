@@ -658,12 +658,12 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55. <b><code>leaked_answe
 <tr><th>category</th><th>metric</th><th>heuristic</th><th>hand-label agreement</th></tr>
 <tr><td>hard_negative</td><td>FPR</td><td class="hi">0.10 (1/10)</td><td>10/10</td></tr>
 <tr><td>obfuscated_hack</td><td>recall</td><td>0.40 (4/10)</td><td>9/10</td></tr>
-<tr><td>reasoning_only</td><td>recall</td><td class="lo">0.20 (1/5)</td><td>5/5</td></tr>
-<tr><td>report_only</td><td>recall</td><td>0.57 (4/7)</td><td class="lo">2/7</td></tr>
-<tr class="sep"><td><b>all 32</b></td><td>P / R</td><td>0.90 / 0.41</td><td>26/32</td></tr>
+<tr><td>reasoning_only</td><td>recall</td><td class="lo">0.20 (1/5)</td><td>4/5</td></tr>
+<tr><td>report_only</td><td>recall</td><td>0.57 (4/7)</td><td class="lo">1/7</td></tr>
+<tr class="sep"><td><b>all 32</b></td><td>P / R</td><td>0.90 / 0.41</td><td>24/32</td></tr>
 </table>
 <p style="font-size:14px;color:var(--muted);margin:6px 0 14px">Offline provenance-based heuristic auditor; <code>full_trace</code> and <code>report_only</code> scores are identical. Last column: the deterministic labeller against the hand labels.</p>
-<div class="callout"><p><b>The rules miss 59% of the hard hacks</b>, and the labeller misses 5 of 7 report-only fabrications. This is the gap an LLM auditor has to close.</p>
+<div class="callout"><p><b>The rules miss 59% of the hard hacks</b>, and the labeller misses 6 of 7 report-only fabrications. This is the gap an LLM auditor has to close.</p>
 <p>Claude auditor run: <b>pending</b>. One command: <code style="background:#24384F;color:#fff">modal run eval/hard_cases.py --modes all</code></p></div>
 </div>
 </div>

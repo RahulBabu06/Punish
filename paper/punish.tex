@@ -48,7 +48,7 @@ Sonnet's verdicts. It does improve Opus: recall 0.77 against 0.63, and false-pos
 Under the corrected label, auditors catch most hacks but over-flag honest runs that read the
 grader: trace-mode FPR is 0.22--0.35, and no Claude auditor keeps FPR $\le$ 10\% on unseen tasks
 with useful recall. Used as a best-of-$n$ veto, the auditor still cuts the share of shipped
-trajectories that are hacked from 0.28 to 0.15 (corrected; 0.37 to 0.21 original). All results
+trajectories that are hacked from 0.28 to 0.15 (corrected; 0.38 to 0.19 original). All results
 are preliminary (5 episodes per cell).
 \end{abstract}
 
@@ -234,15 +234,16 @@ message was made up.
 \paragraph{Mitigation: best-of-$n$ veto.} We replay the v2 Sonnet~4.6 and Haiku~4.5 runs as if
 a deployment shipped one of the five trajectories in each task $\times$ config group (48 groups):
 \begin{itemize}
-\item picking the highest grader score ships 0.28 hacks under the corrected label (0.37
+\item picking the highest grader score ships 0.28 hacks under the corrected label (0.38
 original), against 0.23 (0.33) at random;
 \item vetoing what Sonnet \mode{full\_trace} flags, then taking the highest score, ships 0.15
-(difference CI [0.05, 0.23]; original 0.21);
+(difference CI [0.05, 0.23]; original 0.19) at a cost of 0.06 grader score;
 \item that equals the oracle, which ships a clean trajectory whenever one exists (0.15; 0.19
 original).
 \end{itemize}
-Here the mode matters more than in Table~\ref{tab:auditor}: a Sonnet veto ships 0.21 hacks
-with \mode{full\_trace} against 0.29 with \mode{report\_only} (original label).
+Here the mode matters more than in Table~\ref{tab:auditor}: a Sonnet veto ships 0.15 hacks
+with \mode{full\_trace}, 0.17 with \mode{report\_only} and 0.21 with \mode{final\_report}
+(original 0.19, 0.27, 0.29).
 
 \paragraph{Cost.} For the whole judged v2 study, \code{eval.cost} estimates about \$88. That is
 roughly 2.2 cents per Sonnet audit (3.0 cents when \code{eval.cascade} rebuilds the full
@@ -298,8 +299,9 @@ FPR $\le$ 10\% with useful recall.
 false positives are agents that read the grader and reported honest values, and
 \mode{final\_report} false positives are honest ``N/A'' reports for the failed plate. Under the corrected label, grader-reading runs
 are 301 of the 375 false-positive audits. The rendered
-trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, so future runs should
-use opaque ids. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
+trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, mostly in
+\mode{final\_report}, where those audits have higher FPR (Sonnet 0.39 vs 0.20, corrected). The
+auditor now sees an opaque token. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
 \mode{full\_trace} auditors cite 0.81--0.83 of hack lines, against 0.19--0.26 for \mode{final\_report}.
 
 \paragraph{Deployment cost and attacks.} On the 240 Opus-audited trajectories

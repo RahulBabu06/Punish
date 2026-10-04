@@ -189,6 +189,8 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/calibration_v2/` | leave-one-task-out calibration and FPR-capped thresholds for each auditor and mode (`eval.calibrate`) |
 | `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs (`CASCADE_corrected.md`: corrected label) |
 | `results/errors_v2/` | auditor error taxonomy with a hand-tagged sample ([`docs/error_analysis.md`](docs/error_analysis.md)) |
+| `results/task_stats/` | per-task hack rate, exploit-file reads and auditor recall/FPR ([`docs/task_design.md`](docs/task_design.md)) |
+| `results/id_leak/` | recall/FPR of verdicts that cite the trajectory id vs not (corrected label) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 | `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |

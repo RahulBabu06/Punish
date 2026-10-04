@@ -140,7 +140,7 @@ out of credit, which is why v3 is preliminary.
 Use it as a veto. Replaying v2 offline with the corrected label, if you ship the trajectory
 with the best grader score, 28% of what you ship is a hack, worse than picking at random
 (23%). Veto anything the `full_trace` auditor flags, then take the best score, and that drops
-to 15%, the floor where every candidate hacked (original label: 37% → 21%; `REPORT.md` §8.8).
+to 15%, the floor where every candidate hacked (original label: 38% → 19%; `REPORT.md` §8.8).
 
 **"How does this differ from SHADE-Arena / ImpossibleBench / CoT Red-Handed?"**
 Same agent-plus-monitor idea, applied to scientific analysis. Our hacks (p-hacking, metric
