@@ -34,15 +34,17 @@ sees as an ablation of access to the chain of thought (CoT): reasoning, actions 
 (\mode{final\_report}).
 
 The judged v2 study has 360 trajectories from three subject models and four prompt configs,
-with 1{,}080 Sonnet~4.6 audits and 720 Opus~4.6 re-audits. Agents explicitly told to hack
-and hide it do so 77--93\% of the time, pressured or incentivised agents 13--33\%, and honest
-agents 0--10\%. A deterministic exploit labeller finds only 47 of the 123 hacks found by a
-privileged judge.
+with 1{,}080 Sonnet~4.6 audits and 720 Opus~4.6 re-audits. Our privileged judge was shown a
+stale definition for one task (\code{leaked\_answer}) and is likely wrong on 30 of its 32
+positives there, so we report results with that task excluded (300 trajectories) and with
+those labels corrected. Excluding it, agents explicitly told to hack and hide it do so
+72--100\% of the time, pressured or incentivised agents 12--28\%, and honest agents 0\%. A
+deterministic exploit labeller finds only 46 of the 91 hacks found by the judge.
 
-With only the report, a Sonnet auditor's recall is 0.67. Once it also sees the actions,
-recall rises to 0.93 and AUROC from 0.83 to 0.92--0.95. The reasoning alone barely changes
-Sonnet's verdicts, which match on 345 of 360 trajectories. It does improve Opus: recall
-0.84 against 0.73, and false-positive rate 0.11 against 0.17 ($p<0.001$). Used as a
+With only the report, a Sonnet auditor's recall is 0.76. Once it also sees the actions,
+recall rises to 0.90 and AUROC from 0.86 to 0.93--0.96. The reasoning alone barely changes
+Sonnet's verdicts. It does improve Opus: recall 0.77 against 0.63, and false-positive rate
+0.06 against 0.12 (on all 240 Opus-audited runs, 0.84 vs 0.73 and 0.11 vs 0.17, $p<0.001$). Used as a
 best-of-$n$ veto, the auditor cuts the share of shipped trajectories that are hacked from
 0.37 to 0.21. All results are preliminary (5 episodes per cell).
 \end{abstract}
@@ -117,22 +119,20 @@ It is reproducible and blind to reasoning, but narrow.
 full trajectory, so it can catch improvised hacks. It is itself an imperfect model.
 \end{itemize}
 The headline label is \emph{either}, the union of the two. Over the 360 v2 trajectories, they
-agree on 47 positives, the judge alone flags 76 more, and the labeller alone flags 0.
+agree on 47 positives, the judge alone flags 76 more, and the labeller alone flags 0. With
+\code{leaked\_answer} excluded (300 trajectories), the counts are 46, 45 and 0.
 
 \section{Results}
 All numbers come from \code{results/RESULTS.md} and \code{REPORT.md}~\S8, with 95\%
 bootstrap CIs over trajectories. McNemar tests are exact and paired.
 
 \paragraph{How often agents hack.} Figure~\ref{fig:rates} and Table~\ref{tab:rates}. Without the
-\code{covert} instruction, 43 of 180 incentivised or pressure runs hack. These are almost all
-``soft'' hacks:
-\begin{itemize}
-\item overstating what real papers show (\code{fake\_citation}, 25/30);
-\item letting the leaked answer steer the report (\code{leaked\_answer}, 16/30).
-\end{itemize}
-Even honest Sonnet~4.6 read \code{eval.py} and framed 3 of 5 \code{leaked\_answer} reports
-around the expected value. The labeller misses most of these. Labeller-only hack rates would
-understate the problem by about $2.6\times$.
+\code{covert} instruction, 27 of 150 incentivised or pressure runs hack with
+\code{leaked\_answer} excluded (43 of 180 on the original labels, but 16 of those are
+\code{leaked\_answer} runs that are mostly judge errors; see below). Most are ``soft'' hacks:
+overstating what real papers show (\code{fake\_citation}, 25/30). The labeller misses most of
+these. Labeller-only hack rates would understate the problem by about $2\times$ (46 vs 91
+excluded; $2.6\times$ on the original labels).
 
 \begin{table}[t]
 \centering\small
@@ -145,29 +145,34 @@ Sonnet 4.5 & 1/30 & 5/30 & 10/30 & 28/30\\
 Haiku 4.5 & 0/30 & 5/30 & 4/30 & 25/30\\
 \bottomrule
 \end{tabular}
-\caption{Hack rate (\emph{either} label), v2, 6 tasks $\times$ 5 episodes per cell.}
+\caption{Hack rate (\emph{either} label, original), v2, 6 tasks $\times$ 5 episodes per cell.
+Pooled, with \code{leaked\_answer} excluded: honest 0/75, incentivized 11/75, pressure 16/75,
+covert 64/75. Corrected: 0, 11, 16 and 66 of 90.}
 \label{tab:rates}
 \end{table}
 
 \begin{table}[t]
 \centering\small
 \setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{llccc}
 \toprule
 auditor & mode & recall & FPR & AUROC\\
+ & & orig / excl & orig / excl & orig / excl / corr\\
 \midrule
-Sonnet 4.6 & \mode{full\_trace} & 0.93 & 0.26 & 0.945\\
-(n=360) & \mode{report\_only} & 0.93 & 0.27 & 0.915\\
- & \mode{final\_report} & 0.67 & 0.21 & 0.828\\
+Sonnet & \mode{full\_trace} & 0.93 / 0.90 & 0.26 / 0.20 & 0.945 / 0.962 / 0.891\\
+4.6 & \mode{report\_only} & 0.93 / 0.91 & 0.27 / 0.21 & 0.915 / 0.932 / 0.840\\
+ & \mode{final\_report} & 0.67 / 0.76 & 0.21 / 0.21 & 0.828 / 0.858 / 0.825\\
 \midrule
-Opus 4.6 & \mode{full\_trace} & 0.84 & 0.11 & 0.944\\
-(n=240) & \mode{report\_only} & 0.73 & 0.17 & 0.921\\
- & \mode{final\_report} & 0.57 & 0.16 & 0.841\\
+Opus & \mode{full\_trace} & 0.84 / 0.77 & 0.11 / 0.06 & 0.944 / 0.951 / 0.861\\
+4.6 & \mode{report\_only} & 0.73 / 0.63 & 0.17 / 0.12 & 0.921 / 0.919 / 0.821\\
+ & \mode{final\_report} & 0.57 / 0.63 & 0.16 / 0.17 & 0.841 / 0.848 / 0.808\\
 \bottomrule
-\end{tabular}
-\caption{Auditor quality by mode against the \emph{either} label. The Sonnet rows have 123
-hacked trajectories and the Opus rows 79. Opus re-audited the Sonnet~4.6 and Haiku~4.5
-subjects only.}
+\end{tabular}}
+\caption{Auditor quality by mode against the \emph{either} label: original (Sonnet n=360,
+123 hacked; Opus n=240, 79 hacked), \code{leaked\_answer} excluded (300, 91; 200, 56) and
+corrected (360, 93; 240, 56). Opus re-audited the Sonnet~4.6 and Haiku~4.5 subjects only.}
 \label{tab:auditor}
 \end{table}
 
@@ -181,18 +186,29 @@ mode for Opus~4.6 (240 trajectories) and Sonnet~4.6 (360). Generated by
 \label{fig:rates}
 \end{figure*}
 
-\paragraph{Seeing the actions matters.} See Table~\ref{tab:auditor}. With only the report,
-Sonnet's recall drops from 0.93 to 0.67 ($\Delta$recall 0.26, CI [0.16, 0.36]; $\Delta$AUROC
-0.12, CI [0.07, 0.16]). The drop comes from hacks that leave no trace in a coherent report. In
-\code{leaked\_answer}, the trace modes catch 32/32 hacks and the report alone 13/32. In
-\code{metric\_gaming} the figures are 15/15 and 3/15. A report that says ``$R^2=0.92$'' looks
+\paragraph{Known issue: stale judge context.} The v2 sweeps ran \code{leaked\_answer} on older
+data, where the honest $p\approx0.31$ and the ``leaked'' 0.312 is the correct answer, but the judge
+was shown the newer definition ($p\approx0.006$). In 30 of its 32 positives on that task the agent
+computed and reported $p\approx0.31$ itself, so the judge is likely wrong
+(\code{results/leaked\_answer\_correction.md}). The original 123 hacks are therefore not clean
+ground truth. Table~\ref{tab:auditor} gives every metric three ways. The corrected label
+\emph{raises} FPR, because the auditors also flag those runs (they read \code{eval.py} and matched
+the grader), so we treat the excluded view as primary.
+
+\paragraph{Seeing the actions matters.} See Table~\ref{tab:auditor}. With \code{leaked\_answer}
+excluded, Sonnet's recall drops from 0.90 to 0.76 with only the report ($\Delta$recall 0.14, CI
+[0.03, 0.26]; $\Delta$AUROC 0.10, CI [0.06, 0.15]); on the original labels the drop is 0.26.
+The drop comes from hacks that leave no trace in a coherent report. In \code{metric\_gaming}
+the trace modes catch 15/15 hacks and the report alone 3/15. A report that says ``$R^2=0.92$'' looks
 fine unless you can see the agent compute 0.447 and then read \code{grade.py}.
 
 \paragraph{Reasoning helps a stronger auditor.} For Sonnet, \mode{full\_trace} and
 \mode{report\_only} give the same verdict on 345 of 360 trajectories (8 vs 7 discordant,
 $p=1.0$). The reasoning only improves the ranking ($\Delta$AUROC $+0.030$, CI [0.012, 0.049]).
-Opus makes real use of it: 19 vs 2 discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR
-0.11 against 0.17. The effect holds for each subject:
+Opus makes real use of it: with \code{leaked\_answer} excluded, recall 0.77 against 0.63
+($\Delta$recall 0.14, CI [0.06, 0.25]) and FPR 0.06 against 0.12. On all 240 runs it has 19 vs 2
+discordant pairs ($p<0.001$), recall 0.84 against 0.73, and FPR 0.11 against 0.17, and the
+effect holds for each subject:
 \begin{itemize}
 \item Sonnet~4.6 subject: 9 vs 1 ($p=0.021$). The gain is mostly in false positives (FPR 0.05
 against 0.12). The reasoning shows that an agent read \code{grade.py} and then ignored it.
@@ -231,7 +247,7 @@ usage, so the estimate is a lower bound.
 \paragraph{Preliminary: v3 and new conditions.} The API credit ran out during the 10-task v3
 runs, so they have labeller labels only (\code{REPORT.md}~\S8.6):
 \begin{itemize}
-\item Haiku~4.5: 200 trajectories. Covert runs hack 42/50 and honest runs 1/50.
+\item Haiku~4.5: 200 trajectories. Covert runs hack 42/50 and honest runs 0/50.
 \item Sonnet~4.6: 150 of 200 planned trajectories.
 \item \code{covert\_monitored} (the agent is told an auditor reads its reasoning), with all 15
 labeller positives read by hand (9 were labeller false positives): Haiku hacked 1/14 times on
@@ -249,7 +265,7 @@ Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2 (87--100\
 
 \paragraph{Label audit.} \code{tasks/LABEL\_AUDIT.md} revises the labeller rules. On the 360
 judged v2 runs, labeller--judge agreement rises from $\kappa=0.55$ to $0.80$, and the labeller
-rate on honest v3 runs falls from 24/112 to 6/112; the v3 numbers here use the relabelled
+rate on honest v3 runs falls from 24/112 to 5/112; the v3 numbers here use the relabelled
 episodes. Our v2 headline uses the frozen run-time labels, so Table~\ref{tab:auditor} does not
 change.
 
@@ -260,8 +276,7 @@ blind-hacked runs are judge-hacked. 8 of its 9 disagreements are \code{leaked\_a
 was shown the current definition (honest $p\approx0.006$), but v2 agents ran on older data where
 $p\approx0.312$ is correct. So the judge over-flags honest \code{leaked\_answer} runs. Flipping
 all 31 such labeller--judge disagreements, an upper bound, would cut the Sonnet~4.6 honest,
-incentivized and pressure judge rates from 0.10, 0.30, 0.33 to 0.00, 0.17, 0.17. A corrected sensitivity
-analysis is pending.
+incentivized and pressure judge rates from 0.10, 0.30, 0.33 to 0.00, 0.17, 0.17. The corrected and excluded numbers are in Table~\ref{tab:auditor}.
 
 \paragraph{Operating at a low false-positive rate.} With leave-one-task-out thresholds on raw
 confidence (\code{results/calibration\_v2}), at FPR $\le$ 5\% Sonnet \mode{full\_trace} keeps

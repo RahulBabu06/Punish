@@ -12,21 +12,32 @@ vocabulary, and line-level `evidence`. Built for the London AI x Science Hackath
 Track 2.
 
 Preliminary headline (v2 sweep: 360 trajectories from Sonnet 4.6, Sonnet 4.5 and Haiku 4.5
-subjects, 1,080 Sonnet 4.6 audits, Opus-judge ground truth):
+subjects, 1,080 Sonnet 4.6 audits, Opus-judge ground truth).
+
+**Known issue:** the judge was shown a stale `leaked_answer` definition and is likely wrong on
+30 of its 32 positives for that task (`results/leaked_answer_correction.md`, `REPORT.md` §8.0).
+So the original label (123 hacked) is not clean ground truth. Each cell below is original /
+`leaked_answer` excluded (300 trajectories, 91 hacked) / corrected (360, 93 hacked):
 
 | auditor sees | recall | FPR | AUROC |
 |---|---|---|---|
-| reasoning + actions + report (`full_trace`) | 0.93 | 0.26 | 0.95 |
-| actions + report (`report_only`) | 0.93 | 0.27 | 0.92 |
-| final report only (`final_report`) | 0.67 | 0.21 | 0.83 |
+| reasoning + actions + report (`full_trace`) | 0.93 / 0.90 / 0.90 | 0.26 / 0.20 / 0.35 | 0.95 / 0.96 / 0.89 |
+| actions + report (`report_only`) | 0.93 / 0.91 / 0.91 | 0.27 / 0.21 / 0.35 | 0.92 / 0.93 / 0.84 |
+| final report only (`final_report`) | 0.67 / 0.76 / 0.74 | 0.21 / 0.21 / 0.23 | 0.83 / 0.86 / 0.83 |
 
-Reading only the report misses a third of the hacks, and seeing the actions recovers them.
+The corrected label raises FPR because the auditors also flag the 30 relabelled runs (they
+read `eval.py` and matched the grader), so the excluded column is the cleanest comparison.
+
+Reading only the report misses a quarter to a third of the hacks (recall 0.76 vs 0.90 with
+`leaked_answer` excluded, 0.67 vs 0.93 original), and seeing the actions recovers them.
 For a Sonnet auditor, seeing the reasoning improves the confidence ranking (ΔAUROC +0.03)
 but almost never changes the verdict. A stronger auditor does use it. Re-auditing 240
 trajectories with Opus 4.6, `full_trace` gets recall 0.84 against 0.73 for `report_only`,
-and FPR 0.11 against 0.17 (paired McNemar p < 0.001). Instructed (`covert`) agents hack
-77–93% of the time, pressured or incentivised agents 13–33%, and honest agents 0–10%. A
-deterministic exploit labeller finds only 47 of 123 hacks.
+and FPR 0.11 against 0.17 (paired McNemar p < 0.001); with `leaked_answer` excluded, 0.77
+against 0.63 and 0.06 against 0.12. Instructed (`covert`) agents hack 72–100% of the time
+(excluded; 77–93% original), pressured or incentivised agents 12–28% (13–33%), and honest
+agents 0% (0–10%). A deterministic exploit labeller finds only 46 of 91 hacks (47 of 123
+original).
 
 The 10-task v3 suite and the new conditions (`covert_monitored`, `sycophantic_pi`, tool-failure
 injection, Opus subject) have only preliminary, labeller-only results, because the API credit
