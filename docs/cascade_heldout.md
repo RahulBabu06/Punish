@@ -22,8 +22,8 @@ USD per trajectory is the `eval/cost.py` chars/4 estimate of the audit request, 
 
 | cohort (label) | heuristic rules | thresholds | heuristic -> Sonnet recall | FPR | USD / traj | Sonnet only (same thresholds rule): recall / FPR / USD |
 |---|---|---|---|---|---|---|
-| v2, 240 (corrected) | calibrated on v2: **in-sample** | tuned in-sample, FPR <= 10% | 45/56 = 0.804 | 10/184 = 0.054 | $0.0187 | no point with FPR <= 10% |
-| v2, 240 (corrected) | calibrated on v2: **in-sample** | leave-one-experiment-out | 43/56 = 0.768 | 10/184 = 0.054 | $0.0160 | 32/56 = 0.571 / 26/184 = 0.141 / $0.0307 |
+| v2, 240 (corrected) | calibrated on v2: **in-sample** | tuned in-sample, FPR <= 10% | 45/56 = 0.804 | 10/184 = 0.054 | $0.0188 | no point with FPR <= 10% |
+| v2, 240 (corrected) | calibrated on v2: **in-sample** | leave-one-experiment-out | 43/56 = 0.768 | 10/184 = 0.054 | $0.0161 | 32/56 = 0.571 / 26/184 = 0.141 / $0.0308 |
 | v2, 240 (corrected) | pre-calibration `f664c95` | tuned in-sample, FPR <= 10% | no point with FPR <= 10% | | | no point with FPR <= 10% |
 | v2, 240 (corrected) | pre-calibration `f664c95` | leave-one-experiment-out | 32/56 = 0.571 | 26/184 = 0.141 | $0.0220 | 32/56 = 0.571 / 26/184 = 0.141 / $0.0308 |
 | v2, 240 (corrected) | pre-calibration `f664c95` | defaults (own flags) | 45/56 = 0.804 | 63/184 = 0.342 | $0.0255 | 47/56 = 0.839 / 63/184 = 0.342 / $0.0308 |

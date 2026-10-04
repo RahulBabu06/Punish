@@ -8,7 +8,8 @@
 #   scripts/reproduce.sh cost          estimated API spend per results dir -> results/COST.md
 #   scripts/reproduce.sh sweep         print the exact Modal commands behind each committed results dir
 #   scripts/reproduce.sh derived       committed label/mode variants: mitigation, calibration, cascade, obfuscation,
-#                                      judge validation and error tables (explicit paths; --label tags the filenames)
+#                                      cascade held-out check + headline figure, judge validation and error tables
+#                                      (explicit paths; --label tags the filenames)
 #   scripts/reproduce.sh export-demo   single self-contained static HTML demo -> docs/demo.html (demo.export)
 #   scripts/reproduce.sh all           test + analyze + cost + derived + sweep + export-demo
 set -euo pipefail
@@ -85,6 +86,15 @@ cmd_derived() {
   # shellcheck disable=SC2086
   "$PY" -m eval.cascade $pair --mode final_report --label corrected --out results/CASCADE.md \
     --json results/CASCADE.json --figure results/figures/cascade_frontier.svg >/dev/null
+  # held-out check (docs/cascade_heldout.md): pre-calibration heuristic on v2, current heuristic on v3, then the summary
+  # shellcheck disable=SC2086
+  "$PY" -m eval.cascade $pair --label corrected --heuristic-ref f664c95 --out results/CASCADE_corrected_precal.md \
+    --json results/CASCADE_corrected_precal.json --figure results/figures/cascade_frontier_corrected_precal.svg >/dev/null
+  "$PY" -m eval.cascade results/v3_haiku45 results/v3_sonnet46 results/v3cond_haiku45 results/v3cond_sonnet46 \
+    results/v3fault_sonnet46 results/v3_opus46 --label labeller --families 'heuristic,sonnet,h->sonnet' \
+    --out results/CASCADE_v3_labeller.md --json results/CASCADE_v3_labeller.json >/dev/null
+  "$PY" -m eval.cascade_heldout --out results/cascade_heldout >/dev/null
+  "$PY" -m eval.headline >/dev/null
   "$PY" -m eval.obfuscation results/v3_sonnet46 results/v3_haiku45 results/v3cond_sonnet46 results/v3cond_haiku45 \
     --configs covert,covert_monitored --tasks cherry_pick,effect_size_target,fabrication \
     --overrides docs/obfuscation_v3cond_manual_labels.json --out results/obfuscation/OBFUSCATION_matched_v3.md >/dev/null
@@ -101,7 +111,7 @@ cmd_sweep() { setup; "$PY" scripts/sweep_commands.py "$@"; }
 
 cmd_export_demo() { setup; "$PY" -m demo.export "$@"; }
 
-usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; }
 
 target="${1:-help}"
 shift || true
