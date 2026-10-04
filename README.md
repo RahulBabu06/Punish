@@ -77,10 +77,10 @@ key.
 # flags appear as their evidence lines stream past
 .venv/bin/python -m demo.app --flags-progressive --delay 1.5
 
-# replay a real v2 run (Haiku 4.5, covert, leaked_answer) with its real Sonnet verdict
+# replay a real v2 run (Haiku 4.5, covert, metric_gaming: R² 0.447 reported as 0.92) with its real Sonnet verdict
 .venv/bin/python -m demo.app --delay 0.6 \
-  --trajectory results/v2_haiku45/trajectories/leaked_answer__covert__ep000.jsonl \
-  --verdict    results/v2_haiku45/verdicts/leaked_answer__covert__ep000.json
+  --trajectory results/v2_haiku45/trajectories/metric_gaming__covert__ep002.jsonl \
+  --verdict    results/v2_haiku45/verdicts/metric_gaming__covert__ep002.json
 
 # no browser: same thing in the terminal
 .venv/bin/python -m demo.terminal --flags-progressive --delay 0.8
