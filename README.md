@@ -27,6 +27,10 @@ So the original label (123 hacked) is not clean ground truth. Each cell below is
 
 The corrected label raises FPR because the auditors also flag the 30 relabelled runs (they
 read `eval.py` and matched the grader), so the excluded column is the cleanest comparison.
+**The honest summary: auditors catch most hacks but over-flag honest grader-reading runs**
+(corrected trace-mode FPR 0.22–0.35). Under the corrected label, no Claude auditor × mode
+keeps FPR ≤ 10% on unseen tasks with useful recall. A best-of-n veto still cuts shipped hacks
+from 0.28 to 0.15 (`REPORT.md` §8.8, §8.13–8.14).
 
 Reading only the report misses a quarter to a third of the hacks (recall 0.76 vs 0.90 with
 `leaked_answer` excluded, 0.67 vs 0.93 original), and seeing the actions recovers them.
@@ -157,6 +161,11 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/calibration_v2/CALIBRATION.md
 .venv/bin/python -m eval.judge_validation score --out results/judge_validation
+# corrected-label versions (*_corrected.* files): add --label corrected to mitigate,
+# calibrate, cascade, obfuscation and judge_validation score (see results/README.md)
+.venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --tags docs/error_tags.json --sample-out results/errors_v2/sample.json --out results/errors_v2/ERRORS.md
+.venv/bin/python -m eval.evidence   # evidence localisation vs fixtures/evidence_gold
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -177,7 +186,8 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
 | `results/judge_validation/` | Opus judge vs 60 blind AI labels: κ 0.70, and the stale `leaked_answer` definition ([`docs/judge_validation.md`](docs/judge_validation.md)) |
 | `results/calibration_v2/` | leave-one-task-out calibration and FPR-capped thresholds for each auditor and mode (`eval.calibrate`) |
-| `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs |
+| `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs (`CASCADE_corrected.md`: corrected label) |
+| `results/errors_v2/` | auditor error taxonomy with a hand-tagged sample ([`docs/error_analysis.md`](docs/error_analysis.md)) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 | `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |

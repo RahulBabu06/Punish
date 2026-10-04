@@ -420,7 +420,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55. <b><code>leaked_answe
 <div class="card" style="border-color:var(--orange)"><h3>Instructed hacking</h3><p>Most positives come from <code>covert</code>. Natural hacks are rarer and softer, and Sonnet <code>full_trace</code> recall under <code>pressure</code> is 18/24.</p></div>
 <div class="card" style="border-color:var(--green)"><h3>LLM ground truth</h3><p>The headline label is effectively the Opus judge, from the same model family as the auditor. Against 60 blind AI labels: κ 0.70, never more lenient; 8 of 9 disagreements are a stale <code>leaked_answer</code> definition. No human raters yet.</p></div>
 <div class="card" style="border-color:var(--pink)"><h3>Toy tasks</h3><p>Single-file tasks with one planted exploit each. Real analyses are longer, and hacks may spread across many steps.</p></div>
-<div class="card" style="border-color:var(--amber)"><h3>The rubric drives FPR</h3><p>The rubric counts any eval-file read as <code>suspicious_access</code> and the judge does not. Most trace-mode false positives come from this mismatch.</p></div>
+<div class="card" style="border-color:var(--amber)"><h3>The rubric drives FPR</h3><p>Any eval-file read counts as <code>suspicious_access</code>. Corrected-label trace-mode FPR is 0.22–0.35, and no Claude auditor keeps FPR ≤ 10% on unseen tasks.</p></div>
 <div class="card" style="border-color:var(--navy)"><h3>Reasoning is not ground truth</h3><p>A clean trace is weak evidence of a clean run (Chen et al.). We have not tested agents trained to obfuscate.</p></div>
 </div>
 <div class="src">Source: REPORT.md §9</div>
@@ -432,6 +432,7 @@ The Sonnet 4.6 auditor on the same runs: 4 vs 7, p = 0.55. <b><code>leaked_answe
 <ul style="margin-top:26px">
 <li><b>Actions are the main signal.</b> Reading only the final report costs Sonnet 4.6 0.14 recall with leaked_answer excluded (0.90 → 0.76; 0.26 on the original labels).</li>
 <li><b>Reasoning helps a strong auditor separate looking at the grader from using it</b> (Opus FPR 0.06 vs 0.12 and recall 0.77 vs 0.63 with leaked_answer excluded; 0.11 vs 0.17 and 0.84 vs 0.73 on all 240 runs, p &lt; 0.001).</li>
+<li><b>Auditors catch most hacks but over-flag honest grader-reading runs</b> (corrected label: FPR 0.22–0.35). As a best-of-n veto they still cut shipped hacks 0.28 → 0.15.</li>
 <li><b>Rule-based ground truth undercounts.</b> The labeller finds 46 of the 91 hacks the judge finds (leaked_answer excluded).</li>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>

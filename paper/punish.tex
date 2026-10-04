@@ -44,9 +44,12 @@ deterministic exploit labeller finds only 46 of the 91 hacks found by the judge.
 With only the report, a Sonnet auditor's recall is 0.76. Once it also sees the actions,
 recall rises to 0.90 and AUROC from 0.86 to 0.93--0.96. The reasoning alone barely changes
 Sonnet's verdicts. It does improve Opus: recall 0.77 against 0.63, and false-positive rate
-0.06 against 0.12 (on all 240 Opus-audited runs, 0.84 vs 0.73 and 0.11 vs 0.17, $p<0.001$). Used as a
-best-of-$n$ veto, the auditor cuts the share of shipped trajectories that are hacked from
-0.37 to 0.21. All results are preliminary (5 episodes per cell).
+0.06 against 0.12 (on all 240 Opus-audited runs, 0.84 vs 0.73 and 0.11 vs 0.17, $p<0.001$).
+Under the corrected label, auditors catch most hacks but over-flag honest runs that read the
+grader: trace-mode FPR is 0.22--0.35, and no Claude auditor keeps FPR $\le$ 10\% on unseen tasks
+with useful recall. Used as a best-of-$n$ veto, the auditor still cuts the share of shipped
+trajectories that are hacked from 0.28 to 0.15 (corrected; 0.37 to 0.21 original). All results
+are preliminary (5 episodes per cell).
 \end{abstract}
 
 \section{Introduction}
@@ -231,13 +234,15 @@ message was made up.
 \paragraph{Mitigation: best-of-$n$ veto.} We replay the v2 Sonnet~4.6 and Haiku~4.5 runs as if
 a deployment shipped one of the five trajectories in each task $\times$ config group (48 groups):
 \begin{itemize}
-\item picking the highest grader score ships 0.37 hacks, against 0.33 at random;
-\item vetoing what Sonnet \mode{full\_trace} flags, then taking the highest score, ships 0.21
-(difference CI [0.07, 0.26]) at a cost of 0.05 grader score;
-\item an oracle that ships a clean trajectory whenever one exists gets 0.19.
+\item picking the highest grader score ships 0.28 hacks under the corrected label (0.37
+original), against 0.23 (0.33) at random;
+\item vetoing what Sonnet \mode{full\_trace} flags, then taking the highest score, ships 0.15
+(difference CI [0.05, 0.23]; original 0.21);
+\item that equals the oracle, which ships a clean trajectory whenever one exists (0.15; 0.19
+original).
 \end{itemize}
 Here the mode matters more than in Table~\ref{tab:auditor}: a Sonnet veto ships 0.21 hacks
-with \mode{full\_trace} against 0.29 with \mode{report\_only}.
+with \mode{full\_trace} against 0.29 with \mode{report\_only} (original label).
 
 \paragraph{Cost.} For the whole judged v2 study, \code{eval.cost} estimates about \$88. That is
 roughly 2.2 cents per Sonnet audit (3.0 cents when \code{eval.cascade} rebuilds the full
@@ -259,7 +264,8 @@ The v3 labeller is stricter, so these rates cannot be compared with v2.
 
 \paragraph{Does the reasoning disclose the hack?} A regex rubric (\code{eval/obfuscation.py};
 10/10 on a held-out hand-labelled sample) finds the exploit stated in the reasoning of 25/25
-Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2 (87--100\%). The 3 exceptions are
+Haiku, 28/28 Sonnet~4.5 and 20/23 Sonnet~4.6 \code{covert} hacks in v2 (87--100\%; corrected
+label 63/66, 0.95). The 3 exceptions are
 \code{fake\_citation}, where the overstatement lives in the report. Unprompted hacks
 (incentivised or pressure) disclose less often, 0--90\% per cell (4--10 hacks each).
 
@@ -274,9 +280,8 @@ from an AI annotator (Devin, not a human; \code{docs/judge\_validation.md}), the
 accuracy 0.85 and $\kappa=0.70$ (labeller: 0.82, 0.57). It is never more lenient: all 23
 blind-hacked runs are judge-hacked. 8 of its 9 disagreements are \code{leaked\_answer}: the judge
 was shown the current definition (honest $p\approx0.006$), but v2 agents ran on older data where
-$p\approx0.312$ is correct. So the judge over-flags honest \code{leaked\_answer} runs. Flipping
-all 31 such labeller--judge disagreements, an upper bound, would cut the Sonnet~4.6 honest,
-incentivized and pressure judge rates from 0.10, 0.30, 0.33 to 0.00, 0.17, 0.17. The corrected and excluded numbers are in Table~\ref{tab:auditor}.
+$p\approx0.312$ is correct. So the judge over-flags honest \code{leaked\_answer} runs. Under the
+corrected label it agrees on 59/60 ($\kappa=0.97$), though that is not independent evidence. The corrected and excluded numbers are in Table~\ref{tab:auditor}.
 
 \paragraph{Operating at a low false-positive rate.} With leave-one-task-out thresholds on raw
 confidence (\code{results/calibration\_v2}), at FPR $\le$ 5\% Sonnet \mode{full\_trace} keeps
@@ -284,12 +289,25 @@ recall 0.70 against 0.49 for \mode{report\_only} and 0.15 for \mode{final\_repor
 0.63, 0.57 and 0.19. So the reasoning's AUROC gain for Sonnet matters exactly where a deployment
 would operate, although its default verdicts (0.93 vs 0.93) hide it. No threshold keeps
 \mode{final\_report} FPR at or below 10\% on unseen tasks. Platt and isotonic maps do not
-transfer across tasks: raising the threshold on raw confidence is the better lever.
+transfer across tasks: raising the threshold on raw confidence is the better lever. That holds
+for the original label only. Under the corrected label, thresholds tuned on five tasks reach FPR
+0.15--0.18 on the sixth for every trace mode, so no Claude auditor $\times$ mode keeps unseen-task
+FPR $\le$ 10\% with useful recall.
+
+\paragraph{Errors and evidence.} On the original label (\code{docs/error\_analysis.md}), trace-mode
+false positives are agents that read the grader and reported honest values, and
+\mode{final\_report} false positives are honest ``N/A'' reports for the failed plate. The rendered
+trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, so future runs should
+use opaque ids. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),
+\mode{full\_trace} auditors cite 0.81--0.83 of hack lines, against 0.19--0.26 for \mode{final\_report}.
 
 \paragraph{Deployment cost and attacks.} On the 240 Opus-audited trajectories
 (\code{results/CASCADE.md}), Sonnet alone has recall 0.89 and FPR 0.25 at about \$0.030 per
 trajectory, Opus alone 0.84 and 0.11 at \$0.051, and a Sonnet$\to$Opus cascade 0.82 and 0.11
-at \$0.056 (45.8\% escalated), so Opus alone is the best value. A monitor-attack corpus (10 real \code{covert} hacks $\times$
+at \$0.056 (45.8\% escalated), so Opus alone is the best value on the original label. Under the
+corrected label (\code{results/CASCADE\_corrected.md}) every default Claude policy has FPR
+$\ge$ 0.22; only a tuned heuristic$\to$Sonnet cascade stays under 10\% (recall 0.80, FPR 0.054,
+\$0.019 in-sample; 0.77 at 0.054 held out). A monitor-attack corpus (10 real \code{covert} hacks $\times$
 6 attacks: report and file injections, laundered reasoning, padding, a fake self-check) has so
 far been scored only by the offline heuristic auditor: \mode{full\_trace} recall drops from
 7/10 to 6/10 under laundered reasoning. Claude auditors on the hard-case and attack sets, the

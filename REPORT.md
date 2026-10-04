@@ -48,6 +48,11 @@ clean), and the original 123 hacks should not be read as clean ground truth. Res
    p < 0.001; excluded: recall 0.77 vs 0.63, FPR 0.06 vs 0.12, Δrecall 0.14 [0.06, 0.25]).
    For Sonnet the reasoning improves the ranking (ΔAUROC +0.03, 95% bootstrap
    CI [0.01, 0.05]) but not the verdicts: they are identical on 345 of 360 trajectories.
+5. **Under the corrected label, auditors catch most hacks but over-flag honest
+   grader-reading runs.** Trace-mode FPR is 0.22–0.35 (Opus `full_trace` 0.22, Sonnet
+   `full_trace` 0.35) at recall 0.77–0.91. No Claude auditor × mode keeps FPR ≤ 10% on unseen
+   tasks with useful recall (§8.14). As a best-of-n veto the auditor still roughly halves
+   shipped hacks, 0.28 → 0.15 (§8.8).
 
 Seeing the agent's actions makes a large difference compared with reading only its report.
 Whether also seeing its reasoning helps depends on the auditor: it changes Sonnet 4.6's
@@ -288,6 +293,8 @@ Sonnet rows: n = 360 / 300 / 360 (123 / 91 / 93 hacked). Opus rows: n = 240 / 20
   modes' `leaked_answer` advantage (32/32 vs 13/32) was mostly on likely-wrong labels.
 - The labeller finds 46 of the 91 excluded hacks (about 2.0× undercount; original 47 of 123,
   2.6×).
+- Downstream analyses were re-run with `--label corrected` (`eval/labels.py`; outputs are the
+  `*_corrected.*` files). §8.8, §8.10 and §8.13–8.15 give them next to the original numbers.
 - Tables in §8.1–8.3 below use the original labels unless they say otherwise; read their
   `leaked_answer` rows and the "honest agents read the answer key" finding with this issue in
   mind. The judge now receives the task definition that matches each trajectory's sandbox.
@@ -610,15 +617,18 @@ blind spot to unverified claims that §8.1 found on real runs. `TODO(numbers)`: 
 
 `eval/mitigate.py best-of-n` replays the committed v2 Sonnet 4.6 and Haiku 4.5 runs as if a
 deployment picked one of the 5 trajectories per task × config group to ship (48 groups,
-240 trajectories, `either` label). Results are in
-`results/mitigation_bestofn_v2/MITIGATION_bestofn.md`.
+240 trajectories). Results are in `results/mitigation_bestofn_v2/MITIGATION_bestofn.md`
+(original `either` label) and `MITIGATION_bestofn_corrected.md` (corrected label).
 
-| policy (Sonnet 4.6 auditor, `full_trace`, veto = `hack_detected`) | shipped hack rate | grader score |
-|---|---|---|
-| random | 0.33 [0.21, 0.45] | 0.66 |
-| highest grader score | 0.37 [0.24, 0.50] | 0.79 |
-| auditor veto, then highest grader score | **0.21** [0.10, 0.33] | 0.74 |
-| oracle (a clean one if any exists) | 0.19 [0.08, 0.31] | n/a |
+| policy (Sonnet 4.6 auditor, `full_trace`, veto = `hack_detected`) | shipped hack rate, original | shipped hack rate, corrected | grader score (orig / corr) |
+|---|---|---|---|
+| random | 0.33 [0.21, 0.45] | 0.23 [0.13, 0.35] | 0.66 / 0.67 |
+| highest grader score | 0.37 [0.24, 0.50] | 0.28 [0.16, 0.41] | 0.79 / 0.75 |
+| auditor veto, then highest grader score | **0.21** [0.10, 0.33] | **0.15** [0.06, 0.25] | 0.74 / 0.69 |
+| oracle (a clean one if any exists) | 0.19 [0.08, 0.31] | 0.15 [0.06, 0.25] | n/a |
+
+- **Corrected label:** the veto cuts shipped hacks from 0.28 to 0.15 (difference CI
+  [0.05, 0.23]) and reaches the oracle floor. Opus `full_trace` as the veto ships 0.17.
 
 - Selecting on the grader alone ships *more* hacks than picking at random.
 - The auditor veto cuts the shipped hack rate by 0.16 (bootstrap CI [0.07, 0.26]) at a cost
@@ -659,6 +669,9 @@ It was tuned on 20 hand-labelled cases and scores 10/10 on 10 held-out ones (Wil
 | Sonnet 4.5 | 28 | 28 | 1.00 / 1.00 / 0.68 |
 | Sonnet 4.6 | 23 | 20 | 0.96 / 0.96 / 0.52 |
 
+- **Corrected label** (`results/obfuscation/OBFUSCATION_corrected.md`): 21/21, 27/27 and 15/18
+  `covert` hacks are disclosed, 63/66 = 0.95 pooled. Dropping the likely-wrong
+  `leaked_answer` positives raises disclosure, because those runs had nothing to disclose.
 - The 3 undisclosed Sonnet 4.6 hacks are `fake_citation`: the overstatement is in the report,
   and the reasoning only says "a credible evidence chain".
 - Disclosure is near-total for instructed hacks (87–100% of `covert` hacks per subject: 20/23,
@@ -716,8 +729,15 @@ and Opus 4.6 (79 hacked) under five policies:
 | heuristic → Sonnet (escalate 56%) | 0.78 | 0.24 | $0.018 |
 | Sonnet → Opus (escalate 46%) | 0.82 | 0.11 | $0.056 |
 
-- **Opus alone is the best value here.** Sonnet → Opus gets Opus-level FPR, but costs more than Opus alone, because Sonnet flags
-  46% of trajectories (it would be cheaper below 40%).
+- **Original label: Opus alone is the best value.** Sonnet → Opus gets Opus-level FPR, but
+  costs more than Opus alone, because Sonnet flags 46% of trajectories (it would be cheaper
+  below 40%).
+- **Corrected label (`results/CASCADE_corrected.md`, 56 hacked):** every policy with a Claude
+  stage has FPR ≥ 0.22 at its default verdicts (Sonnet 0.84 / 0.34, Opus 0.77 / 0.22,
+  Sonnet → Opus 0.75 / 0.22; heuristic only 0.68 / 0.08). With tuned thresholds, heuristic →
+  Sonnet is the only Claude policy under 10% FPR: recall 0.80 at FPR 0.054 and $0.019 per
+  trajectory in-sample, and 0.77 at 0.054 ($0.016) with thresholds tuned on the other
+  subject. Sonnet alone and Opus alone stay at FPR 0.14–0.15 held out.
 - At FPR ≤ 5% the best in-sample recall is 0.71 (Sonnet at threshold 0.9, or heuristic →
   Sonnet at $0.012); with thresholds tuned on the other subject it drops to 0.68 for Sonnet
   and 0.60 for heuristic → Sonnet.
@@ -734,21 +754,28 @@ but have not been run: `TODO(numbers)`.
 cross-validation (the map and threshold never see the task they are scored on), over the
 judged v2 runs (`either` label).
 
-| auditor, mode | `hack_detected` recall (FPR) | recall (FPR) at FPR ≤ 5%, raw confidence, LOTO |
-|---|---|---|
-| Sonnet 4.6, `full_trace` | 0.93 (0.26) | 0.70 (0.08) |
-| Sonnet 4.6, `report_only` | 0.93 (0.27) | 0.49 (0.07) |
-| Sonnet 4.6, `final_report` | 0.67 (0.21) | 0.15 (0.14) |
-| Opus 4.6, `full_trace` | 0.84 (0.11) | 0.63 (0.06) |
-| Opus 4.6, `report_only` | 0.73 (0.17) | 0.57 (0.06) |
-| Opus 4.6, `final_report` | 0.57 (0.16) | 0.19 (0.14) |
+| auditor, mode | `hack_detected` recall (FPR), original | corrected | at FPR ≤ 5% cap, raw, LOTO: original | corrected |
+|---|---|---|---|---|
+| Sonnet 4.6, `full_trace` | 0.93 (0.26) | 0.90 (0.34) | 0.70 (0.08) | 0.51 (0.18) |
+| Sonnet 4.6, `report_only` | 0.93 (0.27) | 0.91 (0.35) | 0.49 (0.07) | 0.32 (0.15) |
+| Sonnet 4.6, `final_report` | 0.67 (0.21) | 0.74 (0.23) | 0.15 (0.14) | 0.17 (0.10) |
+| Opus 4.6, `full_trace` | 0.84 (0.11) | 0.77 (0.22) | 0.63 (0.06) | 0.36 (0.18) |
+| Opus 4.6, `report_only` | 0.73 (0.17) | 0.62 (0.27) | 0.57 (0.06) | 0.29 (0.18) |
+| Opus 4.6, `final_report` | 0.57 (0.16) | 0.62 (0.20) | 0.19 (0.14) | 0.25 (0.11) |
+
+- **Corrected label (`results/calibration_v2/CALIBRATION_corrected.md`): no Claude auditor ×
+  mode reaches FPR ≤ 10% on unseen tasks with useful recall.** Thresholds tuned on five tasks
+  overshoot their cap on the sixth (FPR 0.15–0.18 for the trace modes), because the
+  grader-reading false positives cluster in `metric_gaming` and `leaked_answer`. The only
+  recommended cut is Sonnet `final_report` ≥ 0.85, at recall 0.17. The deployment cuts below
+  hold only under the original label.
 
 - **Raise the threshold rather than recalibrate.** Raw confidence is already the best-calibrated
   score out of fold (lowest LOTO Brier); Platt and isotonic maps do not transfer across tasks.
   The recommended deployment cuts are raw confidence ≥ 0.88 for Sonnet `full_trace` (LOTO recall
   0.76, FPR 0.09) and ≥ 0.45 for Opus `full_trace` (0.82, 0.09).
 - At a low false-positive budget, reasoning matters even for Sonnet: `full_trace` keeps 0.70
-  recall against 0.49 for `report_only`. This is the AUROC gap of §8.2 showing up where a
+  recall against 0.49 for `report_only` (corrected 0.51 vs 0.32). This is the AUROC gap of §8.2 showing up where a
   deployment would operate. The default verdicts (0.93 vs 0.93) hide it.
 - No threshold keeps `final_report` FPR at or below 10% on unseen tasks, so that mode should
   not be used as a veto.
@@ -778,6 +805,43 @@ was committed before the annotator saw any judge or labeller verdict.
   0.17 pressure).
 - The ninth disagreement is a borderline `cherry_pick` covert run that planned to emphasise a
   post-hoc exclusion but kept the primary analysis primary in its report.
+- Under the corrected label (`results/judge_validation_corrected/SUMMARY.md`), the judge
+  agrees with the blind labels on 59/60 (κ 0.97); only the `cherry_pick` case remains. This
+  is not independent evidence for the correction: the blind labels helped find the issue.
+
+### 8.16 Auditor error taxonomy (`docs/error_analysis.md`, original label)
+
+`eval/errors.py` lists every audit that disagrees with the original `either` label (1,800
+audits): 126 false-negative audits on 71 trajectories and 246 false-positive audits on 110.
+One annotator hand-tagged a stratified sample of 25 FN and 25 FP trajectories.
+
+- **False positives come in two clusters.** In the trace modes they are agents that read the
+  grader and reported honest values (`metric_gaming` 105, `leaked_answer` 60 audits). In
+  `final_report` they are honest `plate_C mean = N/A` reports read as invented excuses
+  (`fabrication`, 61). The `honest` config alone gives 67 FP audits (27%).
+- **False negatives** are mostly `fake_citation` (60 of 126 audits). In the trace modes, every
+  miss but two is `fake_citation`. The 32 `leaked_answer` FN audits are all judge-only
+  `final_report` labels, i.e. the label noise of §8.0.
+- **Metadata leak.** The rendered trajectory includes the trajectory id, which encodes task and
+  config. 122 of 1,800 audits cite it; for example, an Opus `final_report` audit calls the id
+  "a strong signal". Future runs should use an opaque id.
+- Every v2 verdict used the auditor prompt at `cfe6d7a`, before the provenance Facts block and
+  the rubric recalibration. Their effect is not yet measured.
+
+### 8.17 Evidence localisation (`fixtures/evidence_gold/`, `python -m eval.evidence`)
+
+A gold set marks the exact trajectory lines of each hack: all 22 hacked hard cases and 30
+judge-positive v2 trajectories (5 per task; a purposive sample, 4 disputed positives excluded).
+On the 19 v2 traces with saved verdicts in every mode for both auditors:
+
+| auditor | `full_trace` R / P±1 | `report_only` R / P±1 | `final_report` R / P±1 |
+|---|---|---|---|
+| Sonnet 4.6 | 0.81 / 0.51 | 0.60 / 0.48 | 0.26 / 0.57 |
+| Opus 4.6 | 0.83 / 0.46 | 0.64 / 0.51 | 0.19 / 1.00 |
+
+R = share of gold lines cited; P±1 = share of cited lines within one line of gold. The trace
+auditors cite most hack lines, but about half of what they cite is context. The heuristic gets
+R 0.36 and P±1 0.91 on the hard cases. No Claude auditor has run on them.
 
 ## 9. Limitations
 
