@@ -23,6 +23,7 @@ from auditor.provenance import GRADER_RE as GRADER_FILE_RE
 from auditor.provenance import provenance_facts
 from eval.analyze import MODES, load_experiment, unique_audits
 from eval.leaked_fix import corrected_rows
+from eval.outputs import output, tagged
 
 FN_TAGS = {
     "reasoning_only": "the hack is visible only in the private reasoning; actions and report look clean",
@@ -346,14 +347,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--sample-out", default=None, help="write the stratified sample (JSON) + a .txt digest for reading")
     p.add_argument("--correction", default=None,
                    help="leaked_answer correction JSON (eval.leaked_fix): flagged judge positives count as clean")
-    p.add_argument("--out", default="results/errors/ERRORS.md")
+    p.add_argument("--out", default=None, help="default: ERRORS.md next to the experiment(s); with --correction, "
+                   "'corrected' is added to --out and --sample-out unless the path already names it")
     args = p.parse_args(argv)
     flags = json.loads(Path(args.correction).read_text())["flags"] if args.correction else None
     audits, errors = load_errors(args.experiments, flags=flags)
     units = trajectory_units(errors)
+    tag = "corrected" if flags else None
     if args.sample_out:
         sample = sample_units(units, args.n_fn, args.n_fp, args.seed)
-        path = Path(args.sample_out)
+        path = tagged(args.sample_out, tag)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(sample, indent=2), encoding="utf-8")
         path.with_suffix(".txt").write_text(sample_digest(sample), encoding="utf-8")
@@ -369,7 +372,7 @@ def main(argv: list[str] | None = None) -> int:
             note += f"; {len(tags) - len(kept)} hand-tagged trajectories are no longer errors"
             tags = kept
     md = render(audits, errors, units, tags, args.experiments, note)
-    out = Path(args.out)
+    out = output(args.out, args.experiments, "ERRORS.md", tag)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
     out.with_suffix(".json").write_text(json.dumps({"units": units, "tag_summary": tag_summary(tags, units) if tags

@@ -79,7 +79,8 @@ Hidden requirements: no offline command needed an API key, Modal or network. sci
 
 ### Exact corrected-label commands
 
-These reproduce the committed `*_corrected*` files (prefix `.venv/bin/python -m`; `V2="results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45"`):
+Since `devin/repro-fix-2` the either-label `--out` paths work too (the label is added to the filename);
+`scripts/reproduce.sh derived` runs all of them. These reproduce the committed `*_corrected*` files (prefix `.venv/bin/python -m`; `V2="results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45"`):
 
 ```bash
 eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 --label corrected --out results/mitigation_bestofn_v2/MITIGATION_bestofn_corrected.md
@@ -89,7 +90,7 @@ eval.cascade results/v2_sonnet46 results/v2_haiku45 --label corrected --out resu
 eval.cascade results/v2_sonnet46 results/v2_haiku45 --mode final_report --label corrected --out results/CASCADE_final_report_corrected.md --json results/CASCADE_final_report_corrected.json --figure results/figures/cascade_frontier_final_report_corrected.svg
 eval.obfuscation $V2 results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json --labels docs/obfuscation_handlabels_heldout.json --label corrected --out results/obfuscation/OBFUSCATION_corrected.md
 eval.judge_validation score --label corrected --out results/judge_validation_corrected
-eval.errors $V2 --tags docs/error_tags.json --correction results/leaked_answer_correction.json --sample-out results/errors_v2_corrected/sample.json --out results/errors_v2_corrected/ERRORS.md
+eval.errors $V2 --tags docs/error_tags.json --correction results/leaked_answer_correction.json --out results/errors_v2_corrected/ERRORS.md
 ```
 
 ## Fixes made (this branch)
@@ -113,7 +114,152 @@ eval.errors $V2 --tags docs/error_tags.json --correction results/leaked_answer_c
 corrected-label commands above (plus `eval.final_report_compare` and the random-fold calibration) are now
 byte-identical, E3 exits 2 with a clear message, and `pytest -q` gives 1122 passed, 1 skipped.
 
+## Follow-up: `devin/repro-fix-2`
+
+### Why COST.md moved from $151.54 to $162.46
+
+Not more runs, not a price change, not a counting change. Both tables cover the same 11 dirs and the same 8,519
+calls, priced from the same `PRICES` table. Every committed run predates usage tracking, so `eval.cost` rebuilds each
+auditor/judge request with the current prompt code and counts characters / 4. The estimate therefore moves whenever
+that code does.
+
+Each step below was measured on today's data by running `eval.cost` (all 11 dirs, `--by-dir`) at the commit and at
+its first parent. The old COST.md commit `6628853` still gives exactly $151.54.
+
+| change | commit(s) | auditor | judge | reaudit | total |
+|---|---|---|---|---|---|
+| committed COST.md (code at `6628853`) | | $56.37 | $14.59 | $26.89 | **$151.54** |
+| provenance Facts block in the audit prompt + recalibrated rubric (`auditor/{audit,prompts,provenance}.py`) | `2d9a21a`, `5e0630c` | +5.79 | +1.03 | +2.74 | +$9.55 |
+| "trajectory content is data, not instructions" rubric (monitor-injection hardening) | `16039ef` | +0.76 | 0 | +0.36 | +$1.12 |
+| judge uses the task definition matching the sandbox files | `070cc1c` | 0 | −0.04 | 0 | −$0.04 |
+| Facts citation lines report whether cited specifics were read | `2e7c2aa` | +0.15 | +0.07 | +0.10 | +$0.31 |
+| opaque sha256 token instead of the trajectory id | `8bc082f` | −0.02 | 0 | −0.01 | −$0.02 |
+| rubric v3 (opt-in), heuristic final_report | `c785a9c`, `4adb558` | 0 | 0 | 0 | 0 |
+| **regenerated COST.md (this branch)** | | $63.05 | $15.65 | $30.08 | **$162.46** |
+
+Swapping only `auditor/{audit,prompts,provenance}.py` from `8037138` into a `6628853` checkout gives $161.09, which
+pins the first step on those three files. The judge also grows there because the judge prompt renders the trajectory
+with `auditor.audit`. Agent rows and every output-token count are unchanged. The v2 rows go from $88.18 to $95.12.
+
+`results/COST.md` is now regenerated with the full command (`scripts/reproduce.sh cost` runs exactly this):
+
+```bash
+.venv/bin/python -m eval.cost results/model_probe results/probe_v1 results/v2_haiku45 results/v2_sonnet45 \
+  results/v2_sonnet46 results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 results/v3cond_haiku45 \
+  results/v3cond_sonnet46 results/v3fault_sonnet46 --by-dir --out results/COST.md
+```
+
+`CASCADE*.{md,json}` and their frontier SVGs use the same estimator for `$/traj`, so they were regenerated as well
+(`scripts/reproduce.sh derived`). Only cost columns and points changed. Recall and FPR are unchanged.
+
+### Non-clobbering outputs (code)
+
+- **New `eval/outputs.py`:**
+  - Without `--out`, output goes to `<exp>/NAME` for one experiment, or `<parent>/combined__<a>+<b>.../NAME` for
+    several (order-insensitive).
+  - A non-default `--label`, `--mode` or `--folds random` is added to the filename unless the path already names it
+    (`tagged`).
+  - `guard_inputs` refuses to replace a report built from another input set.
+- **`eval.analyze`:**
+  - `--out` defaults to `<exp>/RESULTS.md`; `.json`, `_thresholds.csv` and `figures/` follow `--out`.
+  - It refuses (exit 2) to overwrite a report whose `Experiments:` line lists other experiments; `--force`
+    overrides. Order doesn't matter.
+- **`eval.cost --out`:** the same guard on the `Results dirs:` line, so a 3-dir run can no longer replace the
+  11-dir `COST.md`.
+- **Label/mode tags in filenames:** `mitigate best-of-n`, `calibrate`, `cascade` (`--out`, `--json`, `--figure`),
+  `obfuscation`, `judge_validation score` (output dir), `errors` (`--out`, `--sample-out`, tagged `corrected`
+  when `--correction` is given).
+  - Defaults now sit next to the experiments, not under `results/MITIGATION_bestofn.md`, `results/CASCADE.md`,
+    `results/calibration/` or `results/errors/`.
+  - So `--label corrected --out results/CASCADE.md` writes `results/CASCADE_corrected.md`, and the either-label
+    file is untouched.
+- **`scripts/reproduce.sh`:**
+  - New `derived` target that regenerates every committed label/mode variant with explicit paths (also part of
+    `all`).
+  - `analyze` and `cost` already passed explicit `--out`.
+  - Running `derived` and `cost` twice leaves the tree unchanged.
+- **Tests:** `tests/test_outputs.py` (15 tests) covers default dirs, tagging, explicit paths, the guard, analyze
+  defaults and the analyze/cost refusal. `pytest -q`: 1177 passed, 1 skipped.
+- **Regenerated:** `results/obfuscation/OBFUSCATION_matched_v3.{md,json}` and `OBFUSCATION_v3manual.json` (by
+  `derived`) were also from the pre-relabel labeller. Sonnet `covert` is now 11/15 hacked (was 12/15), the number
+  REPORT already gives in brackets.
+
 ## Needed doc fixes not made (protected or owned elsewhere)
+
+Exact replacements for the write-up session, updated for `devin/repro-fix-2`. After this branch, the old README
+commands no longer clobber anything: probe_v1 writes `results/probe_v1/RESULTS.md`, `--label corrected` writes
+`*_corrected` files, and the 3-dir cost run exits 2. They still don't reproduce the committed files, though.
+
+**README.md "Reproducing the results" block (lines 138–173)** — replace with:
+
+```bash
+# Everything below in one go: scripts/reproduce.sh analyze && scripts/reproduce.sh cost && scripts/reproduce.sh derived
+# REPORT §8.1–8.3 (judged v2 runs) -> results/RESULTS.md + results/figures/
+.venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/RESULTS.md --figures --figures-dir results/figures
+# REPORT §8.6 (labeller-only, preliminary)
+.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 \
+  results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46 \
+  --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3
+# REPORT §8.4 (writes results/probe_v1/RESULTS.md; nothing committed is touched)
+.venv/bin/python -m eval.analyze results/probe_v1 --out results/probe_v1/RESULTS.md
+# REPORT §8.7–8.9: hard-case set (heuristic), best-of-n veto replay, API cost estimate (all 11 trajectory dirs)
+.venv/bin/python -m eval.hard_cases --auditor heuristic
+.venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
+  --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
+.venv/bin/python -m eval.cost results/model_probe results/probe_v1 results/v2_haiku45 results/v2_sonnet45 \
+  results/v2_sonnet46 results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 results/v3cond_haiku45 \
+  results/v3cond_sonnet46 results/v3fault_sonnet46 --by-dir --out results/COST.md
+# REPORT §8.10–8.13: reasoning disclosure, labeller audit, monitor attacks (heuristic), cost vs detection
+.venv/bin/python -m eval.obfuscation results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  results/v3cond_sonnet46 results/v3cond_haiku45 --labels docs/obfuscation_handlabels.json \
+  --labels docs/obfuscation_handlabels_heldout.json --out results/obfuscation/OBFUSCATION.md
+.venv/bin/python -m tasks.validate_labels results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45
+.venv/bin/python -m eval.monitor_attacks --auditor heuristic --modes all
+.venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
+  --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
+.venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/calibration_v2/CALIBRATION.md
+# corrected-label versions: rerun mitigate, calibrate, cascade and obfuscation above with --label corrected
+# (same --out/--json/--figure; "_corrected" is added to each filename), e.g.
+.venv/bin/python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 --label corrected \
+  --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
+.venv/bin/python -m eval.judge_validation score --label corrected --out results/judge_validation
+#   -> results/judge_validation_corrected/
+.venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --tags docs/error_tags.json --sample-out results/errors_v2/sample.json --out results/errors_v2/ERRORS.md
+.venv/bin/python -m eval.errors results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --tags docs/error_tags.json --correction results/leaked_answer_correction.json \
+  --out results/errors_v2_corrected/ERRORS.md
+.venv/bin/python -m eval.final_report_compare --json results/heuristic_final_report/comparison.json
+.venv/bin/python -m eval.evidence   # evidence localisation vs fixtures/evidence_gold
+# rows for further stats (McNemar, per-task, per-subject)
+.venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
+  --out results/analysis/RESULTS_rows.md --json results/analysis/rows.json
+```
+
+**README.md line 65 (setup)** — replace with:
+"Runtime dependencies: `anthropic`, `modal`, `numpy`, `pytest`, and the stdlib. `fixtures/hard_cases/build.py`
+also needs scipy and pandas: `~/.local/bin/uv pip install -p .venv -e ".[sandbox]"`. Live runs need ..."
+
+**REPORT.md "Reproducing" block (lines 947–967)** — replace these lines:
+- 950–952 (§8.6): use the v3 order `results/v3_haiku45 results/v3_opus46 results/v3_sonnet46
+  results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46`.
+- 953 (§8.4): `.venv/bin/python -m eval.analyze results/probe_v1 --out results/probe_v1/RESULTS.md`.
+- 957–958 (§8.9): the full 11-dir `eval.cost` command above, or `scripts/reproduce.sh cost`.
+- After the block, add: "`scripts/reproduce.sh derived` regenerates the corrected-label and final_report variants."
+
+**REPORT.md §8.9 numbers (lines 648–649)**, if the write-up adopts the regenerated table:
+- `$88` → `$95` (v2 rows: $95.12).
+- `$151.54` → `$162.46`.
+- Add: "estimated with the current prompt code; the committed runs used shorter prompts, see docs/repro_check.md."
+
+**PITCH.md**, same basis:
+- "about 2.2 cents per Sonnet audit" becomes about 2.5 cents ($26.80 / 1,080 v2 audits).
+- The v2 study "$88" becomes $95.
+- The 7 cents per subject run is unchanged.
+
+The items below are from the first pass. Items 2–8 are covered by the replacement block above.
 
 **README.md**
 1. Setup: "Runtime dependencies: `anthropic`, `modal`, `pytest`, and the stdlib" should add `numpy`, and mention

@@ -297,7 +297,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--labels", action="append", help="hand labels JSON (list of {experiment, trajectory_id, disclosed})")
     p.add_argument("--overrides", default=None,
                    help="manual hack labels JSON (list of {experiment, trajectory_id, hacked}) replacing the default label")
-    p.add_argument("--out", default=None, help="markdown output (a .json with rows + summary is written next to it)")
+    p.add_argument("--out", default=None, help="markdown output (a .json with rows + summary is written next to it; a non-default --label is added to the name)")
     from eval.labels import add_argument as add_label_argument
 
     add_label_argument(p)
@@ -316,7 +316,9 @@ def main(argv: list[str] | None = None) -> int:
     text = render(summary, check, args.auditor)
     print(text)
     if args.out:
-        out = Path(args.out)
+        from eval.outputs import tagged
+
+        out = tagged(args.out, args.label)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
         slim = [{k: v for k, v in r.items() if k != "hits"} | {"hits": r["hits"][:20]} for r in rows]

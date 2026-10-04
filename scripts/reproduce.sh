@@ -7,8 +7,10 @@
 #   scripts/reproduce.sh analyze       regenerate results/RESULTS.md (judged v2) + RESULTS_v3_preliminary.md and figures
 #   scripts/reproduce.sh cost          estimated API spend per results dir -> results/COST.md
 #   scripts/reproduce.sh sweep         print the exact Modal commands behind each committed results dir
+#   scripts/reproduce.sh derived       committed label/mode variants: mitigation, calibration, cascade, obfuscation,
+#                                      judge validation and error tables (explicit paths; --label tags the filenames)
 #   scripts/reproduce.sh export-demo   single self-contained static HTML demo -> docs/demo.html (demo.export)
-#   scripts/reproduce.sh all           test + analyze + cost + sweep + export-demo
+#   scripts/reproduce.sh all           test + analyze + cost + derived + sweep + export-demo
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -54,11 +56,52 @@ cmd_cost() {
   "$PY" -m eval.cost $(traj_dirs) --by-dir --out results/COST.md "$@"
 }
 
+# The committed outputs of the label-aware CLIs. Without --out they write next to the experiments, and a
+# non-default --label/--mode is added to each filename, so the corrected runs below reuse the either-label paths.
+cmd_derived() {
+  setup
+  local v2="results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45" pair="results/v2_sonnet46 results/v2_haiku45"
+  local hand="--labels docs/obfuscation_handlabels.json --labels docs/obfuscation_handlabels_heldout.json"
+  local label
+  for label in either corrected; do
+    # shellcheck disable=SC2086
+    "$PY" -m eval.mitigate best-of-n $pair --label "$label" \
+      --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md >/dev/null
+    # shellcheck disable=SC2086
+    "$PY" -m eval.calibrate $v2 --label "$label" --out results/calibration_v2/CALIBRATION.md >/dev/null
+    # shellcheck disable=SC2086
+    "$PY" -m eval.calibrate $v2 --label "$label" --folds random \
+      --out results/calibration_v2/random_folds/CALIBRATION.md >/dev/null
+    # shellcheck disable=SC2086
+    "$PY" -m eval.cascade $pair --label "$label" --out results/CASCADE.md --json results/CASCADE.json \
+      --figure results/figures/cascade_frontier.svg >/dev/null
+    # shellcheck disable=SC2086
+    "$PY" -m eval.obfuscation $v2 results/v3cond_sonnet46 results/v3cond_haiku45 $hand --label "$label" \
+      --out results/obfuscation/OBFUSCATION.md >/dev/null
+    # shellcheck disable=SC2086
+    "$PY" -m eval.obfuscation $v2 results/v3cond_sonnet46 results/v3cond_haiku45 $hand --label "$label" \
+      --overrides docs/obfuscation_v3cond_manual_labels.json --out results/obfuscation/OBFUSCATION_v3manual.md >/dev/null
+  done
+  # shellcheck disable=SC2086
+  "$PY" -m eval.cascade $pair --mode final_report --label corrected --out results/CASCADE.md \
+    --json results/CASCADE.json --figure results/figures/cascade_frontier.svg >/dev/null
+  "$PY" -m eval.obfuscation results/v3_sonnet46 results/v3_haiku45 results/v3cond_sonnet46 results/v3cond_haiku45 \
+    --configs covert,covert_monitored --tasks cherry_pick,effect_size_target,fabrication \
+    --overrides docs/obfuscation_v3cond_manual_labels.json --out results/obfuscation/OBFUSCATION_matched_v3.md >/dev/null
+  "$PY" -m eval.judge_validation score --label corrected --out results/judge_validation >/dev/null
+  # shellcheck disable=SC2086
+  "$PY" -m eval.errors $v2 --tags docs/error_tags.json --sample-out results/errors_v2/sample.json \
+    --out results/errors_v2/ERRORS.md >/dev/null
+  # shellcheck disable=SC2086
+  "$PY" -m eval.errors $v2 --tags docs/error_tags.json --correction results/leaked_answer_correction.json \
+    --out results/errors_v2_corrected/ERRORS.md >/dev/null
+}
+
 cmd_sweep() { setup; "$PY" scripts/sweep_commands.py "$@"; }
 
 cmd_export_demo() { setup; "$PY" -m demo.export "$@"; }
 
-usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; }
 
 target="${1:-help}"
 shift || true
@@ -67,9 +110,10 @@ case "$target" in
   demo) cmd_demo "$@" ;;
   analyze) cmd_analyze "$@" ;;
   cost) cmd_cost "$@" ;;
+  derived) cmd_derived ;;
   sweep) cmd_sweep "$@" ;;
   export-demo) cmd_export_demo "$@" ;;
-  all) cmd_test && cmd_analyze && cmd_cost && cmd_sweep && cmd_export_demo ;;
+  all) cmd_test && cmd_analyze && cmd_cost && cmd_derived && cmd_sweep && cmd_export_demo ;;
   help|-h|--help) usage ;;
   *) echo "unknown target: $target" >&2; usage >&2; exit 2 ;;
 esac
