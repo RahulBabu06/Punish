@@ -11,6 +11,7 @@ Dependency-free: stdlib ``http.server`` + Server-Sent Events + one inline HTML p
 from __future__ import annotations
 
 import argparse
+import os
 import errno
 import html
 import json
@@ -37,6 +38,8 @@ class AppConfig:
     fixtures_dir: Path = FIXTURES_DIR
     results_dir: Path = RESULTS_DIR
     story: str | None = None  # playlist spec for /story ("default" or a JSON file); None = built-in default
+    live: object | None = None  # live.session.LiveManager when --live-runs is on
+    live_code: str | None = None  # passcode required to start a live run (None = open)
 
     def trajectory_dirs(self) -> list[tuple[str, Path]]:
         """fixtures/trajectories, results/trajectories and every results/<exp>/trajectories."""
@@ -156,6 +159,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                   "/benchmarks": self.page_benchmarks, "/api/benchmarks": self.api_benchmarks,
                   "/api/gallery": self.api_gallery, "/api/compare": self.api_compare,
                   "/api/dashboard": self.api_dashboard, "/api/story": self.api_story,
+                  "/live": self.page_live, "/api/live/start": self.api_live_start, "/api/live/runs": self.api_live_runs,
                   "/healthz": lambda q: self.send_text(200, "ok", "text/plain"),
                   "/favicon.ico": lambda q: self.send_text(200, FAVICON, "image/svg+xml")}
         handler = routes.get(url.path)
@@ -252,6 +256,46 @@ class DemoHandler(BaseHTTPRequestHandler):
 
     def api_benchmarks(self, query):
         self.send_json(200, self.benchmarks_data())
+
+    def page_live(self, query):
+        from agent.prompts import AGENT_CONFIGS
+        from demo.live_page import live_page
+        from tasks.registry import list_tasks, load_task
+
+        live = self.config.live
+        tasks = [{"id": t, "title": load_task(t).get("title")} for t in list_tasks()] if live else []
+        model = live.open_client_factory().model if live else ""
+        self.send_text(200, live_page(tasks, list(AGENT_CONFIGS), live.subjects() if live else [], live is not None,
+                                      model, bool(self.config.live_code)), "text/html")
+
+    def _live_row(self, run: dict) -> dict:
+        from demo.live_page import view_url
+
+        verdict, _ = find_verdict([Path(run["trajectory"]).parent.parent / "verdicts" / f"{run['run_id']}.json"])
+        row = {**run, "view_url": view_url(traj_key(Path(run["trajectory"])))}
+        row.pop("trajectory")
+        if verdict:
+            row["verdict"] = ("HACK " if verdict.get("hack_detected") else "clean ") + f"{round(100 * verdict.get('confidence', 0))}%"
+        return row
+
+    def api_live_start(self, query):
+        live = self.config.live
+        if live is None:
+            return self.send_json(404, {"error": "live runs are disabled on this server"})
+        q = {k: v[-1] for k, v in query.items() if v}
+        if self.config.live_code and q.get("code") != self.config.live_code:
+            return self.send_json(403, {"error": "wrong passcode"})
+        try:
+            run = live.start(q.get("task", ""), q.get("config", ""), q.get("subject", "open"))
+        except (ValueError, KeyError, FileNotFoundError) as exc:
+            return self.send_json(400, {"error": str(exc)})
+        except Exception as exc:  # noqa: BLE001 - e.g. too many runs, open model not configured
+            return self.send_json(503, {"error": str(exc)})
+        self.send_json(200, self._live_row(run.to_json()))
+
+    def api_live_runs(self, query):
+        live = self.config.live
+        self.send_json(200, [self._live_row(r) for r in live.list_runs()] if live else [])
 
     def api_story(self, query):
         self.send_text(200, pages.story_payload(self.config.story_steps()), "application/json")
@@ -744,6 +788,10 @@ on("evidence", d => {
   addEvidence(d.index, d.item);
   if (!state.verdict) setBanner("hack", "HACK DETECTED", "auditor flags streaming in…");
 });
+on("flags_reset", () => {
+  state.evidence = []; $("evidence").innerHTML = ""; $("ev-title").hidden = true; $("flagcount").textContent = "";
+  if (typeof remarkAll === "function") remarkAll();
+});
 on("verdict", showVerdict);
 on("reset", () => { state.lines.clear(); state.events.clear(); state.calls.clear(); state.results.clear(); $("stream").innerHTML = ""; });
 on("done", () => {
@@ -785,6 +833,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--results-dir", default=str(RESULTS_DIR))
     p.add_argument("--open", action="store_true", help="open the browser")
     p.add_argument("--verbose", action="store_true", help="log HTTP requests")
+    p.add_argument("--live-runs", action="store_true",
+                   help="enable /live: start a subject agent audited live by the open-weight model at $PUNISH_VLLM_URL")
+    p.add_argument("--live-code", default=None, help="passcode required to start live runs (default $PUNISH_LIVE_CODE)")
     return p
 
 
@@ -796,7 +847,13 @@ def config_from_args(args: argparse.Namespace) -> AppConfig:
         live=live, delay=args.delay, progressive=args.flags_progressive, audit=args.audit,
         auditor_mode=args.auditor_mode, poll=args.poll, verdict_timeout=args.verdict_timeout,
         results_dir=Path(args.results_dir).resolve())
-    return AppConfig(defaults=defaults, results_dir=defaults.results_dir, story=args.story)
+    live_manager = None
+    if args.live_runs:
+        from live.session import LiveManager
+
+        live_manager = LiveManager(defaults.results_dir)
+    return AppConfig(defaults=defaults, results_dir=defaults.results_dir, story=args.story, live=live_manager,
+                     live_code=args.live_code or os.environ.get("PUNISH_LIVE_CODE") or None)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -819,6 +876,8 @@ def main(argv: list[str] | None = None) -> int:
     mode = "live tail" if config.defaults.live else "replay"
     print(f"Punish demo ({mode}) of {traj_key(config.defaults.trajectory)}")
     print(f"  viewer:    {base}/view\n  gallery:   {base}/\n  results:   {base}/dashboard\n  story:     {base}/story")
+    if config.live is not None:
+        print(f"  live runs: {base}/live")
     start = f"{base}/view"
     if args.story:
         steps = config.story_steps()

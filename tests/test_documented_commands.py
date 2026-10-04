@@ -1,5 +1,4 @@
-"""Every shell command in docs/REVIEW_GUIDE.md, docs/repro_check.md and README's "Reproducing the results"
-section must still work offline.
+"""Check reviewer/reproduction commands and the README/SUBMISSION offline quickstarts.
 
 Each fenced ``bash`` block is split into commands (continuations joined, comments dropped, ``&&`` split,
 ``$V2``-style variables from the doc's prose expanded). Every command must match a handler below; an
@@ -16,6 +15,7 @@ unmatched command fails the test, so nothing is skipped silently.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shlex
@@ -59,7 +59,12 @@ raise SystemExit("module finished without calling parse_args")
 
 
 def _env() -> dict:
-    return {k: v for k, v in os.environ.items() if k not in KEY_VARS and not k.startswith("MODAL_")}
+    env = {k: v for k, v in os.environ.items()
+           if k not in KEY_VARS and not k.endswith(("_API_KEY", "_AUTH_TOKEN")) and not k.startswith("MODAL_")}
+    env.update({name: "http://127.0.0.1:9" for name in
+                ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy")})
+    env.update(NO_PROXY="localhost,127.0.0.1", no_proxy="localhost,127.0.0.1", UV_OFFLINE="1")
+    return env
 
 
 def _blocks(text: str) -> list[tuple[int, str]]:
@@ -104,10 +109,18 @@ def _commands(doc: str, text: str) -> list[tuple[str, str]]:
     return found
 
 
-def _readme_section() -> str:
+def _readme_section(heading: str = README_SECTION) -> str:
     text = (ROOT / "README.md").read_text(encoding="utf-8")
-    body = text.split(README_SECTION, 1)[1]
-    return README_SECTION + re.split(r"\n## ", body, maxsplit=1)[0]
+    body = text.split(heading, 1)[1]
+    return heading + re.split(r"\n## ", body, maxsplit=1)[0]
+
+
+def quickstarts() -> list[tuple[str, str]]:
+    readme = _readme_section("## Quickstart").split("### 1. Offline demo replay (no keys)", 1)[1]
+    readme = readme.split("### 2.", 1)[0]
+    submission = (ROOT / "docs/SUBMISSION.md").read_text(encoding="utf-8")
+    submission = submission.split("## How to run it (offline, no API key)", 1)[1].split("## Links", 1)[0]
+    return _commands("README.md#quickstart", readme) + _commands("docs/SUBMISSION.md#offline", submission)
 
 
 def collect() -> list[tuple[str, str]]:
@@ -115,6 +128,7 @@ def collect() -> list[tuple[str, str]]:
     for doc in ("docs/REVIEW_GUIDE.md", "docs/repro_check.md"):
         cmds += _commands(doc, (ROOT / doc).read_text(encoding="utf-8"))
     cmds += _commands("README.md#reproducing", _readme_section())
+    cmds += quickstarts()
     return cmds
 
 
@@ -137,7 +151,8 @@ def _run(args: list[str], timeout: float = 120):
 
 def test_commands_were_found():
     docs = {where.split(":")[0] for where, _ in COMMANDS}
-    assert docs == {"docs/REVIEW_GUIDE.md", "docs/repro_check.md", "README.md#reproducing"}
+    assert docs == {"docs/REVIEW_GUIDE.md", "docs/repro_check.md", "README.md#reproducing",
+                    "README.md#quickstart", "docs/SUBMISSION.md#offline"}
     assert len(COMMANDS) >= 40
 
 
@@ -177,3 +192,27 @@ def test_parse_only_catches_drift():
     assert _run(["-c", PARSE_ONLY, "eval.cascade", "results/v2_haiku45", "--no-such-flag"]).returncode == 2
     assert _run(["-c", PARSE_ONLY, "eval.no_such_module"]).returncode != 0
     assert _run(["-c", PARSE_ONLY, "eval.cascade", "results/v2_haiku45", "--out", "/tmp/x.md"]).returncode == 0
+
+
+def test_quickstart_heuristic_verdict_matches_readme(tmp_path):
+    cmd = next(cmd for _, cmd in quickstarts()
+               if (call := _module_call(cmd)) and call[0] == "auditor.audit")
+    argv = shlex.split(cmd)[1:]
+    output = tmp_path / "verdict.json"
+    argv[argv.index("--out") + 1] = str(output)
+    result = _run(argv)
+    assert result.returncode == 0, result.stderr
+    verdict = json.loads(result.stdout)
+    assert json.loads(output.read_text(encoding="utf-8")) == verdict
+    assert verdict["hack_detected"] is True
+    assert verdict["confidence"] == 0.99 and len(verdict["hack_types"]) == 4
+
+
+def test_offline_environment_blocks_provider_access(monkeypatch):
+    for key in (*KEY_VARS, "OPENAI_API_KEY"):
+        monkeypatch.setenv(key, "not-a-real-key")
+    monkeypatch.setenv("NO_PROXY", "*")
+    env = _env()
+    assert not any(key in env for key in (*KEY_VARS, "OPENAI_API_KEY"))
+    assert env["HTTP_PROXY"] == env["HTTPS_PROXY"] == "http://127.0.0.1:9"
+    assert env["NO_PROXY"] == "localhost,127.0.0.1" and env["UV_OFFLINE"] == "1"

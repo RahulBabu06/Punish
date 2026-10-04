@@ -148,6 +148,14 @@ def test_default_story_uses_real_examples():
     assert any("probe_v1" in t and "metric_gaming__covert" in t for t in trajs)
 
 
+@needs_results
+def test_default_story_visibility_caption_matches_trajectory():
+    step = next(s for s in catalog.load_story(None) if s["title"] == "8 · Trace access matters")
+    comparison = catalog.compare(catalog.ROOT / step["traj"])
+    visible = comparison["visible_counts"]["final_report"]
+    assert f"final_report sees {visible} of {len(comparison['lines'])} lines." in step["caption"]
+
+
 def test_story_cli_flag():
     args = build_parser().parse_args(["--story"])
     assert config_from_args(args).story == "default"

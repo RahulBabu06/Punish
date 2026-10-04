@@ -79,7 +79,7 @@ def test_robustness_keeps_the_headline_first(tmp_path):
     page = benchmarks.benchmarks_page({"headline": headline, "robustness": data})
     assert page.index('id="headline"') < page.index('id="robustness"')
     assert 'data-jump="robustness"' in page
-    assert "#robustness{scroll-margin-top:80px}" in page
+    assert ".bench{scroll-margin-top:80px}" in page
 
 
 def test_committed_v2_v3_robustness_is_available():

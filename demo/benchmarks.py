@@ -727,7 +727,7 @@ def render_doc(doc: dict) -> str:
 BENCH_CSS = """
 .bench{margin:28px 0 40px;padding-top:8px;border-top:1px solid var(--line)}
 .bench h2{margin:10px 0 6px}.bench h3{margin:22px 0 8px;color:var(--dim);font-size:15px;text-transform:uppercase;letter-spacing:.04em}
-#robustness{scroll-margin-top:80px}
+.bench{scroll-margin-top:80px}
 .bench .lede{color:var(--text);max-width:980px;line-height:1.5}.bench .src{color:var(--faint);font-size:13px;margin-top:14px}
 .bench .two{display:grid;grid-template-columns:minmax(380px,1fr) minmax(420px,1.3fr);gap:24px;align-items:start}
 .bench .stack>.chart{max-width:760px;margin-bottom:16px}

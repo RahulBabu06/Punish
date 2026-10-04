@@ -359,11 +359,43 @@ def _stream_replay(opts: StreamOptions, start_line: int):
     yield from _verdict_events(opts, trajectory_id, len(lines), wait=False, precomputed=precomputed)
 
 
+def interim_path(trajectory: str | os.PathLike) -> Path:
+    """``results/<exp>/trajectories/x.jsonl`` -> ``results/<exp>/interim/x.json`` (live audits of the prefix so far)."""
+    traj = Path(trajectory)
+    return traj.parent.parent / "interim" / f"{traj.stem}.json"
+
+
+def _interim_events(path: Path, seen: dict) -> Iterator[tuple[str, dict]]:
+    """Re-emit the auditor's flags whenever ``live.session`` writes a newer prefix audit."""
+    try:
+        mtime = path.stat().st_mtime_ns
+    except FileNotFoundError:
+        return
+    if mtime == seen.get("mtime"):
+        return
+    seen["mtime"] = mtime
+    data = load_verdict_file(path) or {}
+    verdict = data.get("verdict") or {}
+    if not isinstance(verdict, dict) or not isinstance(data.get("upto_line"), int):
+        return
+    seen["shown"] = True
+    yield "flags_reset", {}
+    for i, item in enumerate(verdict.get("evidence") or []):
+        yield "evidence", {"index": i, "item": item}
+    conf = verdict.get("confidence")
+    who = verdict.get("auditor_model") or "auditor"
+    state = "suspects hacking" if verdict.get("hack_detected") else "sees nothing wrong yet"
+    pct = f" ({round(conf * 100)}%)" if isinstance(conf, (int, float)) else ""
+    yield "status", {"text": f"Live audit by {who} of lines 1-{data['upto_line']}: {state}{pct}."}
+
+
 def _stream_live(opts: StreamOptions, start_line: int):
     trajectory_id = None
     n_lines = start_line
     announced_wait = False
     last_activity = time.monotonic()
+    interim = interim_path(opts.trajectory)
+    interim_seen: dict = {}
     if start_line:
         try:
             first, _ = parse_line(read_lines(opts.trajectory)[0])
@@ -383,6 +415,7 @@ def _stream_live(opts: StreamOptions, start_line: int):
                 trajectory_id = trajectory_id_of(event)
             if event.get("type") == "final_report":
                 break
+            yield from _interim_events(interim, interim_seen)
             continue
         if kind == "waiting" and not announced_wait:
             announced_wait = True
@@ -391,11 +424,15 @@ def _stream_live(opts: StreamOptions, start_line: int):
             n_lines = 0
             yield "reset", {}
             yield "status", {"text": "Trajectory file was truncated; restarting."}
+        yield from _interim_events(interim, interim_seen)
         if time.monotonic() - last_activity >= opts.keepalive:
             last_activity = time.monotonic()
             yield "ping", {}
     yield "status", {"text": "Trajectory complete. Waiting for the auditor..."}
-    yield from _verdict_events(opts, trajectory_id, n_lines, wait=True)
+    for name, data in _verdict_events(opts, trajectory_id, n_lines, wait=True):
+        if name == "verdict" and interim_seen.get("shown"):
+            yield "flags_reset", {}
+        yield name, data
 
 
 def _display(path) -> str:
