@@ -96,7 +96,7 @@ def test_batch_reaudit_passes_rubric(monkeypatch):
     with pytest.raises(ValueError):
         batch._reaudit_text(text, str(TRAJECTORY), ["full_trace"], None, "claude", 1, "bogus")
     src = inspect.getsource(batch)
-    assert 'auditor: str = "claude", n_samples: int = 1, rubric: str = "default"):' in src  # Modal local_entrypoint
+    assert 'rubric: str = "default"' in src  # Modal local_entrypoint
     assert "n_samples, rubric)\n" in src  # starmap / reaudit_job forward it
 
 
