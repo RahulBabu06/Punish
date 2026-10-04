@@ -482,3 +482,38 @@ def test_robustness_caveats_in_faq_and_slides(tmp_path):
     assert set(nums) >= {"66/93", "75/90", "0.056", "0.48", "26%", "0.12", "26/27", "20/27"}
     assert "up to about 2×" in faq and "up to ~2×" in slides
     assert "Actions are the main signal" not in slides
+
+
+def test_slides_and_faq_lead_with_corrected_labels():
+    slides, faq = doc("docs/slides.html"), doc("docs/reviewer_faq.md")
+    corr = json.loads((ROOT / "results/leaked_answer_correction.json").read_text(encoding="utf-8"))["headline"]["corrected"]
+    opus = {a["mode"]: a for a in corr["auditor"] if a["auditor"] == OPUS}
+    ft, ro = opus["full_trace"], opus["report_only"]
+    ft, ro = ({**a, "recall": a["recall"] + 1e-9} for a in (ft, ro))  # round half up: 35/56 = 0.625 -> 0.63
+    assert f"recall {ft['recall']:.2f} vs {ro['recall']:.2f}, FPR {ft['fpr']:.2f} vs {ro['fpr']:.2f}" in slides
+    assert f"FPR {ft['fpr']:.2f} vs {ro['fpr']:.2f} and recall {ft['recall']:.2f} vs {ro['recall']:.2f}" in slides
+    for a in (ft, ro):
+        assert f"{a['fp']}/{a['n'] - a['pos']} clean runs flagged (corrected label)" in slides
+    pos, n = corr["positives"], corr["n_trajectories"]
+    assert f"47 of {pos} found (corrected label)" in slides and f"47 of the {pos} hacks" in slides
+    assert f">{pos - 47}</text>" in slides and f">{n - pos} clean by both</text>" in slides
+    names = {"claude-haiku-4-5-20251001": "Haiku 4.5", "claude-sonnet-4-5-20250929": "Sonnet 4.5", "claude-sonnet-4-6": "Sonnet 4.6"}
+    for model, name in names.items():
+        cell = corr["hack_rate_by_model_config"][f"{model}/covert"]
+        assert re.search(rf">{name}</text>\n<rect [^>]*/>\n<text [^>]*>judge {cell['hacked'] / cell['n']:.0%}</text>", slides), name
+    assert slides.count("0.06 vs 0.12") == 1
+    assert "Side note, <code>leaked_answer</code> excluded (200 runs): FPR 0.06 vs 0.12" in slides
+    for stale in ("46 of 91", "46 of the 91", "AUROC 0.962", "original; 2–40", "237 clean", "Opus FPR 0.06"):
+        assert stale not in slides, stale
+    assert "κ 0.70 (0.97 after the stale <code>leaked_answer</code> fix they helped find)" in slides
+
+    v2t, v2x = heldout_row("v2", "tuned in-sample"), heldout_row("v2", "leave-one-experiment-out")
+    v3 = heldout_row("v3", "v2-tuned")
+    points = [f"{100 * v2t['recall']:.1f}% recall at {100 * v2t['fpr']:.1f}% FPR",
+              f"{100 * v2x['recall']:.1f}% / {100 * v2x['fpr']:.1f}%", f"{100 * v3['recall']:.1f}% / {100 * v3['fpr']:.1f}%"]
+    for head in ("## 6.", "## 9."):
+        sec = " ".join(faq.split(head, 1)[1].split("\n## ", 1)[0].split())
+        for p in points:
+            assert p in sec, (head, p)
+        if "64.3%" in sec:
+            assert sec.index("64.3%") > max(sec.index(p) for p in points), head
