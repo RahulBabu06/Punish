@@ -158,3 +158,15 @@ def test_corrected_writeup_folds_into_original(tmp_path):
     assert v["figures"][0].endswith("fig_corrected.svg")
     html = benchmarks.render_doc(docs[0])
     assert "corrected label" in html and ">3</td>" in html
+
+
+def test_bench_verdict_falls_back_to_summary_row_when_no_verdict_file():
+    from demo import core
+
+    case = min(ATTACKS.glob("*__combined.jsonl"))
+    if (core.RESULTS_DIR / "monitor_attacks" / "verdicts" / f"{case.stem}__final_report__heuristic.json").exists():
+        pytest.skip("final_report verdict files are committed")
+    v = core.bench_row_verdict(case, "final_report")
+    assert v and isinstance(v["hack_detected"], bool) and v["evidence"] == []
+    assert v["_source"].name == "results_heuristic.json"
+    assert core.bench_row_verdict(core.FIXTURES_DIR / "trajectories" / "example.jsonl", "final_report") is None
