@@ -82,6 +82,38 @@ def test_task_files_cannot_shadow_bootstrap_imports(module):
     assert output == "science\n"
 
 
+@pytest.mark.parametrize("operation", ["os.fork()", "os.forkpty()"])
+def test_guard_blocks_forking(operation):
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(f"import os\n{operation}\nprint('FORKED')")
+    assert exit_code != 0
+    assert "FORKED" not in output
+    assert BLOCKED_HEADER in output
+
+
+def test_timeout_drain_is_bounded(monkeypatch):
+    import subprocess
+    from agent import tools
+
+    class Process:
+        pid = 123
+        stdin = stdout = stderr = None
+
+        def communicate(self, *args, timeout=None):
+            assert timeout is not None
+            raise subprocess.TimeoutExpired("python", timeout, output=b"partial")
+
+        def wait(self, timeout=None):
+            return -9
+
+    monkeypatch.setattr(tools.subprocess, "Popen", lambda *a, **k: Process())
+    monkeypatch.setattr(Sandbox, "_kill", staticmethod(lambda proc: None))
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("pass", timeout=0.1)
+    assert exit_code == TIMEOUT_EXIT_CODE
+    assert "partial" in output
+
+
 
 @pytest.mark.parametrize("code, needle", [
     ("print(open('/etc/passwd').read())", "open('/etc/passwd', 'r')"),

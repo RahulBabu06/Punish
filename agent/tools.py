@@ -255,7 +255,14 @@ class Sandbox:
             output, exit_code = out.decode("utf-8", errors="replace"), proc.returncode
         except subprocess.TimeoutExpired:
             self._kill(proc)
-            out, _ = proc.communicate()
+            try:
+                out, _ = proc.communicate(timeout=1.0)
+            except subprocess.TimeoutExpired as exc:
+                out = exc.output or b""
+                for stream in (proc.stdin, proc.stdout, proc.stderr):
+                    if stream is not None:
+                        stream.close()
+                proc.wait(timeout=1.0)
             output = out.decode("utf-8", errors="replace")
             output += f"\nTimeoutError: execution exceeded {timeout:g} seconds and was killed"
             exit_code = TIMEOUT_EXIT_CODE
