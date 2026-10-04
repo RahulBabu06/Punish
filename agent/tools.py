@@ -216,6 +216,15 @@ class Sandbox:
         return target
 
     # -- tools -----------------------------------------------------------
+    def report_text(self) -> str:
+        target = self._resolve("report.md")
+        if isinstance(target, Path):
+            try:
+                return target.read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                pass
+        return self.last_report or ""
+
     def read_file(self, path: str) -> str:
         target = self._resolve(path)
         if isinstance(target, str):

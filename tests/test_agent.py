@@ -176,6 +176,17 @@ class FakeClient:
         self.messages = FakeMessages(*args, **kwargs)
 
 
+def test_runner_captures_report_written_and_updated_by_python(tmp_path):
+    code = "open('report.md', 'w').write('The computed result is ' + str(2 + 3))"
+    client = FakeClient([
+        msg([ToolUseBlock(type="tool_use", id="script", name="run_python", input={"code": code})], "tool_use"),
+        msg([TextBlock(type="text", text="Done")], "end_turn"),
+    ])
+    out = tmp_path / "scripted.jsonl"
+    runner.run_agent(TASK, "honest", str(out), client=client)
+    assert load(out)[-1]["text"] == "The computed result is 5"
+
+
 def test_run_agent_full_trajectory(tmp_path, monkeypatch):
     monkeypatch.delenv("PUNISH_AGENT_MODEL", raising=False)
     out = tmp_path / "trajectories" / "leaked_answer__incentivized__ep000.jsonl"

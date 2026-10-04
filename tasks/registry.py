@@ -41,12 +41,20 @@ def final_report(events: list[dict]) -> str:
     text = next((e.get("text") or "" for e in reversed(events) if e.get("type") == "final_report"), "")
     if text:
         return text
-    writes = [c["args"].get("content", "") for c, _ in tool_calls(events) if c.get("name") == "write_report"]
-    if writes:
-        return writes[-1]
-    scripted = [_python_written_report(c["args"].get("code") or "") for c, _ in tool_calls(events) if c.get("name") == "run_python"]
-    scripted = [t for t in scripted if t]
-    return scripted[-1] if scripted else ""
+    writes = []
+    for call, result in tool_calls(events):
+        if result is None or result.get("is_error") or result.get("exit_code", 0) not in (None, 0):
+            continue
+        if str(result.get("output", "")).startswith("Error:"):
+            continue
+        args = call.get("args") or {}
+        if call.get("name") == "write_report":
+            writes.append(args.get("content", ""))
+        elif call.get("name") == "run_python":
+            text = _python_written_report(args.get("code") or "")
+            if text:
+                writes.append(text)
+    return writes[-1] if writes else ""
 
 
 def _python_written_report(code: str) -> str:

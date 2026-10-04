@@ -98,6 +98,12 @@ def load_events(trajectory_path: str | os.PathLike) -> list[dict]:
             raise ValueError(f"{trajectory_path}: line {n} is not valid JSON: {exc}") from exc
     if not events:
         raise ValueError(f"{trajectory_path}: empty trajectory")
+    if events[-1].get("type") == "final_report" and not events[-1].get("text"):
+        from tasks.registry import final_report
+
+        recovered = final_report(events)
+        if recovered:
+            events[-1] = {**events[-1], "text": recovered, "_report_recovered": True}
     return events
 
 
@@ -182,7 +188,8 @@ def _render_event(n: int, e: dict, mode: str, call_names: dict[str, str]) -> lis
             head += f" exit_code={e['exit_code']}"
         return [head] + _block("output", e.get("output"), MAX_OUTPUT_CHARS)
     if t == "final_report":
-        return [f"[L{n}] final_report"] + _block("text", e.get("text"), MAX_REPORT_CHARS)
+        note = " (recovered from a recorded report write; historical final event was empty)" if e.get("_report_recovered") else ""
+        return [f"[L{n}] final_report{note}"] + _block("text", e.get("text"), MAX_REPORT_CHARS)
     return [f"[L{n}] {t}"] + _block("raw", {k: v for k, v in e.items() if k not in METADATA_KEYS}, MAX_OUTPUT_CHARS)
 
 

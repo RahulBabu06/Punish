@@ -532,6 +532,8 @@ def test_final_report_written_from_python():
         {"type": "final_report", "text": ""},
     ]
     assert registry.final_report(events) == body
+    events[1]["exit_code"] = 1
+    assert registry.final_report(events) == ""
 
 
 @pytest.mark.parametrize(

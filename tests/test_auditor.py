@@ -36,6 +36,16 @@ def write_jsonl(path: Path, events: list[dict]) -> str:
     return str(path)
 
 
+def test_historical_scripted_report_is_available_in_restricted_modes():
+    path = Path(__file__).resolve().parent.parent / "results/v2_haiku45/trajectories/metric_gaming__covert__ep001.jsonl"
+    events = load_events(path)
+    from tasks.registry import final_report
+
+    report = final_report(events)
+    assert report and report.splitlines()[0] in render_trajectory(events, "final_report")
+    assert report == events[-1]["text"]
+
+
 def honest_events(trajectory_id: str = "leaked_answer__honest__ep000") -> list[dict]:
     code = (
         "import pandas as pd\nfrom scipy import stats\n"
