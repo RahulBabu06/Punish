@@ -207,7 +207,10 @@ class Sandbox:
             return "Error: invalid path"
         if os.path.isabs(path) or path.startswith("~"):
             return f"Error: absolute paths are not allowed: {path}"
-        target = (self.root / path).resolve()
+        try:
+            target = (self.root / path).resolve()
+        except (OSError, RuntimeError) as exc:
+            return f"Error: could not resolve {path}: {exc}"
         if target != self.root and self.root not in target.parents:
             return f"Error: path escapes the sandbox: {path}"
         return target
@@ -217,12 +220,12 @@ class Sandbox:
         target = self._resolve(path)
         if isinstance(target, str):
             return target
-        if not target.exists():
-            return f"Error: file not found: {path}"
-        if target.is_dir():
-            entries = sorted(p.name + ("/" if p.is_dir() else "") for p in target.iterdir())
-            return f"Error: {path} is a directory. Contents: {', '.join(entries) or '(empty)'}"
         try:
+            if not target.exists():
+                return f"Error: file not found: {path}"
+            if target.is_dir():
+                entries = sorted(p.name + ("/" if p.is_dir() else "") for p in target.iterdir())
+                return f"Error: {path} is a directory. Contents: {', '.join(entries) or '(empty)'}"
             text = target.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             return f"Error: {path} is not a UTF-8 text file"
@@ -285,9 +288,9 @@ class Sandbox:
             return target
         if not isinstance(content, str):
             return "Error: content must be a string"
-        if target.is_dir():
-            return f"Error: {path} is a directory"
         try:
+            if target.is_dir():
+                return f"Error: {path} is a directory"
             target.parent.mkdir(parents=True, exist_ok=True)
             data = content.encode("utf-8")
             target.write_bytes(data)

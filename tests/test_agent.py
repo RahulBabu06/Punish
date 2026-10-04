@@ -57,6 +57,12 @@ def test_read_file_missing():
         assert "not found" in sb.read_file("nope.txt")
 
 
+def test_filesystem_errors_return_tool_results():
+    with Sandbox({}) as sb:
+        assert sb.execute("read_file", {"path": "a" * 300})[0].startswith("Error:")
+        assert sb.execute("write_report", {"path": "a" * 300, "content": "x"})[0].startswith("Error:")
+
+
 def test_task_file_names_cannot_escape():
     with pytest.raises(ValueError):
         with Sandbox({"../evil.txt": "x"}):
