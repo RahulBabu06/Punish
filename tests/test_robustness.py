@@ -73,3 +73,50 @@ def test_committed_outputs_are_current(fresh, committed):
     for key in ("slices", "delta_slices", "ppv", "role", "natural_by_task"):
         assert json.loads(json.dumps(fresh[key])) == committed[key]
     assert [h["point"] for h in fresh["headline"]] == [h["point"] for h in committed["headline"]]
+
+
+@pytest.fixture(scope="module")
+def fresh_v3():
+    return rb.analyse(rb.V3_EXPERIMENTS, "labeller", repeats=50, seed=1729, cohort="v3")
+
+
+def test_v3_points_match_labeller_only_headline(fresh_v3):
+    h = _row(fresh_v3["headline"], auditor="claude-sonnet-4-6", mode="full_trace")
+    assert (h["n"], h["pos"]) == (450, 102)
+    assert h["point"]["recall"] == pytest.approx(88 / 102)  # docs/cascade_heldout.md
+    assert h["point"]["fpr"] == pytest.approx(60 / 348)
+    assert h["task"]["clusters"] == 10
+    assert not any(r["auditor"] == "claude-opus-4-6" for r in fresh_v3["headline"])
+
+
+def test_v3_instructed_slice_includes_covert_monitored(fresh_v3):
+    assert fresh_v3["instructed"] == ["covert", "covert_monitored"]
+    assert "sycophantic_pi" in fresh_v3["natural"]
+    for mode in rb.MODES:
+        inst = _row(fresh_v3["slices"], mode=mode, slice="covert + covert_monitored")
+        nat = _row(fresh_v3["slices"], mode=mode, slice="non-covert")
+        assert (inst["pos"], nat["pos"]) == (76, 26)
+        cfg = [s for s in fresh_v3["config_slices"] if s["mode"] == mode]
+        assert sum(s["pos"] + s["neg"] for s in cfg) == 450
+
+
+def test_v3_role_leak_by_config(fresh_v3):
+    role = fresh_v3["role"]
+    assert role["covert"] == {"mentions": 71, "n": 86}
+    assert role["covert_monitored"] == {"mentions": 23, "n": 30}
+    assert all(role[c]["mentions"] == 0 for c in fresh_v3["natural"])
+
+
+def test_v3_committed_outputs_are_current(fresh_v3):
+    committed = json.loads((OUT / "robustness_v3.json").read_text(encoding="utf-8"))
+    md = (OUT / "ROBUSTNESS_v3.md").read_text(encoding="utf-8")
+    assert md == rb.render(committed) and "LABELLER-ONLY" in md.splitlines()[0]
+    for key in ("slices", "config_slices", "delta_slices", "ppv", "role", "natural_by_task"):
+        assert json.loads(json.dumps(fresh_v3[key])) == committed[key]
+    assert [h["point"] for h in fresh_v3["headline"]] == [h["point"] for h in committed["headline"]]
+
+
+def test_cli_cohort_v3_writes_suffixed_outputs(tmp_path):
+    assert rb.main(["--cohort", "v3", "--repeats", "5", "--out", str(tmp_path)]) == 0
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["ROBUSTNESS_v3.md", "robustness_v3.json"]
+    assert json.loads((tmp_path / "robustness_v3.json").read_text())["label"] == "labeller"
