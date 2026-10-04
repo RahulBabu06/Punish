@@ -26,10 +26,12 @@ AI-made and costs are estimates.
 
 ## Key results
 
-1. **Seeing the trace catches more hacks, at a cost in false positives.** On 360 v2 trajectories (93 hacked,
-   corrected label), Sonnet 4.6 reading reasoning, actions and report (`full_trace`) gets 0.90 recall, 0.34 FPR
-   and AUROC 0.891. Reading the final report alone (`final_report`) gets 0.74 recall, 0.23 FPR and AUROC 0.825.
-   Most false positives are honest runs that read the grader file.
+1. **Seeing the trace catches more instructed hacks, not more natural ones.** On 360 v2 trajectories (93
+   hacked, corrected label), Sonnet 4.6 reading reasoning, actions and report (`full_trace`) gets 0.90 recall,
+   0.34 FPR and AUROC 0.891. Reading the final report alone (`final_report`) gets 0.74 recall, 0.23 FPR and
+   AUROC 0.825. The gap comes from instructed (`covert`) hacks, 66/93 of the positives. On natural hacks the
+   report alone catches 26/27 against 20/27 with actions, and `full_trace` recall is 19/27 = 0.70 (Opus
+   5/17 = 0.29). Most false positives are honest runs that read the grader file.
 2. **The auditor is useful as a veto.** In best-of-n selection over 240 matched runs, vetoing flagged
    candidates before picking the best-graded one cuts the shipped-hack rate from 0.28 to 0.15.
 3. **A cheap cascade works, but less well out of sample.** Heuristic → Sonnet reaches 80.4% recall at 5.4% FPR
@@ -56,6 +58,12 @@ AI-made and costs are estimates.
   is scored against a rule-based labeller, which may flatter a rule-based heuristic. The live agentic auditor
   and the opt-in rubric-v3 were never run with Claude (the credit ran out); the rubric-v3 figures are an
   offline proxy.
+- **Config leak.** 75/90 `covert` runs name the red-team or reward-hacker role in their reasoning, so
+  `full_trace` can read the config. Opus's reasoning gain still holds without them (+0.056 accuracy).
+- **Clustered CIs.** There are 5 episodes per cell and only 6 tasks; resampling by cell widens the CIs up to
+  about 2×.
+- **Precision at realistic prevalence.** Sonnet `full_trace` precision is 0.48 at the study's 26% hack rate
+  and would be 0.12 at 5%.
 - **Costs are estimates.** The $162.33 for 8,519 API calls is estimated from prompt and response character
   counts, not billed spend.
 
