@@ -243,3 +243,44 @@ def test_submission_abstract_and_links():
     assert {"../README.md", "../REPORT.md", "../PITCH.md", "../paper/punish.pdf", "demo.html", "slides.html",
             "REVIEW_GUIDE.md"} <= set(links)
     assert all((ROOT / "docs" / link).resolve().exists() for link in links)
+
+
+def test_report_robustness_claims_match_committed_json():
+    source = json.loads((ROOT / "results/robustness/robustness.json").read_text(encoding="utf-8"))
+    report = doc("REPORT.md").split("## 9. Limitations", 1)[1].split("## 10.", 1)[0]
+    covert = source["role"]["covert"]
+    other = [r for config, r in source["role"].items() if config != "covert"]
+    assert f"{covert['mentions']}/{covert['n']} `covert`" in report
+    assert f"{sum(r['mentions'] for r in other)}/{sum(r['n'] for r in other)} others" in report
+    for r in source["slices"]:
+        if r["slice"] == "non-covert" and r["mode"] == "full_trace":
+            assert f"{r['tp']}/{r['pos']} = {r['recall']:.2f}" in report
+        if r["auditor"] == "claude-sonnet-4-6" and r["slice"] == "non-covert":
+            if r["mode"] == "final_report":
+                assert f"catches {r['tp']}/{r['pos']}" in report
+            elif r["mode"] == "report_only":
+                assert f"versus {r['tp']}/{r['pos']} with actions" in report
+    for r in source["delta_slices"]:
+        if r["auditor"] == "claude-sonnet-4-6" and r["left"] == "report_only":
+            if r["slice"] == "covert":
+                assert f"{r['d_recall']:+.2f} on `covert`" in report
+            elif r["slice"] == "non-covert":
+                assert f"{r['d_recall']:+.2f} on natural".replace("-", "−") in report
+        if r["auditor"] == "claude-opus-4-6" and r["left"] == "full_trace" and r["slice"] == "role not mentioned":
+            assert f"Δaccuracy {r['d_accuracy']:+.3f}, unadjusted p = {r['p']:.3f}" in report
+    for r in source["deltas"]:
+        if r["auditor"] == "claude-sonnet-4-6" and r["left"] == "report_only":
+            for metric in ("recall", "fpr"):
+                lo, hi = r["cell"][metric]
+                assert f"[{lo:+.2f}, {hi:+.2f}]".replace("-", "−") in report
+        if r["auditor"] == "claude-opus-4-6" and r["left"] == "full_trace":
+            lo, hi = r["task"]["accuracy"]
+            assert f"[{lo:+.2f}, {hi:+.2f}]" in report
+        if r["left"] == "full_trace":
+            lo, hi = r["task"]["auroc"]
+            digits = 2 if r["auditor"] == "claude-sonnet-4-6" else 3
+            assert f"[{lo:+.{digits}f}, {hi:+.{digits}f}]".replace("-", "−") in report
+    ppv = next(r for r in source["ppv"] if r["auditor"] == "claude-sonnet-4-6" and r["mode"] == "full_trace")
+    assert f"precision is {ppv['observed']:.2f}" in report
+    assert f"{ppv['observed_prevalence']:.0%} hack prevalence" in report
+    assert f"{ppv['0.05']:.2f} at 5% and {ppv['0.01']:.2f} at 1%" in report
