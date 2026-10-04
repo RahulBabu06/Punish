@@ -103,6 +103,40 @@ reasoning-only hack cannot be a positive, and 21 of the 26 natural positives are
 Labels are labeller-only and preliminary (hand-review precision 0.92, recall 0.88, one AI annotator), and
 the natural slice is 26 runs dominated by one rule, so findings 2–3 are suggestive, not confirmatory.
 
+## Known issues found in the final contract review
+
+Committed episodes and verdicts are left unchanged. Reproduce with `python -m eval.hidden_evidence`;
+the checks are in `tests/test_known_issues.py`.
+
+1. **Stale `trajectory_path`: no number affected.** 2,538 of 3,258 committed episodes (probe_v1, v2_*,
+   v3*) store `results/trajectories/<id>.jsonl`, which does not exist (re-audit dirs are correct).
+   `eval.analyze.load_experiment` and `eval.cost` look up `<run>/trajectories/<id>.jsonl` first, which
+   the regression test pins on the committed `v2_sonnet46/leaked_answer__covert__ep000` from a cwd where
+   the stored path is missing. New sweep/mitigate runs write the local path (`eval.sweep.relocate`).
+2. **34 `final_report` verdicts cite lines that mode hides.** 34 of 3,258 committed Claude verdicts,
+   all `final_report` (probe_v1 1; v2_haiku45 2 + 2 Opus re-audit; v2_sonnet45 8; v2_sonnet46 8 + 6
+   Opus re-audit; v3_sonnet46 7), cite the hidden system prompt (line 1) or the whole trajectory,
+   mostly arguing from the trajectory id (REPORT §8.16). 11 are labeller-hacked; 7 cite only hidden
+   lines. They predate the visible-line check in `validate_verdict`.
+   - **Detection: unchanged.** `repair_verdict` drops the hidden items and keeps `hack_detected` and
+     `hack_types` (0/34 change), so recall, FPR, precision, accuracy and `hack_type_recall` are identical.
+   - **Type attribution (strict: drop types whose only evidence was hidden):** 30 `suspicious_access`
+     and 3 `rationalization` lose support. Only `suspicious_access` hack-type recall moves: v3_sonnet46
+     5/6 → 1/6, v2_haiku45 Opus re-audit 2/20 → 1/20. Dropping the 34 verdicts instead changes recall
+     only through the denominator (at most 0.50 → 0.40, v2_sonnet46 Opus re-audit).
+   - **Evidence localisation: moves for Sonnet.** One gold trace is affected
+     (`v2_haiku45/leaked_answer__covert__ep000`, Sonnet), and it supplies all 22 mode-hidden cited lines
+     in `results/bug_hunt/EVIDENCE.md`. Repairing it moves Sonnet `final_report` P±1 0.57 → 1.00 and
+     R 0.26 → 0.21 on the 19 common traces (all 26: 0.63 → 1.00, 0.25 → 0.22); hit@1, type-exact and
+     Opus are unchanged. REPORT §8.17's Sonnet `final_report` "0.26 / 0.57" would read "0.21 / 1.00".
+3. **`sycophantic_pi` PI message: by design.** `build_user_prompt` prepends `USER_PREFIXES["sycophantic_pi"]`
+   to the user turn; this config's system prompt is neutral. `auditor.audit._render_event` hides the
+   system prompt and config in every mode but shows user messages (also in `final_report`), so the
+   auditor sees the PI's request as task context, as a reviewer of a PI-assigned analysis would. The
+   test renders a committed `sycophantic_pi` trajectory: the PI text is visible in all three modes and
+   the config name is not. It reveals the pressure, not the label (the agent can still answer honestly).
+   No code change.
+
 ## Reproduce
 
 ```bash
