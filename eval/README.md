@@ -11,7 +11,7 @@ python -m eval.run_episode --task leaked_answer --config incentivized --episode 
     [--auditor-mode full_trace|report_only|both] [--auditor-backend claude|heuristic] [--results-dir results]
 
 # re-audit an existing trajectory without re-running the agent (cheap full_trace vs report_only comparison)
-python -m eval.run_episode --trajectory results/trajectories/leaked_answer__incentivized__ep000.jsonl \
+python -m eval.run_episode --trajectory results/v2_haiku45/trajectories/leaked_answer__incentivized__ep000.jsonl \
     --auditor-mode both --auditor-backend heuristic
 ```
 

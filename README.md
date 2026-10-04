@@ -103,7 +103,7 @@ modal run eval/batch.py --results-dir results/v2_sonnet46 --job judge
 # optional: re-audit the same trajectories with another auditor model
 modal run eval/batch.py --results-dir results/v2_sonnet46 --job reaudit \
   --auditor-model claude-opus-4-6 --auditor-modes full_trace,report_only,final_report \
-  --out-dir results/v2_sonnet46/opus_auditor
+  --out-dir results/v2_sonnet46/reaudit_claude-opus-4-6
 
 # newer configs and tool-failure injection (added after v2)
 modal run eval/sweep.py --n-episodes 5 --configs covert_monitored,sycophantic_pi \
@@ -125,8 +125,8 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/RESULTS.md --figures
 # REPORT §8.6 (labeller-only, preliminary)
-.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_sonnet46 results/v3cond_sonnet46 \
-  results/v3cond_haiku45 results/v3fault_sonnet46 results/v3_opus46 \
+.venv/bin/python -m eval.analyze results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 \
+  results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46 \
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3
 # REPORT §8.4
 .venv/bin/python -m eval.analyze results/probe_v1
@@ -134,7 +134,7 @@ commands rebuild every table in `REPORT.md` offline:
 .venv/bin/python -m eval.hard_cases --auditor heuristic
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md
-.venv/bin/python -m eval.cost results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 --by-dir --out results/COST.md
+scripts/reproduce.sh cost    # eval.cost --by-dir over every committed run -> results/COST.md
 # rows for further stats (McNemar, per-task, per-subject)
 .venv/bin/python -m eval.analyze results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out /tmp/results.md --json /tmp/rows.json
@@ -150,7 +150,7 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
 | `results/hard_cases/` | 32 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
 | `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
-| `results/COST.md` | estimated API cost of the v2 runs (`eval.cost`) |
+| `results/COST.md` | estimated API cost of every committed run (`eval.cost`) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
 | `results/RESULTS.md`, `results/figures/` | generated tables and SVG figures for the v2 runs (`results/RESULTS_v3_preliminary.md`, `results/figures_v3/` for v3) |

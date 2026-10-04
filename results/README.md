@@ -1,7 +1,8 @@
 # `results/` index
 
 Every committed experiment directory. The table is generated from the committed files by
-`python scripts/sweep_commands.py --index --cost-json <(eval.cost --by-dir --json)`; the exact launch command
+`python scripts/sweep_commands.py --index --cost-json cost.json` (`cost.json` from
+`python -m eval.cost results/<dir> ... --by-dir --json cost.json`); the exact launch command
 behind each directory is printed by `scripts/reproduce.sh sweep`.
 
 | dir | subject model | agent configs | tasks | n | auditor modes | judged | trajectories | status | est. cost |
