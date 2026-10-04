@@ -58,6 +58,14 @@ print(open({str(canary)!r}).read())
     assert "PermissionError" in output
 
 
+@pytest.mark.parametrize("query", ["getaddrinfo('localhost', 80)", "gethostbyname('localhost')", "gethostbyaddr('127.0.0.1')"])
+def test_guard_blocks_dns_queries(query):
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("import socket\nprint(socket." + query + ")")
+    assert exit_code != 0
+    assert "network access is not allowed" in output
+
+
 @pytest.mark.parametrize("setup", [
     "import sys; sys._getframe(1).f_locals['state'].busy = True",
     "import gc; gc.get_objects()",

@@ -23,7 +23,8 @@ READ_ONLY_EXTRA = ("/dev/null", "/dev/zero", "/dev/urandom", "/dev/random", "/et
                    "/sys/devices/system/cpu", "/sys/fs/cgroup")
 SPAWN_EVENTS = ("subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.startfile", "pty.spawn",
                 "os.fork", "os.forkpty")
-NETWORK_EVENTS = ("socket.connect", "socket.sendto", "socket.sendmsg")
+NETWORK_EVENTS = ("socket.connect", "socket.sendto", "socket.sendmsg", "socket.getaddrinfo",
+                  "socket.gethostbyname", "socket.gethostbyaddr")
 INTROSPECTION_EVENTS = ("sys._getframe", "sys._current_frames", "sys._current_exceptions",
                         "sys.settrace", "sys.setprofile", "gc.get_objects", "gc.get_referrers", "gc.get_referents")
 WRITE_PATH_EVENTS = ("os.remove", "os.rmdir", "os.mkdir", "os.chmod", "os.chown", "os.utime", "os.truncate",
