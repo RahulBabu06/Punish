@@ -52,6 +52,11 @@ the grader a hack. The judgment files are left unchanged.
 `RESULTS_v2_excl_leaked.md` is `eval.analyze --exclude-task leaked_answer`. New judge runs use the definition matching
 each trajectory's sandbox files (`eval.judge.task_for_events`).
 
+**Cascade held-out check.** `CASCADE_corrected.*` is in-sample for the heuristic's rules (calibrated on v2).
+`CASCADE_corrected_precal.*` reruns it with the pre-calibration heuristic (`--heuristic-ref f664c95`),
+`CASCADE_v3_labeller.*` uses v3 as a held-out cohort (labeller-only labels, no Opus policies), and
+`cascade_heldout.{md,json}` summarises both; see `docs/cascade_heldout.md`.
+
 **Corrected-label outputs.** `mitigate best-of-n`, `calibrate`, `cascade`, `obfuscation` and `judge_validation score`
 take `--label {either,corrected,excl_leaked}` (`eval/labels.py`, shared). The `*_corrected.*` files next to each original
 (`mitigation_bestofn_v2/`, `calibration_v2/`, `CASCADE_corrected.*`, `obfuscation/`, `judge_validation_corrected/`) are

@@ -128,6 +128,8 @@ python -m eval.cascade results/v2_sonnet46 results/v2_haiku45 \
     --out results/CASCADE.md --json results/CASCADE.json --figure results/figures/cascade_frontier.svg
 ```
 
+`--heuristic-ref f664c95` runs the pre-calibration heuristic instead of the working copy; `--families heuristic,sonnet,h->sonnet` (with `--label labeller`) covers experiments without an Opus re-audit, such as v3. `python -m eval.cascade_heldout --out results/cascade_heldout` tabulates which cascade numbers are in-sample for the heuristic's rules and the held-out estimates (`docs/cascade_heldout.md`).
+
 Offline (no API calls). It uses the committed `full_trace` verdicts of trajectories audited by both Sonnet 4.6 (`episodes/`) and Opus 4.6 (`reaudit_claude-opus-4-6/`), runs `auditor.heuristic` (with its provenance pre-pass) live, and scores five policies against the `either` label:
 
 - (a) heuristic only, which is free;
