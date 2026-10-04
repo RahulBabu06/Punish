@@ -403,3 +403,33 @@ def test_paper_final_numbers_and_caveats():
                    "DeLong tests on AUROC", "Holm-corrected per label", "Wilson intervals",
                    "cell-clustered bootstraps are up to about 2$\\times$"):
         assert method in paper
+
+
+def test_robustness_caveats_in_faq_and_slides(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("build_slides", ROOT / "docs/build_slides.py")
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    slides = doc("docs/slides.html")
+    builder.OUT = tmp_path / "slides.html"
+    builder.build()
+    assert builder.OUT.read_text(encoding="utf-8") == slides, "docs/slides.html is stale: run python docs/build_slides.py"
+    assert not re.search(r"""(?:src|href)=["']https?:|url\(\s*["']?https?:|@import|fetch\(|XMLHttpRequest""", slides)
+
+    faq = doc("docs/reviewer_faq.md")
+    v3 = json.loads((ROOT / "results/robustness/robustness_v3.json").read_text(encoding="utf-8"))
+    v3_nat = {s["mode"]: s for s in v3["slices"] if s["auditor"] == SONNET and s["slice"] == "non-covert"}
+    assert v3_nat["report_only"]["tp"] == v3_nat["final_report"]["tp"]
+    assert f"both modes catch {v3_nat['final_report']['tp']}/{v3_nat['final_report']['pos']}" in faq
+    nums = robustness_numbers()
+    for value in ("66/93", "75/90", "0.056", "0.48", "26%", "0.12", "26/27", "20/27", "19/27", "5/17"):
+        assert value in faq, value
+    for value in ("66/93", "75/90", "0.48", "26%", "0.12", "26/27", "20/27"):
+        assert value in slides, value
+    for a in (SONNET, OPUS):
+        s = robust_slice(a, "full_trace", "non-covert")
+        claim = f"{s['tp']}/{s['pos']} = {s['recall']:.2f}"
+        assert claim in faq and claim in slides, claim
+    assert set(nums) >= {"66/93", "75/90", "0.056", "0.48", "26%", "0.12", "26/27", "20/27"}
+    assert "up to about 2×" in faq and "up to ~2×" in slides
+    assert "Actions are the main signal" not in slides
