@@ -444,17 +444,19 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--figure-cap", type=float, default=0.10)
     p.add_argument("--bootstrap-samples", type=int, default=1000)
     p.add_argument("--seed", type=int, default=1729)
+    p.add_argument("--mode", default=MODE, choices=("full_trace", "report_only", "final_report"),
+                   help="audit mode for every stage (saved Claude verdicts and the live heuristic)")
     from eval.labels import add_argument as add_label_argument
 
     add_label_argument(p)
     args = p.parse_args(argv)
     caps = tuple(float(c) for c in args.fpr_caps.split(",") if c)
-    items = common(load_items(args.experiments, label=args.label), FIRST, SECOND)
+    items = common(load_items(args.experiments, mode=args.mode, label=args.label), FIRST, SECOND)
     if not items:
-        p.error(f"no trajectories audited in {MODE} by both {FIRST} and {SECOND}")
+        p.error(f"no trajectories audited in {args.mode} by both {FIRST} and {SECOND}")
     res = analyze(items, lo=args.lo, hi=args.hi, caps=tuple(sorted({*caps, args.figure_cap})),
                   repeats=args.bootstrap_samples, seed=args.seed)
-    res["label"] = args.label
+    res["label"], res["mode"] = args.label, args.mode
     rel_fig = None
     if args.figure:
         Path(args.figure).parent.mkdir(parents=True, exist_ok=True)

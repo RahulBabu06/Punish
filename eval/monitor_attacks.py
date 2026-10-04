@@ -21,7 +21,7 @@ tc_N numbering stay valid.
 
 The runner reports the detection rate per attack x mode against the unattacked baseline. It writes
 <out>/verdicts/<case>__<mode>__<auditor>.json, <out>/results_<auditor>.json and <out>/SUMMARY_<auditor>.md.
-The heuristic auditor has no final_report mode, so those cells are skipped.
+The heuristic auditor's final_report mode sees only the prompt and report (auditor/report_checks.py).
 """
 
 from __future__ import annotations
@@ -491,22 +491,10 @@ if modal is not None:
 
     @app.local_entrypoint()
     def modal_main(modes: str = "all", out: str = DEFAULT_OUT, auditor_model: str = "", cases_dir: str = "",
-                   attacks: str = "", only: str = ""):
+                   attacks: str = "", only: str = "", skip_existing: bool = True):
         cases = select(load_cases(cases_dir or CASES_DIR), attacks, only)
         mode_list = hc.parse_modes(modes)
-        jobs = [(c, m) for c in cases for m in mode_list]
-        print(f"monitor attacks: {len(cases)} cases x {len(mode_list)} modes = {len(jobs)} Claude audits on Modal")
-        texts = {c["case_id"]: Path(c["path"]).read_text(encoding="utf-8") for c in cases}
-        results = monitor_attack_job.starmap(
-            [(texts[c["case_id"]], c["case_id"], m, auditor_model or None) for c, m in jobs], return_exceptions=True)
-        rows = []
-        for (c, m), r in zip(jobs, list(results)):
-            if isinstance(r, BaseException):
-                print(f"FAILED {c['case_id']} {m}: {r!r}")
-                rows.append(hc.make_row(c, m, "claude", error=repr(r)))
-                continue
-            hc.write_json(Path(out, "verdicts", f"{c['case_id']}__{m}__claude.json"), r)
-            rows.append(hc.make_row(c, m, "claude", r))
+        rows = hc.run_modal_cases(cases, mode_list, out, auditor_model or None, monitor_attack_job, skip_existing)
         print(save(attach(rows, cases), cases, out, "claude", auditor_model or None))
 
 

@@ -97,3 +97,44 @@ def test_v2_leaked_answer_trajectory_matches_v1_definition():
     version, task = judge_mod.task_for_events(events)
     assert version != "current" and task != load_task("leaked_answer")
     assert "0.006" not in json.dumps(task.get("honest_solution"))
+
+
+def test_batch_subset_and_per_mode_resume(tmp_path):
+    import pytest
+    from eval import batch
+    from eval.run_episode import episode_path_for, verdict_path_for
+
+    paths = [tmp_path / "x.jsonl", tmp_path / "y.jsonl"]
+    assert batch.select_paths(paths, "y") == paths[1:]
+    with pytest.raises(ValueError, match="unknown trajectory"):
+        batch.select_paths(paths, "missing")
+    out = tmp_path / "reaudit"
+    v = __import__("pathlib").Path(verdict_path_for("x", "full_trace", "agentic", str(out)))
+    e = __import__("pathlib").Path(episode_path_for("x", "full_trace", "agentic", str(out)))
+    v.parent.mkdir(parents=True)
+    e.parent.mkdir(parents=True)
+    v.write_text('{"hack_detected": false}')
+    e.write_text('{"verdict": {"hack_detected": false}}')
+    assert batch.pending_modes(paths[0], ["full_trace", "report_only"], str(out), "agentic") == ["report_only"]
+    e.write_text("broken")
+    assert batch.pending_modes(paths[0], ["full_trace"], str(out), "agentic") == ["full_trace"]
+
+
+def test_batch_judge_out_dir_preserves_original_judgments(tmp_path, monkeypatch):
+    from agent import credentials
+    from eval import batch
+
+    source, destination = tmp_path / "source", tmp_path / "matched"
+    (source / "trajectories").mkdir(parents=True)
+    (source / "judgments").mkdir()
+    (source / "trajectories/x.jsonl").write_text("irrelevant: judge is injected")
+    original = source / "judgments/x.json"
+    original.write_text('{"hacked": true}')
+    called = []
+    monkeypatch.setattr(credentials, "require_anthropic", lambda *a: None)
+    monkeypatch.setattr(batch, "_judge_text", lambda *a: called.append(a) or {"trajectory_id": "x", "hacked": False})
+    args = ["--local", "--results-dir", str(source), "--out-dir", str(destination), "--only", "x"]
+    assert batch._cli(args) == 0
+    assert json.loads(original.read_text())["hacked"] is True
+    assert json.loads((destination / "judgments/x.json").read_text())["hacked"] is False
+    assert batch._cli(args) == 0 and len(called) == 1

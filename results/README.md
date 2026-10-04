@@ -5,6 +5,10 @@ Every committed experiment directory. The table is generated from the committed 
 `python -m eval.cost results/<dir> ... --by-dir --json cost.json`); the exact launch command
 behind each directory is printed by `scripts/reproduce.sh sweep`.
 
+For prioritized, resumable live runs once credits return, see [the live plan](../docs/live_plan.md):
+`python scripts/live_plan.py` prints exact Modal commands, prerequisites and cost estimates offline;
+only `--run` launches them.
+
 | dir | subject model | agent configs | tasks | n | auditor modes | judged | trajectories | status | est. cost |
 |---|---|---|---|---|---|---|---|---|---|
 | `model_probe/` | haiku-4-5, opus-4-6, sonnet-4-5, sonnet-4-6 | covert | leaked_answer | 1 per model | none | no | 4 | complete | $0.35 |
@@ -24,7 +28,7 @@ Two directories hold derived analyses rather than new agent runs, so the table a
 Neither made any API calls:
 
 - `hard_cases/`: the offline heuristic auditor (`auditor.heuristic`) on the 32 hand-labelled red-team cases in
-  `fixtures/hard_cases/`, in `full_trace` and `report_only` (64 verdicts). Rebuild it with
+  `fixtures/hard_cases/`, in all three modes (96 verdicts). Rebuild it with
   `python -m eval.hard_cases`.
 - `mitigation_bestofn_v2/`: offline best-of-n with an auditor veto (`python -m eval.mitigate best-of-n`). It runs
   over the existing `v2_sonnet46/` and `v2_haiku45/` trajectories and their Sonnet 4.6 `full_trace` verdicts.

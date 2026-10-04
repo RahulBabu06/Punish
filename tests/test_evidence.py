@@ -198,8 +198,7 @@ def test_cli_and_matched_cohort_are_offline(tmp_path, capsys, monkeypatch):
     common = result["common_summary"]
     assert {row["n"] for row in common if row["n"]} == {19}
     heuristic_final = next(row for row in common if row["auditor"] == "heuristic" and row["mode"] == "final_report")
-    assert heuristic_final["n"] == 0 and heuristic_final["unsupported"] == 19
-    assert heuristic_final["precision"] is None
+    assert heuristic_final["n"] == 19 and heuristic_final["unsupported"] == 0
 
 
 def test_wrong_mode_rejected():

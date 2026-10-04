@@ -110,6 +110,33 @@ def _trajectories(results_dir: str) -> list[Path]:
     return sorted(Path(results_dir, "trajectories").glob("*.jsonl"))
 
 
+def select_paths(paths: list[Path], only: str = "") -> list[Path]:
+    if not only:
+        return paths
+    ids = set(filter(None, only.split(",")))
+    missing = ids - {p.stem for p in paths}
+    if missing:
+        raise ValueError(f"unknown trajectory ids: {sorted(missing)}")
+    return [p for p in paths if p.stem in ids]
+
+
+def pending_modes(path: Path, modes: list[str], out_dir: str, auditor: str = "claude",
+                  skip_existing: bool = True) -> list[str]:
+    from eval.run_episode import episode_path_for, verdict_path_for
+
+    return [m for m in modes if not skip_existing or not (
+        existing_json(Path(verdict_path_for(path.stem, m, auditor, out_dir)), "hack_detected")
+        and existing_json(Path(episode_path_for(path.stem, m, auditor, out_dir)), "verdict"))]
+
+
+def existing_json(path: Path, key: str) -> bool:
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+        return isinstance(obj, dict) and key in obj
+    except (OSError, ValueError, TypeError):
+        return False
+
+
 def _write(path: str, obj: dict) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     Path(path).write_text(json.dumps(obj, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -164,13 +191,13 @@ def _save_reaudits(out_dir: str, paths: list[Path], results) -> int:
 def _pending(results_dir: str, paths: list[Path], job: str, skip_existing: bool) -> list[Path]:
     if job != "judge" or not skip_existing:
         return paths
-    return [p for p in paths if not Path(results_dir, "judgments", f"{p.stem}.json").exists()]
+    return [p for p in paths if not existing_json(Path(results_dir, "judgments", f"{p.stem}.json"), "hacked")]
 
 
 @app.local_entrypoint()
 def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_model: str = "",
          auditor_modes: str = "full_trace,report_only,final_report", out_dir: str = "", skip_existing: bool = True,
-         auditor: str = "claude", n_samples: int = 1, rubric: str = "default"):
+         auditor: str = "claude", n_samples: int = 1, rubric: str = "default", only: str = ""):
     if job == "reaudit":
         from auditor.audit import _check_samples
         from auditor.prompts import system_prompt
@@ -179,19 +206,25 @@ def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_mo
         system_prompt(rubric)
         if auditor not in ("claude", "agentic"):
             raise ValueError("auditor must be claude or agentic")
-    paths = _pending(results_dir, _trajectories(results_dir), job, skip_existing)
+    destination = out_dir or (results_dir if job == "judge" else os.path.join(results_dir, "reaudit"))
+    paths = select_paths(_trajectories(results_dir), only)
+    paths = _pending(destination, paths, job, skip_existing)
     print(f"{job}: {len(paths)} trajectories from {results_dir}")
     texts = [p.read_text(encoding="utf-8") for p in paths]
     if job == "judge":
         res = judge_job.starmap([(t, judge_model or None, judge_task_for_text(t)) for t in texts],
                                 return_exceptions=True)
-        failed = _save_judgments(results_dir, paths, list(res))
+        failed = _save_judgments(destination, paths, list(res))
     elif job == "reaudit":
         modes = [m for m in auditor_modes.split(",") if m]
-        res = reaudit_job.starmap([(t, str(p), modes, auditor_model or None, auditor, n_samples, rubric)
-                                   for t, p in zip(texts, paths)],
+        jobs = [(p, t, pending_modes(p, modes, destination, auditor, skip_existing))
+                for p, t in zip(paths, texts)]
+        jobs = [(p, t, ms) for p, t, ms in jobs if ms]
+        paths = [p for p, _, _ in jobs]
+        res = reaudit_job.starmap([(t, str(p), ms, auditor_model or None, auditor, n_samples, rubric)
+                                   for p, t, ms in jobs],
                                   return_exceptions=True)
-        failed = _save_reaudits(out_dir or os.path.join(results_dir, "reaudit"), paths, list(res))
+        failed = _save_reaudits(destination, paths, list(res))
     else:
         raise SystemExit(f"unknown job {job!r}")
     print(f"done: {len(paths) - failed} ok, {failed} failed")
@@ -209,6 +242,7 @@ def _cli(argv: list[str] | None = None) -> int:
     p.add_argument("--rubric", choices=["default", "v3"], default="default", help="auditor prompt version (reaudit)")
     p.add_argument("--auditor-modes", default="full_trace,report_only,final_report")
     p.add_argument("--out-dir", default="")
+    p.add_argument("--only", default="", help="comma-separated trajectory ids; reject unknown ids")
     p.add_argument("--workers", type=int, default=8)
     args = p.parse_args(argv)
     if args.n_samples < 1:
@@ -218,7 +252,8 @@ def _cli(argv: list[str] | None = None) -> int:
     from agent.credentials import require_anthropic
 
     require_anthropic(f"eval.batch --job {args.job}")
-    paths = _pending(args.results_dir, _trajectories(args.results_dir), args.job, True)
+    destination = args.out_dir or (args.results_dir if args.job == "judge" else os.path.join(args.results_dir, "reaudit"))
+    paths = _pending(destination, select_paths(_trajectories(args.results_dir), args.only), args.job, True)
     texts = [p.read_text(encoding="utf-8") for p in paths]
 
     def safe(fn, *a):
@@ -231,13 +266,15 @@ def _cli(argv: list[str] | None = None) -> int:
     with ThreadPoolExecutor(args.workers) as pool:
         if args.job == "judge":
             res = list(pool.map(lambda t: safe(_judge_text, t, args.judge_model), texts))
-            _save_judgments(args.results_dir, paths, res)
+            _save_judgments(destination, paths, res)
         else:
             modes = args.auditor_modes.split(",")
-            res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), modes, args.auditor_model, args.auditor,
+            jobs = [(t, p, pending_modes(p, modes, destination, args.auditor)) for t, p in zip(texts, paths)]
+            jobs = [(t, p, ms) for t, p, ms in jobs if ms]
+            res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), tp[2], args.auditor_model, args.auditor,
                                                       args.n_samples, args.rubric),
-                                zip(texts, paths)))
-            _save_reaudits(args.out_dir or os.path.join(args.results_dir, "reaudit"), paths, res)
+                                jobs))
+            _save_reaudits(destination, [p for _, p, _ in jobs], res)
     return 0
 
 
