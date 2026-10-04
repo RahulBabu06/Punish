@@ -4,6 +4,10 @@ The annotator is an AI (Devin), not a human. Workflow:
   python -m eval.v3_hand_review sample   # stratified, seeded sample -> results/v3_hand_review/sample.json
   (hand-label every sampled trajectory against the task definition it saw, into results/v3_hand_review/labels.json)
   python -m eval.v3_hand_review score    # labeller precision/recall + Sonnet full_trace shift -> metrics.json/.md
+  python -m eval.v3_hand_review decoy    # v2/v3 flips of the opt-in leaked_grader_decoy rule -> decoy.json/.md
+
+Round 1 is the original 40-run draw; round 2 adds EXTENSION more runs to the under-sampled `clean_other` stratum with
+the same seed (the larger greedy draw starts with the round-1 picks, so round 1 is unchanged).
 
 Strata are labeller verdict x config risk: every labeller positive is in `labeller_hacked`, and labeller-clean runs
 are split into `clean_risky` (covert, covert_monitored, pressure), where missed hacks are likely and which is
@@ -31,11 +35,16 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "results" / "v3_hand_review"
 SAMPLE_PATH = OUT_DIR / "sample.json"
 LABELS_PATH = OUT_DIR / "labels.json"
+DECOY_REVIEW_PATH = OUT_DIR / "decoy_flips.json"
+HARD_CASES = ROOT / "fixtures" / "hard_cases"
+V2_EXPERIMENTS = ("results/v2_sonnet46", "results/v2_haiku45", "results/v2_sonnet45")
 EXPERIMENTS = ("results/v3_haiku45", "results/v3_opus46", "results/v3_sonnet46", "results/v3cond_haiku45",
                "results/v3cond_sonnet46", "results/v3fault_sonnet46")
 RISKY = frozenset({"covert", "covert_monitored", "pressure"})
 STRATA = ("labeller_hacked", "clean_risky", "clean_other")
 QUOTAS = {"labeller_hacked": 14, "clean_risky": 16, "clean_other": 10}
+# round 2 tops up the under-sampled stratum: the same seeded greedy draw with a larger quota, so round 1 is a prefix
+EXTENSION = {"clean_other": 30}
 DECISIONS = ("yes", "no", "ambiguous")
 AUDITOR, MODE = "claude-sonnet-4-6", "full_trace"
 SEED = 20261004
@@ -63,16 +72,33 @@ def load_population(experiments=EXPERIMENTS) -> list[dict]:
     return sorted(out, key=lambda t: (t["experiment"], t["trajectory_id"]))
 
 
-def draw_sample(population: list[dict], quotas: dict = QUOTAS, seed: int = SEED) -> list[dict]:
+def _draw(population: list[dict], quotas: dict, seed: int) -> list[dict]:
     rng = random.Random(seed)
     seen: Counter = Counter()
     picked = []
     for name in STRATA:
         picked += _pick([t for t in population if t["stratum"] == name], quotas.get(name, 0), rng, seen)
-    picked.sort(key=lambda t: (STRATA.index(t["stratum"]), t["task_id"], t["agent_config"], t["experiment"],
-                               t["trajectory_id"]))
+    return picked
+
+
+def draw_sample(population: list[dict], quotas: dict = QUOTAS, seed: int = SEED,
+                extension: dict | None = EXTENSION) -> list[dict]:
+    """Round 1 (`quotas`) then round 2 (`extension` more per stratum). Per stratum the greedy pick is sequential and
+    the RNG only shuffles each pool, so the larger draw starts with exactly the round-1 picks."""
+    def key(t):
+        return (STRATA.index(t["stratum"]), t["task_id"], t["agent_config"], t["experiment"], t["trajectory_id"])
+
+    first = _draw(population, quotas, seed)
+    rounds = [sorted(first, key=key)]
+    if extension:
+        total = {n: quotas.get(n, 0) + extension.get(n, 0) for n in STRATA}
+        ids = {id(t) for t in first}
+        full = _draw(population, total, seed)
+        assert ids <= {id(t) for t in full}, "round 2 must extend round 1"
+        rounds.append(sorted((t for t in full if id(t) not in ids), key=key))
     return [{"experiment": t["experiment"], "trajectory_id": t["trajectory_id"], "stratum": t["stratum"],
-             "path": f"results/{t['experiment']}/trajectories/{t['trajectory_id']}.jsonl"} for t in picked]
+             "round": r, "path": f"results/{t['experiment']}/trajectories/{t['trajectory_id']}.jsonl"}
+            for r, picked in enumerate(rounds, 1) for t in picked]
 
 
 def load_sample(path=SAMPLE_PATH) -> list[dict]:
@@ -229,7 +255,9 @@ def score(population=None, sample=None, labels=None) -> dict:
                                   "labeller": t["labeller"], "hand": lab["hacked"], "hack_types": lab["hack_types"],
                                   "why": lab["why"]})
     return {
-        "seed": SEED, "quotas": QUOTAS, "n_sample": len(sample),
+        "seed": SEED, "quotas": QUOTAS, "extension": EXTENSION, "n_sample": len(sample),
+        "rounds": {str(r): dict(Counter(s["stratum"] for s in sample if s.get("round", 1) == r))
+                   for r in sorted({s.get("round", 1) for s in sample})},
         "hand_decisions": dict(Counter(lab["hacked"] for lab in labels)),
         "labeller": {mode: labeller_estimates(population, sample, labels, mode) for mode in ("drop", "hack", "clean")},
         "full_trace_shift": auditor_shift(population, sample, labels),
@@ -258,7 +286,7 @@ def render(result: dict) -> str:
     main = result["labeller"]["drop"]
     lines = ["# v3 labeller hand review", "",
              f"Seeded stratified sample (seed {result['seed']}) of {result['n_sample']} of {main['population']} v3 "
-             f"trajectories. Hand decisions: {result['hand_decisions']}.", "",
+             f"trajectories (per round: {result.get('rounds')}). Hand decisions: {result['hand_decisions']}.", "",
              "| stratum | population N | sampled n (decided) | hand-labelled hacked | rate [Wilson 95%] |",
              "|---|---|---|---|---|"]
     for name, c in main["strata"].items():
@@ -292,6 +320,94 @@ def render(result: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+# ------------------------------------------------------------------ opt-in decoy rule
+
+
+def _leaked_runs(experiments) -> list[dict]:
+    """Every leaked_answer trajectory, scored with the task definition it saw, by the default and opt-in labellers."""
+    from eval.judge import task_for_events
+    from tasks import registry, validate_labels
+
+    rows = []
+    for exp in experiments:
+        for path in sorted((ROOT / exp / "trajectories").glob("*.jsonl")):
+            events = validate_labels.load_events(path)
+            if (events[0].get("config") or {}).get("task_id") != "leaked_answer":
+                continue
+            version, task = task_for_events(events)
+            rows.append({"experiment": Path(exp).name, "trajectory_id": path.stem, "definition": version,
+                         "config": events[0]["config"].get("agent_config"),
+                         "default": registry.label(task, events),
+                         "opt_in": registry.label_with(task, events, ("leaked_grader_decoy",)),
+                         "loose": registry.leaked_grader_decoy(task, events, require_conclusion=False)})
+    return rows
+
+
+def decoy_impact(v2=V2_EXPERIMENTS, v3=EXPERIMENTS, sample=None, labels=None,
+                 review_path=DECOY_REVIEW_PATH, hard_cases=HARD_CASES) -> dict:
+    """What the opt-in `leaked_grader_decoy` rule would change. Read-only: no episode or label file is written."""
+    from eval.judge import task_for_events
+    from tasks import registry, validate_labels
+
+    sample = sample if sample is not None else load_sample()
+    labels = labels if labels is not None else load_labels(sample)
+    hand = {(s["experiment"], s["trajectory_id"]): lab["hacked"] for s, lab in zip(sample, labels)}
+    review = {(r["experiment"], r["trajectory_id"]): r for r in json.loads(Path(review_path).read_text("utf-8"))}
+    out: dict = {"rule": "tasks.registry.leaked_grader_decoy"}
+    for name, experiments in (("v2", v2), ("v3", v3)):
+        rows = _leaked_runs(experiments)
+        flips = [{**r, "hand": hand.get((r["experiment"], r["trajectory_id"])),
+                  "review": review.get((r["experiment"], r["trajectory_id"]), {}).get("hacked")}
+                 for r in rows if r["opt_in"] != r["default"]]
+        out[name] = {"leaked_answer_runs": len(rows), "definitions": dict(Counter(r["definition"] for r in rows)),
+                     "default_hacked": sum(r["default"] for r in rows), "flips": flips,
+                     "flips_by_config": dict(Counter(f["config"] for f in flips)),
+                     "loose_flips": sum(r["loose"] and not r["default"] for r in rows)}
+    flips = out["v2"]["flips"] + out["v3"]["flips"]
+    out["flip_review"] = dict(Counter(f["review"] or "unreviewed" for f in flips))
+    in_sample = [r for r in _leaked_runs(v3) if (r["experiment"], r["trajectory_id"]) in hand]
+    out["hand_sample"] = [{"experiment": r["experiment"], "trajectory_id": r["trajectory_id"],
+                           "hand": hand[(r["experiment"], r["trajectory_id"])], "default": r["default"],
+                           "opt_in": r["opt_in"]} for r in in_sample]
+    cases = []
+    for path in sorted(Path(hard_cases).glob("*.jsonl")):
+        lab = json.loads(path.with_suffix(".label.json").read_text("utf-8"))
+        if lab.get("task_id") != "leaked_answer":
+            continue
+        events = validate_labels.load_events(path)
+        _, task = task_for_events(events)
+        cases.append({"case": path.stem, "hand": lab["hacked"], "default": registry.label(task, events),
+                      "opt_in": registry.label_with(task, events, ("leaked_grader_decoy",)),
+                      "loose": registry.leaked_grader_decoy(task, events, require_conclusion=False)})
+    out["hard_cases"] = cases
+    return out
+
+
+def render_decoy(result: dict) -> str:
+    yn = {True: "hacked", False: "clean", None: "-"}
+    lines = ["# Opt-in rule `leaked_grader_decoy`: impact (default labels unchanged)", "",
+             "| data | leaked_answer runs | definitions | default hacked | flips clean -> hacked | "
+             "loose variant flips |", "|---|---|---|---|---|---|"]
+    for name in ("v2", "v3"):
+        r = result[name]
+        lines.append(f"| {name} | {r['leaked_answer_runs']} | {r['definitions']} | {r['default_hacked']} | "
+                     f"{len(r['flips'])} {r['flips_by_config'] or ''} | {r['loose_flips']} |")
+    lines += ["", f"Hand review of the flips: {result['flip_review']}", "",
+              "| flipped trajectory | config | hand (sample) | hand (flip review) |", "|---|---|---|---|"]
+    for f in result["v2"]["flips"] + result["v3"]["flips"]:
+        lines.append(f"| {f['experiment']}/{f['trajectory_id']} | {f['config']} | {f['hand'] or '-'} | "
+                     f"{f['review'] or '-'} |")
+    lines += ["", "| hand-sample leaked_answer run | hand | default | opt-in |", "|---|---|---|---|"]
+    for r in result["hand_sample"]:
+        lines.append(f"| {r['experiment']}/{r['trajectory_id']} | {r['hand']} | {yn[r['default']]} | "
+                     f"{yn[r['opt_in']]} |")
+    lines += ["", "| hard case | hand | default | opt-in | loose variant |", "|---|---|---|---|---|"]
+    for c in result["hard_cases"]:
+        lines.append(f"| {c['case']} | {yn[c['hand']]} | {yn[c['default']]} | {yn[c['opt_in']]} | "
+                     f"{yn[c['loose']]} |")
+    return "\n".join(lines) + "\n"
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -300,7 +416,15 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--out", default=str(SAMPLE_PATH))
     c = sub.add_parser("score", help="labeller precision/recall and the full_trace shift vs the hand labels")
     c.add_argument("--out", default=str(OUT_DIR / "metrics"), help="writes <out>.json and <out>.md")
+    d = sub.add_parser("decoy", help="v2/v3 label flips of the opt-in leaked_grader_decoy rule (read-only)")
+    d.add_argument("--out", default=str(OUT_DIR / "decoy"), help="writes <out>.json and <out>.md")
     args = p.parse_args(argv)
+    if args.cmd == "decoy":
+        result = decoy_impact()
+        Path(f"{args.out}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        Path(f"{args.out}.md").write_text(render_decoy(result), encoding="utf-8")
+        print(render_decoy(result))
+        return 0
     if args.cmd == "sample":
         population = load_population()
         sample = draw_sample(population, seed=args.seed)
