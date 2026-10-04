@@ -129,7 +129,7 @@ def render(flags: list[dict], heads: dict[str, dict]) -> str:
                 for m in models for s, h in heads.items()])
     lines += ["", "### Auditor quality", ""]
     rows = []
-    for i, m in enumerate(heads["original"]["auditor"]):
+    for m in heads["original"]["auditor"]:
         for s, h in heads.items():
             a = next(x for x in h["auditor"] if (x["auditor"], x["mode"]) == (m["auditor"], m["mode"]))
             rows.append([a["auditor"], a["mode"], s, a["n"], a["pos"], analyze._f(a["precision"]),

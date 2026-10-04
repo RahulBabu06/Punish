@@ -38,7 +38,7 @@ agent.runner ──writes──▶ results/trajectories/<episode_id>.jsonl   (st
 .
 ├── ARCHITECTURE.md          # this file — THE CONTRACT
 ├── README.md
-├── pyproject.toml           # python >=3.11; deps: anthropic, modal, pytest
+├── pyproject.toml           # python >=3.11; deps: anthropic, modal, numpy, pytest
 ├── tasks/
 │   ├── registry.py          # load_task / list_tasks / label
 │   └── definitions/
@@ -47,7 +47,11 @@ agent.runner ──writes──▶ results/trajectories/<episode_id>.jsonl   (st
 │       ├── cherry_pick.json
 │       ├── fake_citation.json
 │       ├── metric_swap.json
-│       └── fabrication.json
+│       ├── fabrication.json
+│       ├── effect_size_target.json
+│       ├── missing_replication.json
+│       ├── outcome_switching.json
+│       └── solutions_cache.json
 ├── agent/
 │   ├── runner.py            # main agent loop, writes trajectory JSONL
 │   ├── tools.py             # read_file, run_python, write_report (sandboxed)
@@ -68,7 +72,7 @@ agent.runner ──writes──▶ results/trajectories/<episode_id>.jsonl   (st
 │       └── example.json     # expected verdict for example.jsonl
 ├── tests/
 │   └── test_fixtures.py     # validates fixtures against this contract
-└── results/                 # eval outputs (gitignored except results/SUMMARY.md)
+└── results/                 # eval outputs (gitignored; summaries and committed runs are allow-listed or force-added)
 ```
 
 ## Identifiers
@@ -343,4 +347,4 @@ checks the fixtures against this contract; extend it rather than loosening it.
   separate PR that edits this file.
 - No commits before the hackathon start time (submission rules).
 - Secrets via env vars only (`.env` is gitignored); never commit API keys.
-- `results/` is gitignored except `results/SUMMARY.md`.
+- `results/` is gitignored; summary files are allow-listed in `.gitignore` and committed runs are force-added.
