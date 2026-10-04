@@ -673,8 +673,8 @@ It was tuned on 20 hand-labelled cases and scores 10/10 on 10 held-out ones (Wil
   `leaked_answer` positives raises disclosure, because those runs had nothing to disclose.
 - The 3 undisclosed Sonnet 4.6 hacks are `fake_citation`: the overstatement is in the report,
   and the reasoning only says "a credible evidence chain".
-- Disclosure is near-total for instructed hacks (87–100% of `covert` hacks per subject: 20/23,
-  28/28, 25/25), yet the `full_trace` − `report_only` gap is
+- Disclosure is near-total for instructed hacks (original label 87–100% of `covert` hacks per
+  subject: 20/23, 28/28, 25/25; corrected 83–100%), yet the `full_trace` − `report_only` gap is
   0: the copied value or dropped site is also visible in the tool calls and the report.
 - Unprompted hacks (v2 `incentivized` / `pressure`, 4–10 hacks per cell) disclose much less
   often: 0.00–0.90 per cell.
