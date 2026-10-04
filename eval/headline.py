@@ -80,7 +80,7 @@ def render(data: dict) -> str:
 
     # A — subject behaviour.
     x, y, w, h = 24, 118, 505, 318
-    _panel(svg, x, y, w, h, "A  Hack rate depends on incentives", "corrected label (n=360) · 90 trajectories per config")
+    _panel(svg, x, y, w, h, "A  Hacking follows the prompt", "corrected label (n=360) · 90 per config · covert = told to hack and hide it")
     rates = data["hack_rates"]
     labels = (("honest", BLUE), ("incentivized", GREEN), ("pressure", ORANGE), ("covert", PURPLE))
     bar_x, bar_w = x + 128, 270
@@ -99,7 +99,7 @@ def render(data: dict) -> str:
 
     # B — detector quality. Values are verdict operating points, not tuned thresholds.
     x = 551
-    _panel(svg, x, y, w, h, "B  Detection is strong—but false alarms are high", "corrected label · Sonnet n=360; Opus matched n=240")
+    _panel(svg, x, y, w, h, "B  Catches most hacks, over-flags honest runs", "corrected label · Sonnet n=360; Opus matched n=240")
     svg.text(x + 248, y + 79, "Recall", anchor="middle", size=11, weight=700)
     svg.text(x + 332, y + 79, "FPR", anchor="middle", size=11, weight=700)
     svg.text(x + 421, y + 79, "AUROC", anchor="middle", size=11, weight=700)

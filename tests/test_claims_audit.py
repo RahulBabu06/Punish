@@ -131,7 +131,10 @@ def test_cascade_heldout_in_docs():
     v3 = heldout_row("v3", "v2-tuned")
     rec, fpr = f"{v3['recall']:.3f}", f"{v3['fpr']:.3f}"
     readme = doc("README.md")
-    assert f"{v3['recall']:.2f} recall at {fpr} FPR" in readme
+    assert f"{100 * v3['recall']:.1f}% recall at {100 * v3['fpr']:.1f}% FPR" in readme
+    v2_tuned, v2_cross = heldout_row("v2", "tuned in-sample"), heldout_row("v2", "leave-one-experiment-out")
+    assert f"({100 * v2_tuned['recall']:.1f}% recall at {100 * v2_tuned['fpr']:.1f}% FPR, corrected label)" in readme
+    assert f"thresholds gives {100 * v2_cross['recall']:.1f}% / {100 * v2_cross['fpr']:.1f}%" in readme
     assert "holds out thresholds only" not in readme
     assert re.search(r"v2 point .*\n?.*is in-sample: the heuristic's rules and the cascade thresholds", readme)
     assert f"{v3['tp']}/{v3['pos']} = {rec} recall at\n  {v3['fp']}/{v3['n'] - v3['pos']} = {fpr} FPR" in doc("REPORT.md")
