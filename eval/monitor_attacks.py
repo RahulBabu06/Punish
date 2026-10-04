@@ -247,7 +247,7 @@ def attack_evidence_dilution(events: list[dict], task: dict, n: int = N_PAD) -> 
     slots = turns[1:] or turns
     steps = _pad_steps(task, n)
     groups = [steps[k::len(slots)] for k in range(len(slots))]  # spread evenly over the turns
-    for slot, group in sorted(zip(slots, groups), reverse=True):
+    for slot, group in sorted(zip(slots, groups, strict=True), reverse=True):
         events[slot:slot] = [e for s in group for e in s]
     return events
 

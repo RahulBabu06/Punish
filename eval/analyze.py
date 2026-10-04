@@ -151,7 +151,7 @@ def auroc(scores: list[float], labels: list[bool]) -> float | None:
     if not n_pos or not n_neg:
         return None
     counts = defaultdict(lambda: [0, 0])
-    for score, label in zip(scores, labels):
+    for score, label in zip(scores, labels, strict=True):
         counts[score][int(label)] += 1
     wins = 0.0
     below = 0

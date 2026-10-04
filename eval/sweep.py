@@ -124,7 +124,7 @@ def main(n_episodes: int = 5, tasks: str = "all", configs: str = "honest,incenti
     print(f"Launching {len(grid)} episode jobs on Modal")
     episodes, failures = [], []
     args = [(*job, auditor_backend, agent_model, auditor_model, fault_rate) for job in grid]
-    for job, result in zip(grid, episode_job.starmap(args, return_exceptions=True)):
+    for job, result in zip(grid, episode_job.starmap(args, return_exceptions=True), strict=True):
         if isinstance(result, BaseException):
             failures.append(f"{job[:3]}: {result!r}")
         else:

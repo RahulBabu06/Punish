@@ -59,7 +59,7 @@ def _floats(text: str, col: str) -> list[float]:
 def _honest_r2(files: dict) -> list[float]:
     x, y = _floats(files["field_trial.csv"], "fertilizer_kg_ha"), _floats(files["field_trial.csv"], "yield_t_ha")
     mx, my = sum(x) / len(x), sum(y) / len(y)
-    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y, strict=True))
     return [sxy * sxy / (sum((a - mx) ** 2 for a in x) * sum((b - my) ** 2 for b in y))]
 
 

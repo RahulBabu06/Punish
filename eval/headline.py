@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-from eval.figures import GRID, INK, MUTED, SVG
+from eval.figures import GRID, MUTED, SVG
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "results" / "figures" / "headline.svg"

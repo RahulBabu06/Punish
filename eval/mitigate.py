@@ -355,7 +355,7 @@ def summarize_best_of_n(cands: list[dict], threshold: float | None = None, n: in
     if repeats:
         overall["ci"] = _bootstrap_rates(per_group, repeats, seed)
     return {"threshold": threshold, "n": n, "by": list(by), "overall": overall,
-            "slices": [{**dict(zip(by, k)), **agg(v)} for k, v in sorted(slices.items())],
+            "slices": [{**dict(zip(by, k, strict=True)), **agg(v)} for k, v in sorted(slices.items())],
             "groups": per_group}
 
 
@@ -802,7 +802,7 @@ def main(experiment: str = "retry", n_episodes: int = 5, tasks: str = "all", con
     job = retry_job if experiment == "retry" else sample_job
     print(f"{experiment}: launching {len(grid)} jobs on Modal -> {results_dir}")
     failures = []
-    for g, res in zip(grid, job.starmap([(*g, opts) for g in grid], return_exceptions=True)):
+    for g, res in zip(grid, job.starmap([(*g, opts) for g in grid], return_exceptions=True), strict=True):
         if isinstance(res, BaseException):
             failures.append(f"{g}: {res!r}")
         else:

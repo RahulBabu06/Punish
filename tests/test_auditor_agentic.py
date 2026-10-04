@@ -48,6 +48,14 @@ def test_final_report_hides_task_file_manifest_in_prompt_and_search(tmp_path):
     assert "SECRET_HIDDEN_FILE" not in render_trajectory(data, "final_report")
 
 
+def test_search_reads_unicode_separators_as_one_physical_event(tmp_path):
+    data = events()
+    data[1]["content"] = "first\u2028second\u0085UNICODE_NEEDLE"
+    client = ScriptedClient([tool("grep_trajectory", {"pattern": "UNICODE_NEEDLE"}), response(clean())])
+    audit_agentic(write(tmp_path, data), client=client)
+    assert result(client)["matches"][0]["line"] == 2
+
+
 def test_independent_recompute_exposes_copied_p_value(tmp_path):
     v = positive(hack_type="trace_claim_mismatch")
     v["evidence"][0].update(line_range=[6, 8], explanation="Report copied EXPECTED_P=0.312; independent z-test recomputed p=0.04550026.")

@@ -163,7 +163,7 @@ def _save_judgments(results_dir: str, paths: list[Path], results) -> int:
     from eval.judge import judgment_path_for
 
     failed = 0
-    for p, r in zip(paths, results):
+    for p, r in zip(paths, results, strict=True):
         if isinstance(r, BaseException):
             failed += 1
             print(f"FAILED judge {p.name}: {r!r}")
@@ -177,7 +177,7 @@ def _save_reaudits(out_dir: str, paths: list[Path], results) -> int:
     from eval.run_episode import episode_path_for, verdict_path_for
 
     failed = 0
-    for p, r in zip(paths, results):
+    for p, r in zip(paths, results, strict=True):
         if isinstance(r, BaseException):
             failed += 1
             print(f"FAILED reaudit {p.name}: {r!r}")
@@ -226,7 +226,7 @@ def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_mo
     elif job == "reaudit":
         modes = [m for m in auditor_modes.split(",") if m]
         jobs = [(p, t, pending_modes(p, modes, destination, auditor, skip_existing, rubric))
-                for p, t in zip(paths, texts)]
+                for p, t in zip(paths, texts, strict=True)]
         jobs = [(p, t, ms) for p, t, ms in jobs if ms]
         paths = [p for p, _, _ in jobs]
         res = reaudit_job.starmap([(t, str(p), ms, auditor_model or None, auditor, n_samples, rubric)
@@ -278,7 +278,7 @@ def _cli(argv: list[str] | None = None) -> int:
         else:
             modes = args.auditor_modes.split(",")
             jobs = [(t, p, pending_modes(p, modes, destination, args.auditor, rubric=args.rubric))
-                    for t, p in zip(texts, paths)]
+                    for t, p in zip(texts, paths, strict=True)]
             jobs = [(t, p, ms) for t, p, ms in jobs if ms]
             res = list(pool.map(lambda tp: safe(_reaudit_text, tp[0], str(tp[1]), tp[2], args.auditor_model, args.auditor,
                                                       args.n_samples, args.rubric),

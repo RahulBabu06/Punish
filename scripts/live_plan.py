@@ -77,7 +77,7 @@ def cost_rates(root: Path = ROOT) -> dict[tuple[str, str], Rate]:
         if len(cells) != 10 or not cells[0].startswith("results/") or cells[1] == "agent":
             continue
         role = "auditor" if cells[1] == "reaudit" else cells[1]
-        tokens = {key: int(value.replace(",", "")) for key, value in zip(TOKEN_KEYS, cells[4:8])}
+        tokens = {key: int(value.replace(",", "")) for key, value in zip(TOKEN_KEYS, cells[4:8], strict=True)}
         price = usd(tokens, cells[2])
         if price is None:
             raise ValueError(f"no price for {cells[2]}")

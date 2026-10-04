@@ -20,8 +20,8 @@ def test_auc_matches_pairwise_reference():
     for _ in range(40):
         scores = [rng.choice([0, 0.3, 0.5, 1]) for _ in range(30)]
         labels = [rng.choice([True, False]) for _ in scores]
-        pos = [s for s, y in zip(scores, labels) if y]
-        neg = [s for s, y in zip(scores, labels) if not y]
+        pos = [s for s, y in zip(scores, labels, strict=True) if y]
+        neg = [s for s, y in zip(scores, labels, strict=True) if not y]
         reference = sum((p > n) + 0.5 * (p == n) for p in pos for n in neg) / (len(pos) * len(neg))
         assert analyze.auroc(scores, labels) == reference
     with pytest.raises(ValueError):
@@ -91,7 +91,7 @@ def test_roc_tied_thresholds_and_exact_low_fpr():
 def test_roc_area_equals_rank_auc():
     rows = [row(str(i), i % 2 == 0, True, score) for i, score in enumerate([1, 0.8, 0.8, 0.2, 0])]
     points = analyze.threshold_sweep(rows, "either")
-    area = sum((b["fpr"] - a["fpr"]) * (a["tpr"] + b["tpr"]) / 2 for a, b in zip(points, points[1:]))
+    area = sum((b["fpr"] - a["fpr"]) * (a["tpr"] + b["tpr"]) / 2 for a, b in zip(points, points[1:], strict=False))
     assert area == pytest.approx(analyze.cls(rows, "either")["auroc"])
 
 

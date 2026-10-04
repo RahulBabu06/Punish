@@ -86,7 +86,7 @@ def fit_isotonic(s: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     w = np.bincount(inv).astype(float)
     m = np.bincount(inv, weights=np.asarray(y, dtype=float)) / w
     blocks: list[list[float]] = []  # [mean, weight, n_knots]
-    for mi, wi in zip(m, w):
+    for mi, wi in zip(m, w, strict=True):
         blocks.append([mi, wi, 1])
         while len(blocks) > 1 and blocks[-2][0] > blocks[-1][0]:
             m2, w2, k2 = blocks.pop()
@@ -349,7 +349,7 @@ def reliability_svg(results: list[dict]) -> str:
                 bins = [b for b in r["methods"][k]["bins"] if b["n"] >= MIN_BIN_PLOT]
                 pts = [(left + pw * b["mean_confidence"], top + ph * (1 - b["observed_hack_rate"])) for b in bins]
                 svg.path(pts, METHOD_COLORS[k], width=2)
-                for (x, y), b in zip(pts, bins):
+                for (x, y), b in zip(pts, bins, strict=True):
                     svg.circle(x, y, METHOD_COLORS[k], 2 + min(4, b["n"] ** 0.5 / 2))
             ece_txt = " · ".join(f"{k[:3]} {r['methods'][k]['ece']:.3f}" for k in METHODS)
             svg.text(left, top + ph + 70, f"ECE {ece_txt}", size=11, color=MUTED)

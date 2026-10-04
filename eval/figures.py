@@ -240,7 +240,7 @@ def calibration_svg(stats: dict) -> str:
             bins = [b for b in metric["bins"] if b["n"]]
             points = [(left + width * b["mean_confidence"], top + ph * (1 - b["observed_hack_rate"])) for b in bins]
             svg.path(points, COLORS[mode])
-            for (x, y), b in zip(points, bins):
+            for (x, y), b in zip(points, bins, strict=True):
                 svg.circle(x, y, COLORS[mode], 3 + min(4, b["n"] ** 0.5 / 2))
     svg.text(36, height - 39, AUDITOR_COVERAGE_NOTE, size=12, color=MUTED)
     svg.text(36, height - 17, "Dashed diagonal: perfect calibration. Larger dots: more trajectories. Empty bins are omitted; lines only guide the eye.",

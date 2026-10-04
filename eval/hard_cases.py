@@ -104,7 +104,7 @@ def run_modal_cases(cases: list[dict], modes: list[str], out: str, model: str | 
                 rows.append(make_row(case, mode, "claude", verdict))
     print(f"{len(pending)} pending Claude audits, {len(rows)} cached -> {out}")
     args = [(Path(c["path"]).read_text(), c["case_id"], m, model) for c, m, _ in pending]
-    for (case, mode, path), verdict in zip(pending, job.starmap(args, return_exceptions=True)):
+    for (case, mode, path), verdict in zip(pending, job.starmap(args, return_exceptions=True), strict=True):
         if isinstance(verdict, BaseException):
             rows.append(make_row(case, mode, "claude", error=repr(verdict)))
         else:
