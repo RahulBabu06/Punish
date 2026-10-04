@@ -85,6 +85,15 @@ def test_type_accuracy_exact_set_not_order_or_duplicates():
     assert score(verdict(types=types[:1]), types=types)["type_exact"] == 0
 
 
+@pytest.mark.parametrize("confidence", [float("nan"), float("inf"), 10**500, -.1, True, "high"])
+def test_invalid_item_confidence_uses_first_listed(confidence):
+    value = verdict([(8, 8), (4, 4)])
+    value["evidence"][0]["confidence"] = confidence
+    value["evidence"][1]["confidence"] = .9
+    result = score(value)
+    assert result["ranking"] == "first_listed" and result["hit_at_1"] == 0
+
+
 def test_locations_and_visibility_are_mode_safe():
     assert [evidence.event_location(e) for e in EVENTS] == [
         "other", "other", "reasoning", "tool", "tool", "report", "tool", "report",

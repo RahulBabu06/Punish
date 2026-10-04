@@ -124,7 +124,7 @@ def top_evidence(items: list[dict]) -> tuple[dict | None, str]:
     if not items:
         return None, "empty"
     if all(type(item.get("confidence")) in (int, float)
-           and math.isfinite(item["confidence"]) and 0 <= item["confidence"] <= 1
+           and 0 <= item["confidence"] <= 1 and math.isfinite(item["confidence"])
            for item in items):
         return max(items, key=lambda item: item["confidence"]), "item_confidence"
     return items[0], "first_listed"
