@@ -804,14 +804,14 @@ and Opus 4.6 (79 hacked) under five policies:
 - **The v2 80% / 5% point is in-sample; the low-FPR point transfers to v3 at lower recall**
   ([`results/cascade_heldout.md`](results/cascade_heldout.md), `full_trace`, $ are chars/4 estimates). The heuristic's rules were calibrated
   on `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`, so every v2 heuristic and heuristic → Sonnet
-  number is in-sample for the heuristic: 45/56 = 0.804 recall at 10/184 = 0.054 FPR ($0.0187) with tuned
-  thresholds, and 0.768 / 0.054 with leave-one-experiment-out thresholds. With the pre-calibration rules
+  number is in-sample for the heuristic: 45/56 = 0.804 recall at 10/184 = 0.054 FPR ($0.0188) with tuned
+  thresholds, and 0.768 / 0.054 ($0.0161) with leave-one-experiment-out thresholds. With the pre-calibration rules
   (`f664c95`) and leave-one-experiment-out thresholds, heuristic → Sonnet gets 32/56 = 0.571 recall at
   26/184 = 0.141 FPR, identical to Sonnet alone (0.571 / 0.141) at about 71% of its cost ($0.0220 vs
-  $0.0307). Without calibration the cascade only saves cost. On the 450 unseen v3 runs (labeller-only
+  $0.0308). Without calibration the cascade only saves cost. On the 450 unseen v3 runs (labeller-only
   labels, preliminary), the v2-tuned thresholds applied unchanged give 64/102 = 0.627 recall at
   10/348 = 0.029 FPR ($0.0169), against Sonnet alone at 0.863 / 0.172. Most of that recall comes from the
-  heuristic alone. On the 40-run v3 hand sample it is 9/13 recall and 1/26 FPR.
+  heuristic alone. On the 70-run v3 hand sample it is 10/14 recall and 2/55 FPR.
 - Costs here are characters / 4 estimates at list prices from today's prompt code (§8.9), not billed spend.
 - These per-audit costs rebuild the full audit request (system prompt included), so they
   are higher than §8.9's $0.025, which is estimated from stored records.
@@ -1079,7 +1079,7 @@ in §8 come from:
   results/v3cond_haiku45 results/v3cond_sonnet46 results/v3fault_sonnet46 \
   --out results/RESULTS_v3_preliminary.md --figures --figures-dir results/figures_v3   # §8.6
 .venv/bin/python -m eval.analyze results/probe_v1 \
-  --out results/probe_v1/SUMMARY_regen.md                                 # §8.4 (scratch)
+  --out results/probe_v1/RESULTS.md                                       # §8.4 (uncommitted)
 .venv/bin/python -m eval.hard_cases --auditor heuristic                   # §8.7
 .venv/bin/python -m eval.mitigate best-of-n results/v2_sonnet46 results/v2_haiku45 \
   --out results/mitigation_bestofn_v2/MITIGATION_bestofn.md               # §8.8
@@ -1094,6 +1094,8 @@ scripts/reproduce.sh cost   # §8.9; all 11 dirs -> results/COST.md
 .venv/bin/python -m eval.calibrate results/v2_sonnet46 results/v2_haiku45 results/v2_sonnet45 \
   --out results/calibration_v2/CALIBRATION.md   # §8.14
 ```
+
+`scripts/reproduce.sh derived` regenerates the corrected-label and `final_report` variants.
 
 The McNemar tests, the Sonnet-on-240 restriction, and the per-task and per-subject breakdowns were
 computed from the `--json` rows written by `eval.analyze`.
