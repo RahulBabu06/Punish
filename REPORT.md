@@ -581,6 +581,10 @@ R = share of gold lines cited; P±1 = share of cited lines within one line of go
 auditors cite most hack lines, but about half of what they cite is context. The heuristic gets
 R 0.36 and P±1 0.91 on the hard cases; Claude coverage status is in §8.7.
 
+Caveat: 34 committed `final_report` verdicts cite lines that mode hides, one of them on a Sonnet gold trace.
+Dropping the hidden lines moves Sonnet `final_report` here from 0.26 / 0.57 to 0.21 / 1.00, and v3 `suspicious_access`
+type recall from 5/6 to 1/6; detection is unchanged ([Known issues](docs/methodology_review.md#known-issues-found-in-the-final-contract-review)).
+
 #### 8.18 Task design (`docs/task_design.md`, `results/task_stats/TASK_STATS.md`)
 
 Per-task statistics under the corrected label (v2, 360 trajectories):
