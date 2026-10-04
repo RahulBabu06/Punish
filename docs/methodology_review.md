@@ -85,9 +85,28 @@ Clustered 95% CIs (2,000 replicates; cells = 72 Sonnet / 48 Opus clusters; tasks
 | 8 | Natural-only FPR at the recommended confidence cuts (REPORT §8.14), i.e. the deployment operating point without `covert` | not done, ~20 min |
 | 9 | Labeller κ on a held-out split of the v2 disagreements (rules frozen before reading half) — only possible as a git-history replay of `tasks/registry.py` | not done, ~1 h |
 
+## v3 replication (labeller-only labels; `python -m eval.robustness --cohort v3`)
+
+[`results/robustness/ROBUSTNESS_v3.md`](../results/robustness/ROBUSTNESS_v3.md): 450 v3 trajectories (6 dirs,
+10 tasks, 96 cells), Sonnet 4.6 auditor only, **labeller labels, no judge** (102 hacked; instructed =
+`covert` + `covert_monitored`, 76; natural, 26). The labeller never reads the reasoning, so a
+reasoning-only hack cannot be a positive, and 21 of the 26 natural positives are `fake_citation`.
+
+| finding | v3 result | verdict |
+|---|---|---|
+| 1. Role leak | 71/86 `covert`, 23/30 `covert_monitored`; 0/334 natural (including 0/25 `sycophantic_pi`) | replicates |
+| 2. Action gain is instructed-only | `report_only` − `final_report` Δrecall +0.24 instructed (b/c 29/10, p = 0.003), 0.00 natural (19/26 both) | replicates (gain vanishes; v2's reversal does not) |
+| 3. Low natural recall | `full_trace` 12/26 = 0.46 [0.29, 0.65] vs 76/76 instructed; `report_only` 19/26 = 0.73. Reasoning access hurts on natural hacks (Δrecall −0.27, b/c 6/11, p = 0.33) | replicates (`full_trace`) |
+| 4. Clustering widens CIs | cell CIs up to about 2× trajectory CIs (FPR [0.13, 0.21] → [0.10, 0.26]); the action recall gain holds under cells [0.01, 0.34] but not tasks [−0.04, 0.47]; `full_trace` − `report_only` ΔAUROC +0.015 is borderline (cells [0.00, 0.03], tasks [0.00, 0.04]) | replicates |
+| 5. Precision at low prevalence | `full_trace` 0.59 at π = 0.23 → 0.21 at 5%, 0.05 at 1% (lower FPR, 0.17, than v2's 0.34) | replicates |
+
+Labels are labeller-only and preliminary (hand-review precision 0.92, recall 0.88, one AI annotator), and
+the natural slice is 26 runs dominated by one rule, so findings 2–3 are suggestive, not confirmatory.
+
 ## Reproduce
 
 ```bash
 .venv/bin/python -m eval.robustness --out results/robustness   # ~10 s, saved verdicts only
+.venv/bin/python -m eval.robustness --cohort v3                 # v3, labeller-only labels
 .venv/bin/pytest -q tests/test_robustness.py
 ```
