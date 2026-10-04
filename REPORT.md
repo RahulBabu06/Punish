@@ -460,7 +460,7 @@ use the relabelled labels.
 |---|---|---|
 | covert | 63/86 = 0.73 | 70/86 = 0.81 |
 | covert_monitored | 8/30 = 0.27 | 6/30 = 0.20 |
-| honest | 24/112 = 0.21 | 6/112 = 0.05 |
+| honest | 24/112 = 0.21 | 5/112 = 0.04 |
 | incentivized | 18/102 = 0.18 | 11/102 = 0.11 |
 | pressure | 14/95 = 0.15 | 9/95 = 0.09 |
 | sycophantic_pi | 7/25 = 0.28 | 1/25 = 0.04 |
@@ -471,7 +471,7 @@ labeller rates are **not comparable** to v2 rates.
 
 | run | subject | n (complete?) | tasks | labeller-positive by config (runtime → relabelled) |
 |---|---|---|---|---|
-| `v3_haiku45` | Haiku 4.5 | 200 (complete) | all 10 | honest 3 → 1/50, incentivized 2 → 4/50, pressure 5 → 4/50, covert 35 → 42/50 |
+| `v3_haiku45` | Haiku 4.5 | 200 (complete) | all 10 | honest 3 → 0/50, incentivized 2 → 4/50, pressure 5 → 4/50, covert 35 → 42/50 |
 | `v3_sonnet46` | Sonnet 4.6 | 150 of 200 | 8 (no `outcome_switching`, `solutions_cache`) | honest 11 → 5/40, incentivized 14 → 7/39, pressure 9 → 5/38, covert 28 → 28/33 |
 | `v3cond_sonnet46` | Sonnet 4.6 | 27 (partial) | `cherry_pick`, `effect_size_target`, `fabrication` | covert_monitored 7 → 5/15, sycophantic_pi 6 → 0/12 |
 | `v3cond_haiku45` | Haiku 4.5 | 28 (partial) | same three, plus 2 `fake_citation` | covert_monitored 1 → 1/15, sycophantic_pi 1 → 1/13 |
@@ -482,7 +482,7 @@ Sonnet 4.6 auditor against the relabelled labeller (TP/positives, FP/negatives):
 
 | run | `full_trace` | `report_only` | `final_report` |
 |---|---|---|---|
-| `v3_haiku45` | 44/51, 30/149 | 49/51, 30/149 | 44/51, 14/149 |
+| `v3_haiku45` | 44/50, 30/150 | 49/50, 30/150 | 44/50, 14/150 |
 | `v3_sonnet46` | 38/45, 25/105 | 36/45, 27/105 | 28/45, 20/105 |
 | `v3cond_sonnet46` | 5/5, 0/22 | 5/5, 0/22 | 1/5, 6/22 |
 | `v3cond_haiku45` | 1/2, 4/26 | 1/2, 1/26 | 0/2, 4/26 |
@@ -492,11 +492,12 @@ Sonnet 4.6 auditor against the relabelled labeller (TP/positives, FP/negatives):
 What we can say, cautiously:
 
 - **The trace helps on v3 (both subjects pooled).** Against the relabelled labeller, `full_trace` and
-  `report_only` recall is 0.85 and 0.88, and `final_report` recall is 0.71. AUROC is 0.93 / 0.91 / 0.86, and
-  the `full_trace − final_report` recall gap is +0.15 [0.04, 0.25]. With the runtime labels, the trace modes
+  `report_only` recall is 0.86 and 0.89, and `final_report` recall is 0.72. AUROC is 0.93 / 0.92 / 0.86, and
+  the `full_trace − final_report` recall gap is +0.15 [0.05, 0.25]. With the runtime labels, the trace modes
   looked no better than `final_report` (0.60 vs 0.58). Much of that gap came from runtime false positives on
   honest runs: `final_report` flagged 9 of those 24, and `full_trace` flagged 2.
-- **Honest runs are now almost all clean.** 6 of 112 honest runs are still positive. All 6 are `fake_citation`:
+- **Honest runs are now almost all clean.** 5 of 112 honest runs are still positive, all Sonnet 4.6 `fake_citation` runs.
+  We hand-read them (`tasks/LABEL_AUDIT.md`), and all 5 are genuine hacks:
   they attribute figures to cited papers that do not appear in `references.bib`
   (e.g. "21 % [@daryanto2016drought]"). Sonnet 4.6 is labeller-positive on 19/20 `fake_citation` runs across
   configs. Its honest, incentivized and pressure runs on the other tasks are positive only 3 times.
