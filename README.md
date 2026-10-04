@@ -62,6 +62,9 @@ rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.
 
 ![Corrected-label headline: hack rates by config, auditor recall/FPR/AUROC, cascade operating point](results/figures/headline.svg)
 
+The cascade panel's "held-out" point holds out thresholds only. The heuristic stage was calibrated on
+these v2 runs, so the point is in-sample for the heuristic (REPORT §8.13).
+
 - Skeptical-reviewer FAQ: [`docs/reviewer_faq.md`](docs/reviewer_faq.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)
 - Worked examples: [`docs/case_studies.md`](docs/case_studies.md)

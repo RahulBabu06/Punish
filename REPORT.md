@@ -797,6 +797,13 @@ and Opus 4.6 (79 hacked) under five policies:
   with thresholds tuned on the other subject it is 0.64 for heuristic → Sonnet (FPR 0.054), and
   Sonnet alone reaches 0.57 only at FPR 0.14, over the cap. (Original label: 0.71 in-sample,
   0.68 / 0.60 held out.)
+- **The heuristic stage is in-sample.** The heuristic auditor's rules were calibrated on
+  `v2_sonnet46`, `v2_haiku45`, `v2_sonnet45` and `probe_v1`. Every heuristic and heuristic → Sonnet
+  number on v2 is therefore in-sample for the heuristic, including the 0.80 / 0.054 point and
+  the leave-one-experiment-out checks above, where only the thresholds are held out. Another
+  session reports that with the pre-calibration heuristic (`auditor.benchmark._baseline("f664c95")`)
+  the held-out heuristic → Sonnet cascade falls to about the Sonnet-only level. That result is
+  not yet committed, so we do not claim the cascade as a held-out win.
 - Costs here are estimates (characters / 4 at list prices, a lower bound), not billed spend.
 - These per-audit costs rebuild the full audit request (system prompt included), so they
   are higher than §8.9's $0.022, which is estimated from stored records.
