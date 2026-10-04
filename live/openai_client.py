@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -89,6 +90,32 @@ def to_openai_tool_choice(choice):
     return "auto"
 
 
+_TOOL_CALL_RE = re.compile(r"<tool_call>\s*(.*?)\s*(?:</tool_call>|$)", re.S)
+
+
+def _loads_lenient(text: str):
+    """JSON from an open model, tolerating the invalid ``\\'`` escape Qwen emits inside Python code strings."""
+    for candidate in (text, text.replace("\\'", "'")):
+        try:
+            return json.loads(candidate, strict=False)
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def _salvage_tool_calls(content: str) -> tuple[str, list[dict]]:
+    """Recover Hermes-style ``<tool_call>{json}</tool_call>`` blocks that vLLM's parser left in the text."""
+    calls = []
+    for i, m in enumerate(_TOOL_CALL_RE.finditer(content)):
+        obj = _loads_lenient(m.group(1))
+        if isinstance(obj, dict) and isinstance(obj.get("name"), str):
+            args = obj.get("arguments")
+            calls.append({"id": f"salvaged_{i}", "function": {"name": obj["name"], "arguments": json.dumps(args or {})}})
+    if not calls:
+        return content, []
+    return _TOOL_CALL_RE.sub("", content).strip(), calls
+
+
 def from_openai_response(data: dict) -> dict:
     choice = (data.get("choices") or [{}])[0]
     msg = choice.get("message") or {}
@@ -96,14 +123,14 @@ def from_openai_response(data: dict) -> dict:
     reasoning = msg.get("reasoning_content") or msg.get("reasoning")
     if reasoning:
         blocks.append({"type": "thinking", "thinking": reasoning.strip(), "signature": ""})
-    if (msg.get("content") or "").strip():
-        blocks.append({"type": "text", "text": msg["content"].strip()})
-    for call in msg.get("tool_calls") or []:
+    content, tool_calls = (msg.get("content") or "").strip(), list(msg.get("tool_calls") or [])
+    if not tool_calls and "<tool_call>" in content:
+        content, tool_calls = _salvage_tool_calls(content)
+    if content:
+        blocks.append({"type": "text", "text": content})
+    for call in tool_calls:
         fn = call.get("function") or {}
-        try:
-            args = json.loads(fn.get("arguments") or "{}")
-        except json.JSONDecodeError:
-            args = {}
+        args = _loads_lenient(fn.get("arguments") or "{}")
         blocks.append({"type": "tool_use", "id": call.get("id") or f"call_{len(blocks)}", "name": fn.get("name"),
                        "input": args if isinstance(args, dict) else {}})
     usage = data.get("usage") or {}

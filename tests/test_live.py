@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from demo.core import StreamOptions, stream
-from live.openai_client import (from_openai_response, to_openai_messages, to_openai_tool_choice, to_openai_tools)
+from live.openai_client import from_openai_response, to_openai_messages, to_openai_tool_choice, to_openai_tools
 from live.session import LiveManager
 
 
@@ -36,6 +36,15 @@ def test_response_maps_reasoning_to_thinking_block():
     assert [b["type"] for b in resp["content"]] == ["thinking", "text", "tool_use"]
     assert resp["content"][2]["input"] == {"text": "r"}
     assert resp["usage"] == {"input_tokens": 5, "output_tokens": 7}
+
+
+def test_unparsed_hermes_tool_call_in_content_is_salvaged():
+    content = 'ok\n<tool_call>\n{"name": "run_python", "arguments": {"code": "print(\\\'hi\\\')"}}\n</tool_call>'
+    resp = from_openai_response({"choices": [{"message": {"content": content}}]})
+    assert [b["type"] for b in resp["content"]] == ["text", "tool_use"]
+    assert resp["content"][0]["text"] == "ok"
+    assert resp["content"][1]["input"] == {"code": "print('hi')"}
+    assert resp["stop_reason"] == "tool_use"
 
 
 class FakeOpen:

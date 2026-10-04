@@ -24,7 +24,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install("anthropic>=0.40", "numpy", "scipy")
     .env({"PUNISH_VLLM_URL": VLLM_URL, "PYTHONPATH": REMOTE})
-    .add_local_dir(ROOT, REMOTE, ignore=[".git", ".venv", "**/__pycache__", "paper", "docs/media", "*.pdf",
+    .add_local_dir(ROOT, REMOTE, ignore=[".git", ".venv", "results/live", "**/__pycache__", "paper", "docs/media", "*.pdf",
                                          ".pytest_cache", ".ruff_cache"])
 )
 secrets = [modal.Secret.from_name("punish-vllm")]
