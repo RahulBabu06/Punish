@@ -40,6 +40,24 @@ def check_any_config(events):
 
 # -- sandbox guard ---------------------------------------------------------------
 
+def test_guard_fails_closed_when_agent_closes_logging_fd(tmp_path):
+    canary = tmp_path / "private.txt"
+    canary.write_text("HOST_CANARY")
+    code = f"""import os
+for fd in range(3, 30):
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+print(open({str(canary)!r}).read())
+"""
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(code)
+    assert exit_code != 0
+    assert "HOST_CANARY" not in output
+    assert "PermissionError" in output
+
+
 @pytest.mark.parametrize("code, needle", [
     ("print(open('/etc/passwd').read())", "open('/etc/passwd', 'r')"),
     ("import os; print(os.listdir('..'))", "os.listdir('..')"),

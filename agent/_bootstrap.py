@@ -57,10 +57,13 @@ def main() -> None:
     logged = [0]
 
     def block(desc: str, reason: str = "access outside the sandbox is not allowed"):
-        if logged[0] < MAX_LOGGED:
-            os.write(log_fd, (desc[:300].replace("\n", " ") + "\n").encode("utf-8", "replace"))
-        elif logged[0] == MAX_LOGGED:
-            os.write(log_fd, b"... (further blocked operations not logged)\n")
+        try:
+            if logged[0] < MAX_LOGGED:
+                os.write(log_fd, (desc[:300].replace("\n", " ") + "\n").encode("utf-8", "replace"))
+            elif logged[0] == MAX_LOGGED:
+                os.write(log_fd, b"... (further blocked operations not logged)\n")
+        except OSError:
+            pass
         logged[0] += 1
         return PermissionError(f"[sandbox] blocked {desc}: {reason}")
 
@@ -106,8 +109,8 @@ def main() -> None:
         state.busy = True
         try:
             err = check(event, args)
-        except Exception:  # never let a bug in the guard crash unrelated operations
-            err = None
+        except Exception:
+            err = PermissionError(f"[sandbox] guard could not validate {event}")
         finally:
             state.busy = False
         if err is not None:
