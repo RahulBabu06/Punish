@@ -282,11 +282,13 @@ def _variants(p: Path, results_dir: Path) -> list[dict]:
 
 
 def _base_of(p: Path) -> Path | None:
-    """X_corrected.md -> X.md; results/<name>_corrected/*.md -> docs/<name>.md."""
+    """X_corrected.md -> X.md; results/<name>_corrected/X.md -> results/<name>/X.md, else docs/<name>.md."""
     if p.stem.endswith(CORRECTED):
         return p.with_name(p.stem[: -len(CORRECTED)] + p.suffix)
     if p.parent.name.endswith(CORRECTED):
-        return ROOT / "docs" / f"{p.parent.name[: -len(CORRECTED)]}.md"
+        name = p.parent.name[: -len(CORRECTED)]
+        sibling = p.parent.with_name(name) / p.name
+        return sibling if sibling.is_file() else ROOT / "docs" / f"{name}.md"
     return None
 
 
