@@ -104,7 +104,7 @@ def pack(text: str) -> str:
     return base64.b64encode(gzip.compress(text.encode("utf-8"), 9, mtime=0)).decode("ascii")
 
 
-BLOCK_RE = re.compile(r"<style>.*?</style>|<script>.*?</script>", re.S)
+BLOCK_RE = re.compile(r"<style>.*?</style>|<script>.*?</script>", re.DOTALL)
 
 
 def shared_blocks(pages_: dict[str, str], min_len: int = 400) -> list[str]:
@@ -135,7 +135,7 @@ def build(results_dir: Path = RESULTS_DIR, fixtures_dir: Path | None = FIXTURES_
     must = {s["traj"] for s in steps if s.get("traj")} | {default_traj}
     chosen = curate(items, must, max_gallery)
     allowed = {it["key"] for it in chosen} | must
-    key = lambda href: route_key(href, experiments, default_traj)  # noqa: E731
+    key = lambda href: route_key(href, experiments, default_traj)
 
     note = (f"Static export: a curated {len(chosen)} of {len(items)} trajectories (hacks caught or missed, false "
             f"positives, every experiment). Run <code>python -m demo.app</code> to browse them all.")

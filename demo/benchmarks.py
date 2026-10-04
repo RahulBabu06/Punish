@@ -11,8 +11,8 @@ import json
 import re
 from pathlib import Path
 
-from demo.core import BENCH_FIXTURES, FIXTURES_DIR, RESULTS_DIR, ROOT
-from demo.pages import _short_model, _table, bar_chart, esc, pct, shell, url
+from demo.core import FIXTURES_DIR, RESULTS_DIR, ROOT
+from demo.pages import _short_model, _table, bar_chart, esc, shell, url
 
 AUDITOR_ORDER = ("claude", "heuristic")
 MODES = ("full_trace", "report_only", "final_report")
@@ -64,7 +64,7 @@ def md_tables(text: str) -> list[dict]:
         if line.startswith("#"):
             heading = line.lstrip("#").strip()
         if line.startswith("|") and i + 1 < len(lines) and re.match(r"^\|[\s:|-]+\|$", lines[i + 1].strip()):
-            cells = lambda s: [c.strip() for c in s.strip().strip("|").split("|")]  # noqa: E731
+            cells = lambda s: [c.strip() for c in s.strip().strip("|").split("|")]
             headers, rows = cells(line), []
             i += 2
             while i < len(lines) and lines[i].strip().startswith("|"):
@@ -98,7 +98,7 @@ def md_intro(text: str, max_paras: int = 2) -> list[str]:
 
 
 def md_title(text: str, fallback: str) -> str:
-    m = re.search(r"^#\s+(.+)$", text, re.M)
+    m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     return m.group(1).strip() if m else fallback
 
 
@@ -141,7 +141,7 @@ def obfuscation(results_dir: Path) -> dict | None:
     if not isinstance(j, dict):
         return None
     doc = _text(ROOT / "docs" / "obfuscation.md") or ""
-    m = re.search(r"^\*\*Short answer\.\*\*(.+?)(?:\n\n|\Z)", doc, re.M | re.S)
+    m = re.search(r"^\*\*Short answer\.\*\*(.+?)(?:\n\n|\Z)", doc, re.MULTILINE | re.DOTALL)
     extra = sorted(p.name for p in (results_dir / "obfuscation").glob("OBFUSCATION_*.json"))
     return {"summary": j.get("summary") or [], "hand_check": j.get("hand_check"),
             "short_answer": m.group(1).strip() if m else "", "extra": extra,
@@ -222,7 +222,7 @@ def _figures(md: Path, results_dir: Path) -> list[str]:
 def inline_svg(path: Path) -> str:
     text = _text(path) or ""
     text = re.sub(r"<\?xml[^>]*>|<!DOCTYPE[^>]*>", "", text)
-    text = re.sub(r"<script.*?</script>", "", text, flags=re.S | re.I)
+    text = re.sub(r"<script.*?</script>", "", text, flags=re.DOTALL | re.IGNORECASE)
     text = re.sub(r"\son\w+=\"[^\"]*\"", "", text)
     return text if text.lstrip().startswith("<svg") else ""
 
@@ -293,7 +293,7 @@ def _base_of(p: Path) -> Path | None:
 
 
 def _attach(base: dict, v: dict) -> None:
-    corr = lambda fs: [f for f in fs if CORRECTED in Path(f).stem]  # noqa: E731
+    corr = lambda fs: [f for f in fs if CORRECTED in Path(f).stem]
     moved = corr(base["figures"])
     base["figures"] = [f for f in base["figures"] if f not in moved]
     base["sources"] = [s for s in base["sources"] if s not in moved]
@@ -495,7 +495,7 @@ def render_relabel(sec: dict) -> str:
     groups, rows, flips = [], [], []
     for e in sec["experiments"]:
         rt, rl = e["by_config"].get("runtime", {}), e["by_config"].get("relabelled", {})
-        tot = lambda d: {"hacked": sum(v["hacked"] for v in d.values()), "n": sum(v["n"] for v in d.values())}  # noqa: E731
+        tot = lambda d: {"hacked": sum(v["hacked"] for v in d.values()), "n": sum(v["n"] for v in d.values())}
         groups.append((e["experiment"].replace("_", "\n", 1), [("runtime labeller", _rate(tot(rt))),
                                                                ("fixed labeller", _rate(tot(rl)))]))
         for cfg in sorted(set(rt) | set(rl), key=lambda c: catalog_order(c)):

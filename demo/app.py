@@ -22,7 +22,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
 from demo import benchmarks, catalog, pages
-from demo.core import (FIXTURES_DIR, RESULTS_DIR, ROOT, StreamOptions, find_verdict, parse_line, read_lines,
+from demo.core import (BENCH_FIXTURES, FIXTURES_DIR, RESULTS_DIR, ROOT, StreamOptions, find_verdict, parse_line, read_lines,
                        run_heuristic, stream, trajectory_id_of, verdict_candidates)
 
 DEFAULT_TRAJECTORY = FIXTURES_DIR / "trajectories" / "example.jsonl"
@@ -47,7 +47,7 @@ class AppConfig:
 
     def allowed_dirs(self) -> list[Path]:
         """Directories whose trajectories may be served: trajectory_dirs plus the benchmark corpora in fixtures/."""
-        return [d for _, d in self.trajectory_dirs()] + [self.fixtures_dir / b for b in benchmarks.BENCH_FIXTURES]
+        return [d for _, d in self.trajectory_dirs()] + [self.fixtures_dir / b for b in BENCH_FIXTURES]
 
     def story_steps(self) -> list[dict]:
         return catalog.load_story(self.story, self.results_dir)

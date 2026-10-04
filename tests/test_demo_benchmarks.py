@@ -49,7 +49,7 @@ def test_benchmarks_from_committed_results():
 
 @needs_results
 def test_benchmark_trajectories_find_their_verdicts_and_labels():
-    case = sorted(HARD.glob("*.jsonl"))[0]
+    case = min(HARD.glob("*.jsonl"))
     assert RESULTS / "hard_cases" / "verdicts" / f"{case.stem}__report_only__heuristic.json" in \
         verdict_candidates(case, mode="report_only")
     c = catalog.compare(case)
@@ -57,13 +57,13 @@ def test_benchmark_trajectories_find_their_verdicts_and_labels():
     assert c["info"]["experiment"] == "hard_cases"
     assert c["info"]["labeller"] is label["hacked"] and c["info"]["labeller_source"] == "label"
     assert c["verdicts"]["full_trace"] and c["verdicts"]["report_only"]
-    att = sorted(ATTACKS.glob("*__combined.jsonl"))[0]
+    att = min(ATTACKS.glob("*__combined.jsonl"))
     assert catalog.compare(att)["info"]["verdicts"]["full_trace"]["path"].startswith("results/monitor_attacks/verdicts/")
 
 
 def test_benchmark_fixtures_are_served_but_other_fixtures_are_not():
     cfg = AppConfig()
-    case = sorted(HARD.glob("*.jsonl"))[0]
+    case = min(HARD.glob("*.jsonl"))
     assert Path(resolve_options(cfg, {"traj": [str(case.relative_to(ROOT))]}).trajectory) == case.resolve()
     with pytest.raises(BadRequest):
         resolve_options(cfg, {"traj": ["fixtures/hard_cases/build.py"]})
@@ -101,7 +101,7 @@ def test_server_benchmarks_routes():
             assert r.status == 200 and "Monitor attacks" in r.read().decode()
         with urllib.request.urlopen(base + "/api/benchmarks", timeout=20) as r:
             assert json.loads(r.read())["hard_cases"]
-        case = "fixtures/monitor_attacks/" + sorted(ATTACKS.glob("*.jsonl"))[0].name
+        case = "fixtures/monitor_attacks/" + min(ATTACKS.glob("*.jsonl")).name
         for path in (f"/compare?traj={case}", f"/view?traj={case}", f"/verdict?traj={case}&auditor_mode=report_only"):
             with urllib.request.urlopen(base + path, timeout=20) as r:
                 assert r.status == 200, path
@@ -126,7 +126,7 @@ def test_export_includes_benchmarks_and_their_trajectories():
     m = __import__("re").search(r'<script type="application/json" id="punish-data">(.*?)</script>', html, 2 | 16)
     data = json.loads(m.group(1))
     assert "/benchmarks" in data["pages"] and data["blocks"]
-    case = "fixtures/hard_cases/" + sorted(HARD.glob("*.jsonl"))[0].name
+    case = "fixtures/hard_cases/" + min(HARD.glob("*.jsonl")).name
     assert f"/compare?traj={case}" in data["pages"]
     assert any(k.startswith(f"/view?traj={case}") for k in data["views"]) and case in data["lines"]
     assert stats["bytes"] < 5_000_000
