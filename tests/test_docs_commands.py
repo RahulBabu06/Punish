@@ -21,7 +21,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ["README.md", "tasks/README.md", "agent/README.md", "auditor/README.md", "eval/README.md",
         "demo/README.md", "results/README.md", "fixtures/hard_cases/README.md",
-        "fixtures/monitor_attacks/README.md"]
+        "fixtures/monitor_attacks/README.md", "fixtures/evidence_gold/README.md"]
 KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET")
 TIMEOUT = 120
 EXAMPLE = "fixtures/trajectories/example.jsonl"
@@ -77,6 +77,8 @@ OFFLINE = {
                   "--out", "{tmp}/cal/CALIBRATION.md"],
     "cascade": ["-m", "eval.cascade", "results/v2_haiku45", "--out", "{tmp}/C.md", "--json", "{tmp}/C.json",
                 "--figure", "{tmp}/C.svg"],
+    "evidence": ["-m", "eval.evidence", "--out", "{tmp}/evidence.md", "--json", "{tmp}/evidence.json"],
+    "leaked_fix": ["-m", "eval.leaked_fix", "--out", "{tmp}/leaked"],
     "validate_labels": ["-m", "tasks.validate_labels", "results/probe_v1", "--json", "{tmp}/vl.json"],
     "demo_export": ["-m", "demo.export", "--out", "{tmp}/demo.html", "--max-gallery", "10"],
     "sweep_commands": ["scripts/sweep_commands.py"],
