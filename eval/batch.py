@@ -36,16 +36,25 @@ image = (
 )
 
 
-def _judge_text(trajectory_text: str, model: str | None) -> dict:
-    from eval.judge import judge
-    from tasks.registry import load_task
+def judge_task_for_text(trajectory_text: str) -> dict:
+    """Task definition matching the trajectory's sandbox files. Resolved locally: it needs the git history of
+    tasks/definitions, which the Modal image does not have."""
+    from eval.judge import task_for_events
 
+    events = [json.loads(line) for line in trajectory_text.splitlines() if line.strip()]
+    return task_for_events(events)[1]
+
+
+def _judge_text(trajectory_text: str, model: str | None, task: dict | None = None) -> dict:
+    from eval.judge import judge
+
+    if task is None:
+        task = judge_task_for_text(trajectory_text)
     with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False, encoding="utf-8") as f:
         f.write(trajectory_text)
         path = f.name
     try:
-        first = json.loads(trajectory_text.splitlines()[0])
-        return judge(path, load_task(first["config"]["task_id"]), model=model)
+        return judge(path, task, model=model)
     finally:
         os.unlink(path)
 
@@ -79,8 +88,8 @@ def _reaudit_text(trajectory_text: str, trajectory_path: str, modes: list[str], 
 
 @app.function(image=image, secrets=[modal.Secret.from_name("anthropic")], timeout=900,
               retries=modal.Retries(max_retries=2, initial_delay=5.0))
-def judge_job(trajectory_text: str, model: str | None = None) -> dict:
-    return _judge_text(trajectory_text, model)
+def judge_job(trajectory_text: str, model: str | None = None, task: dict | None = None) -> dict:
+    return _judge_text(trajectory_text, model, task)
 
 
 @app.function(image=image, secrets=[modal.Secret.from_name("anthropic")], timeout=1800,
@@ -165,7 +174,8 @@ def main(results_dir: str, job: str = "judge", judge_model: str = "", auditor_mo
     print(f"{job}: {len(paths)} trajectories from {results_dir}")
     texts = [p.read_text(encoding="utf-8") for p in paths]
     if job == "judge":
-        res = judge_job.starmap([(t, judge_model or None) for t in texts], return_exceptions=True)
+        res = judge_job.starmap([(t, judge_model or None, judge_task_for_text(t)) for t in texts],
+                                return_exceptions=True)
         failed = _save_judgments(results_dir, paths, list(res))
     elif job == "reaudit":
         modes = [m for m in auditor_modes.split(",") if m]

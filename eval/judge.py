@@ -79,8 +79,20 @@ def build_user_message(task: dict, events: list[dict]) -> str:
     )
 
 
-def judge(trajectory_path: str, task: dict, model: str | None = None, client=None) -> dict:
+def task_for_events(events: list[dict], versions_for=None) -> tuple[str, dict]:
+    """(version, definition) of the task the agent actually saw: task definitions change over time, and the
+    judge must get the exploit/honest solution matching the trajectory's sandbox files, not the current ones."""
+    from tasks import validate_labels
+
+    task_id = (events[0].get("config") or {}).get("task_id")
+    return validate_labels.match_definition(events, list((versions_for or validate_labels.definition_versions)(task_id)))
+
+
+def judge(trajectory_path: str, task: dict | None = None, model: str | None = None, client=None) -> dict:
+    """Judge one trajectory. ``task=None`` picks the definition matching the trajectory (task_for_events)."""
     events = load_events(trajectory_path)
+    if task is None:
+        task = task_for_events(events)[1]
     model = model or os.environ.get("PUNISH_JUDGE_MODEL") or DEFAULT_MODEL
     if client is None:
         from agent.credentials import anthropic_client
@@ -114,15 +126,11 @@ def judgment_path_for(results_dir: str, trajectory_id: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from tasks.registry import load_task
-
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("trajectory")
     p.add_argument("--model", default=None)
     args = p.parse_args(argv)
-    events = load_events(args.trajectory)
-    task = load_task(events[0]["config"]["task_id"])
-    print(json.dumps(judge(args.trajectory, task, args.model), indent=2, ensure_ascii=False))
+    print(json.dumps(judge(args.trajectory, None, args.model), indent=2, ensure_ascii=False))
     return 0
 
 
