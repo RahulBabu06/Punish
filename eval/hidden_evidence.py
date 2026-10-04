@@ -50,6 +50,8 @@ def load(root: Path = ROOT) -> list[dict]:
     """Every committed Claude episode, with its run dir and (if affected) repaired/strict verdicts."""
     out = []
     for path in sorted((root / "results").glob("**/episodes/*.json")):
+        if path.parent.is_symlink():  # results/open_weight_auditor/runs/* link back to the experiment dirs
+            continue
         ep = json.loads(path.read_text(encoding="utf-8"))
         if ep.get("auditor_backend", "claude") != "claude":
             continue
