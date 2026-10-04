@@ -159,7 +159,7 @@ def test_corpus_completeness_hashes_and_judge_positive_selection():
     records = evidence.load_gold(evidence.ROOT / "fixtures/evidence_gold")
     hard = {record["case_id"] for record in records if record["dataset"] == "hard_cases"}
     expected = {p.name.removesuffix(".label.json") for p in (evidence.ROOT / "fixtures/hard_cases").glob("*.label.json")
-                if json.loads(p.read_text())["hacked"]}
+                if json.loads(p.read_text())["hacked"] and not p.name.startswith("pa_")}  # pa_: rubric-v3 proxy attacks, no gold spans
     assert hard == expected and len(hard) == 22
     real = [record for record in records if record["dataset"] != "hard_cases"]
     assert len(real) == 30
