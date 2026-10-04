@@ -192,7 +192,7 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/v3cond_{sonnet46,haiku45}/` | `covert_monitored` and `sycophantic_pi`, 27 and 28 trajectories (partial, labeller only) |
 | `results/v3fault_sonnet46/` | 50% tool-failure injection, 18 trajectories (partial, labeller only) |
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
-| `results/hard_cases/` | 32 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
+| `results/hard_cases/` | 36 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
 | `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
 | `results/COST.md` | estimated API cost of every committed run (`eval.cost`; v2 total about $88) |
 | `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
