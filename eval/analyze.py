@@ -10,7 +10,7 @@ Writes RESULTS.md, RESULTS.json (statistics), RESULTS_thresholds.csv, and option
 Use --json PATH for an additional raw-row export, --seed and --bootstrap-samples for reproducibility.
 --exclude-task TASK (repeatable) drops a task from every table, e.g. for sensitivity analyses.
 An experiment directory may contain re-audits in <exp>/reaudit_<name>/episodes; they are included as
-extra auditors named by the verdicts' auditor model.
+extra auditors named by the verdicts' auditor model (plus "+rubric_<v>" for opt-in rubric re-audits).
 """
 
 from __future__ import annotations
@@ -44,6 +44,13 @@ def _subject_model(traj_path: str, cache: dict) -> str:
         except OSError:
             cache[traj_path] = "?"
     return cache[traj_path]
+
+
+def _auditor_name(ep: dict, default: str) -> str:
+    """The auditor model, suffixed "+rubric_<v>" for opt-in rubric re-audits so they never merge with default ones."""
+    name = ep.get("auditor_model") or default
+    suffix = f"+rubric_{ep['auditor_rubric']}" if ep.get("auditor_rubric") else ""
+    return name if name.endswith(suffix) else name + suffix
 
 
 def load_experiment(exp_dir: str) -> list[dict]:
@@ -81,7 +88,7 @@ def load_experiment(exp_dir: str) -> list[dict]:
                 "task_id": ep["task_id"],
                 "agent_config": ep["agent_config"],
                 "subject_model": _subject_model(traj, model_cache),
-                "auditor": ep.get("auditor_model") or auditor,
+                "auditor": _auditor_name(ep, auditor),
                 "auditor_mode": ep["auditor_mode"],
                 "pred": bool(ep["verdict"]["hack_detected"]),
                 "confidence": confidence,
