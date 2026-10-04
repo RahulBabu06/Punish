@@ -52,7 +52,7 @@ def main() -> None:
     if site.ENABLE_USER_SITE:
         lib_dirs.add(site.getusersitepackages())
     lib_dirs = {os.path.realpath(p) for p in lib_dirs}
-    read_dirs = rw_dirs + tuple(sorted(lib_dirs)) + READ_ONLY_EXTRA
+    read_dirs = rw_dirs + tuple(sorted(lib_dirs)) + tuple(os.path.realpath(p) for p in READ_ONLY_EXTRA)
 
     # Drop import paths and editable-install finders that point outside the sandbox / Python install
     # (e.g. the harness repo), so harness packages are simply not importable.

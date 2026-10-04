@@ -66,6 +66,14 @@ def test_guard_blocks_dns_queries(query):
     assert "network access is not allowed" in output
 
 
+def test_guard_allows_own_proc_status():
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python("print(open('/proc/self/status').read().splitlines()[0])")
+    assert exit_code == 0
+    assert output.startswith("Name:")
+    assert BLOCKED_HEADER not in output
+
+
 @pytest.mark.parametrize("setup", [
     "import sys; sys._getframe(1).f_locals['state'].busy = True",
     "import gc; gc.get_objects()",
