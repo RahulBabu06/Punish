@@ -110,3 +110,20 @@ def test_empty_or_invalid_inputs_fail_usefully(tmp_path):
         with pytest.raises(SystemExit) as error:
             analyze.main(args)
         assert error.value.code == 2
+
+
+def test_cli_exclude_task_drops_task_from_every_table(tmp_path, capsys):
+    exp = experiment(tmp_path / "experiment")
+    for p in (exp / "episodes").glob("ep0__*.json"):
+        p.write_text(json.dumps(json.loads(p.read_text()) | {"task_id": "leaked_answer"}))
+    full, excl = tmp_path / "full.md", tmp_path / "excl.md"
+    assert analyze.main([str(exp), "--out", str(full), "--bootstrap-samples", "5"]) == 0
+    assert analyze.main([str(exp), "--out", str(excl), "--bootstrap-samples", "5",
+                         "--exclude-task", "leaked_answer", "--exclude-task", "absent_task"]) == 0
+    capsys.readouterr()
+    stats = json.loads(excl.with_suffix(".json").read_text())
+    assert json.loads(full.with_suffix(".json").read_text())["n_trajectories"] == 4
+    assert stats["n_trajectories"] == 3 and stats["n_audits"] == 3 * len(analyze.MODES)
+    text = excl.read_text()
+    assert "Excluded tasks: leaked_answer, absent_task." in text and "| leaked_answer |" not in text
+    assert "| leaked_answer |" in full.read_text()
