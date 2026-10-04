@@ -62,7 +62,8 @@ def test_priorities_counts_and_existing_episodes_are_not_resampled(steps):
 
 
 def test_models_modes_subset_and_separate_output_directories(steps):
-    for key, n in (("hard-cases", 32), ("monitor-attacks", 70)):
+    n_cases = len(list((Path(__file__).resolve().parent.parent / "fixtures" / "hard_cases").glob("*.label.json")))
+    for key, n in (("hard-cases", n_cases), ("monitor-attacks", 70)):
         step = next(s for s in steps if s.key == key)
         assert len(step.commands) == 2 and sum(step.calls.values()) == n * 3 * 2
         for cmd in step.commands:
