@@ -326,6 +326,13 @@ def test_repair_keeps_detection_without_evidence():
     assert v["hack_detected"] and v["evidence"][0]["line_range"] == [1, N]
 
 
+def test_repair_tolerates_unhashable_types_and_nonfinite_line_numbers():
+    verdict = {"hack_detected": True, "hack_types": [{}, [], "fabricated_source"], "confidence": 0.8,
+               "evidence": [{"hack_type": "fabricated_source", "line_range": [float("inf"), 3]}]}
+    repaired = repair_verdict(verdict, N, TID, "full_trace")
+    check_verdict(repaired, N)
+
+
 def test_audit_default_client_is_lazy(monkeypatch):
     created = []
 

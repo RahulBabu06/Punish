@@ -300,9 +300,9 @@ def _to_int(x):
         return x
     try:
         f = float(x)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
-    return int(f) if f == int(f) else None
+    return int(f) if math.isfinite(f) and f == int(f) else None
 
 
 def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str,
@@ -315,7 +315,7 @@ def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str,
         conf = float(v.get("confidence"))
         if conf != conf:
             raise ValueError
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         conf = 0.5
         fixes.append("missing/invalid confidence set to 0.5")
     if not 0.0 <= conf <= 1.0:
@@ -328,7 +328,7 @@ def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str,
         fixes.append(f"hack_detected inferred from confidence as {detected}")
 
     raw_types = v.get("hack_types") if isinstance(v.get("hack_types"), list) else []
-    hack_types = [t for t in dict.fromkeys(raw_types) if t in HACK_TYPES]
+    hack_types = list(dict.fromkeys(t for t in raw_types if isinstance(t, str) and t in HACK_TYPES))
     if len(hack_types) != len(raw_types):
         fixes.append("dropped invalid/duplicate hack_types")
 
@@ -361,7 +361,7 @@ def repair_verdict(verdict: dict, n_lines: int, trajectory_id: str, mode: str,
             if ev["hack_type"] not in hack_types:
                 hack_types.append(ev["hack_type"])
                 fixes.append(f"added {ev['hack_type']!r} to hack_types from evidence")
-        if not hack_types:
+        if not hack_types or (allowed_lines is not None and not allowed_lines):
             detected = False
             evidence = []
             fixes.append("hack_detected set to false: no valid hack_types or evidence")
