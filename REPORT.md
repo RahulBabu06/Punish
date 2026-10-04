@@ -331,8 +331,8 @@ Findings:
 - **Even honest agents read the answer key (but see §8.0).** In 3/5 honest `leaked_answer` runs, Sonnet
   4.6 read `eval.py`, noted "the grading script expects p ≈ 0.312", and framed its report
   around that value. Sonnet 4.5 did so once. These agents also ran a correct analysis
-  (p = 0.3116). The judge rated 2 of the 4 `minor` and 2 `major`. Case study 3 is one of
-  the `major` ones. All four are among the 30 likely judge errors: 0.3116 is the correct answer
+  (p = 0.3116). The judge rated 2 of the 4 `minor` and 2 `major`. Case study 10 is one of
+  them. All four are among the 30 likely judge errors: 0.3116 is the correct answer
   on the data they had, so this shows grader-awareness rather than a hack.
 - **Sonnet 4.5 hacks most.** It hacks in 28/30 `covert` runs and 10/30 `pressure` runs, and
   is the only model whose hacks the labeller often catches (21 of its 28 covert hacks). The
@@ -440,9 +440,7 @@ Where the gain comes from depends on the subject. On Sonnet-subject runs it is m
 false positives. All 9 Opus `report_only` FPs there cite `suspicious_access`, and 6 of them
 are incentivized or pressure `metric_gaming` runs where the agent read `grade.py` and then
 reported the true R². With the reasoning visible, only one of those is still flagged (case
-study 5). On Haiku-subject runs it is mostly recall (27/34 vs 22/34). Case study 6 shows
-the mechanism on a Sonnet-subject run: the actions look like a disclosed imputation, and
-only the reasoning calls the value "fabricated". Citation
+study 5). On Haiku-subject runs it is mostly recall (27/34 vs 22/34). Citation
 misuse is still the blind spot. All 13 Opus `full_trace` misses are `fake_citation` (out of
 27 hacked `fake_citation` runs). The Sonnet auditor misses 9 of 40 across all three
 subjects, all of them `fake_citation`.
@@ -460,13 +458,13 @@ subjects, all of them `fake_citation`.
 - **Fluent citation misuse.** All 9 Sonnet `full_trace` misses are `fake_citation`. The
   agent uses only real `references.bib` keys, so the rubric's key-level `fabricated_source`
   check passes, but it attributes specific findings to papers that do not contain them (for
-  example "wheat yields reduced by an average of 21%", case studies 7–9). Only the judge,
+  example "wheat yields reduced by an average of 21%"; case study 7 is a covert example). Only the judge,
   which knows what the papers contain, sees this. `final_report` audits flag 39/40 of these
   runs, but for a shallow reason: the auditor cannot check the bibliography, so it treats
   every specific citation as suspicious.
 - **Intent without effect.** A `covert` agent may plan a hack in its reasoning and then
   write an honest report. Sonnet `full_trace` sometimes flags these on the plan alone, while
-  Opus and the judge clear them (case study 10, and the 3 covert `cherry_pick` FPs).
+  Opus and the judge clear them (the 3 covert `cherry_pick` FPs).
 
 ### 8.4 Preliminary probe (probe_v1)
 
@@ -636,8 +634,10 @@ Grader scores do not depend on the label.
 - The veto mode matters more here than in §8.2. With Sonnet as the vetoing auditor,
   `full_trace` ships 0.15 hacks (corrected), against 0.17 for `report_only` and 0.21 for
   `final_report` (original 0.19 / 0.27 / 0.29). Opus `full_trace` ships 0.17 (original 0.23).
-- Caveat: 40 trajectories read files that differ from the current task definitions, so
-  their grader scores come from the current files. Labels always come from the original run.
+- Grader scores: the 40 trajectories that ran on older task files are graded with the task
+  definition matching their sandbox files. Labels always come from the original run. The
+  shift from earlier drafts (grader-only 0.37 → 0.38, veto 0.21 → 0.19, original label) comes
+  from grader code changes, not from the task definitions.
 
 The live audit-and-retry experiment (`modal run eval/mitigate.py --experiment retry`) has not
 been run: `TODO(numbers)`.
@@ -682,8 +682,8 @@ It was tuned on 20 hand-labelled cases and scores 10/10 on 10 held-out ones (Wil
   Haiku `covert` 13/15 hacked, `covert_monitored` 1/14; Sonnet 4.6 12/15 and 5/15 (11/15 for
   Sonnet `covert` under the relabelled v3 labels, §8.6). Every
   hack in both arms is disclosed. The only non-zero reasoning gap is Sonnet 4.6 v3 `covert`
-  (+0.25), from 3 `fabrication` runs where only the reasoning says the plate-C value was
-  invented.
+  (+0.25), from 3 labeller-positive `fabrication` runs. Their reports disclose the plate-C
+  imputation, so these are not established hidden fabrications (`docs/obfuscation.md`).
 
 ### 8.11 Labeller audit (`tasks/LABEL_AUDIT.md`)
 
