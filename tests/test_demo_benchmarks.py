@@ -143,3 +143,18 @@ def test_relabel_section(tmp_path):
     html = benchmarks.render_relabel(sec)
     assert "2/4 = 0.50" in html and "0/4 = 0.00" in html and "HACK → clean" in html and "/compare?traj=" in html
     assert benchmarks.benchmarks_page({"relabel": sec}, available=set()).count("/compare?traj=") == 0
+
+
+def test_corrected_writeup_folds_into_original(tmp_path):
+    (tmp_path / "x").mkdir()
+    tbl = "| a | b |\n|---|---|\n| 1 | 2 |\n"
+    (tmp_path / "x" / "X.md").write_text("# Orig\n\nIntro.\n\n" + tbl)
+    (tmp_path / "x" / "X_corrected.md").write_text("# Orig\n\nLabel variant: corrected.\n\n" + tbl.replace("2", "3"))
+    (tmp_path / "x" / "fig.svg").write_text("<svg></svg>")
+    (tmp_path / "x" / "fig_corrected.svg").write_text("<svg></svg>")
+    docs = [d for d in benchmarks.generic_docs(tmp_path) if d["name"].startswith("X")]
+    assert len(docs) == 1 and docs[0]["figures"][0].endswith("x/fig.svg")
+    (v,) = docs[0]["variants"]
+    assert v["figures"][0].endswith("fig_corrected.svg")
+    html = benchmarks.render_doc(docs[0])
+    assert "corrected label" in html and ">3</td>" in html

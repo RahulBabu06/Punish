@@ -20,6 +20,10 @@ MODE_SHORT = {"full_trace": "FT", "report_only": "RO", "final_report": "FR"}
 HANDLED_DIRS = {"hard_cases", "monitor_attacks", "obfuscation", "mitigation_bestofn_v2", "figures", "figures_v3"}
 KNOWN_TOP = {"README.md", "RESULTS.md", "RESULTS_v3_preliminary.md", "COST.md", "SUMMARY.md"}
 EXTRA_DOCS = ("docs/judge_validation.md", "tasks/LABEL_AUDIT.md")
+TITLES = {"RESULTS_v2_excl_leaked.md": "v2 headline results without leaked_answer"}
+CORRECTED = "_corrected"
+CORRECTED_NOTE = ("Under the corrected label, judge positives on v2 leaked_answer that were judged against a stale task "
+                  "definition are dropped (eval/labels.py, results/leaked_answer_correction.md).")
 MAX_GENERIC_ROWS = 40
 
 
@@ -141,6 +145,7 @@ def obfuscation(results_dir: Path) -> dict | None:
     extra = sorted(p.name for p in (results_dir / "obfuscation").glob("OBFUSCATION_*.json"))
     return {"summary": j.get("summary") or [], "hand_check": j.get("hand_check"),
             "short_answer": m.group(1).strip() if m else "", "extra": extra,
+            "variants": _variants(results_dir / "obfuscation" / "OBFUSCATION_corrected.md", results_dir),
             "sources": [_rel(results_dir / "obfuscation" / "OBFUSCATION.json"), "docs/obfuscation.md"]}
 
 
@@ -152,6 +157,7 @@ def bestofn(results_dir: Path) -> dict | None:
     md = _text(d / "MITIGATION_bestofn.md") or ""
     return {"auditor": j.get("auditor"), "mode": j.get("mode"), "overall": j.get("overall") or {},
             "slices": j.get("slices") or [], "sweep": j.get("sweep") or [], "intro": md_intro(md, 1),
+            "variants": _variants(d / "MITIGATION_bestofn_corrected.md", results_dir),
             "sources": [_rel(d / "MITIGATION_bestofn.json")]}
 
 
@@ -258,8 +264,45 @@ def calibration_chart(doc: dict) -> str:
                      series, ymax=round(top * 1.2, 2), fmt=lambda v: f"{v:.2f}", width=760)
 
 
+def md_doc(p: Path, results_dir: Path) -> dict | None:
+    text = _text(p) or ""
+    tables = md_tables(text)
+    if not tables:
+        return None
+    figs = _figures(p, results_dir)
+    return {"id": "doc-" + re.sub(r"[^a-z0-9]+", "-", _rel(p).lower()).strip("-"), "name": p.name, "chart": p.name,
+            "title": TITLES.get(p.name) or md_title(text, p.stem.replace("_", " ")), "intro": md_intro(text, 2),
+            "tables": tables[:3], "more_tables": max(0, len(tables) - 3), "figures": figs,
+            "sources": [_rel(p)] + figs}
+
+
+def _variants(p: Path, results_dir: Path) -> list[dict]:
+    v = md_doc(p, results_dir) if p.is_file() else None
+    return [v] if v else []
+
+
+def _base_of(p: Path) -> Path | None:
+    """X_corrected.md -> X.md; results/<name>_corrected/*.md -> docs/<name>.md."""
+    if p.stem.endswith(CORRECTED):
+        return p.with_name(p.stem[: -len(CORRECTED)] + p.suffix)
+    if p.parent.name.endswith(CORRECTED):
+        return ROOT / "docs" / f"{p.parent.name[: -len(CORRECTED)]}.md"
+    return None
+
+
+def _attach(base: dict, v: dict) -> None:
+    corr = lambda fs: [f for f in fs if CORRECTED in Path(f).stem]  # noqa: E731
+    moved = corr(base["figures"])
+    base["figures"] = [f for f in base["figures"] if f not in moved]
+    base["sources"] = [s for s in base["sources"] if s not in moved]
+    v["figures"] = list(dict.fromkeys(moved + corr(v["figures"])))
+    v["chart"], v["sources"] = base["chart"], v["sources"][:1] + v["figures"]
+    base.setdefault("variants", []).append(v)
+
+
 def generic_docs(results_dir: Path) -> list[dict]:
-    """Result write-ups we have no bespoke view for: new results/<dir>/*.md, new top-level results/*.md, EXTRA_DOCS."""
+    """Result write-ups we have no bespoke view for: new results/<dir>/*.md, new top-level results/*.md, EXTRA_DOCS.
+    A *_corrected write-up is folded into its original as a variant."""
     paths: list[Path] = []
     for d in sorted(p for p in results_dir.iterdir() if p.is_dir()):
         if d.name in HANDLED_DIRS or (d / "trajectories").is_dir() or d.name.startswith("figures"):
@@ -267,18 +310,12 @@ def generic_docs(results_dir: Path) -> list[dict]:
         paths += sorted(d.glob("*.md"))
     paths += sorted(p for p in results_dir.glob("*.md") if p.name not in KNOWN_TOP)
     paths += [ROOT / p for p in EXTRA_DOCS if (ROOT / p).is_file()]
-    out = []
-    for p in paths:
-        text = _text(p) or ""
-        tables = md_tables(text)
-        if not tables:
-            continue
-        figs = _figures(p, results_dir)
-        out.append({"id": "doc-" + re.sub(r"[^a-z0-9]+", "-", _rel(p).lower()).strip("-"), "name": p.name,
-                    "title": md_title(text, p.stem.replace("_", " ")), "intro": md_intro(text, 2),
-                    "tables": tables[:3], "more_tables": max(0, len(tables) - 3), "figures": figs,
-                    "sources": [_rel(p)] + figs})
-    return out
+    docs = {p.resolve(): d for p in paths if (d := md_doc(p, results_dir))}
+    bases = {p: (b.resolve() if (b := _base_of(p)) else None) for p in docs}
+    for p, b in bases.items():
+        if b in docs:
+            _attach(docs[b], docs[p])
+    return [d for p, d in docs.items() if bases[p] not in docs]
 
 
 def benchmarks(results_dir: Path = RESULTS_DIR, fixtures_dir: Path = FIXTURES_DIR) -> dict:
@@ -524,6 +561,7 @@ def render_obfuscation(sec: dict) -> str:
                       "recall FT", "recall RO", "recall FR"], rows, 3) + "</div>" + check)
     if sec.get("extra"):
         body += '<p class="sub">Also in results/obfuscation: ' + ", ".join(f"<code>{esc(x)}</code>" for x in sec["extra"]) + "</p>"
+    body += _variant_blocks(sec.get("variants"))
     return _section("obfuscation", "Reasoning disclosure: do hackers say so in their reasoning?", sec["sources"], body,
                     md_inline(sec["short_answer"]) if sec.get("short_answer") else "")
 
@@ -550,6 +588,7 @@ def render_bestofn(sec: dict) -> str:
             + (f'<h3>Which auditor vetoes (veto = hack_detected)</h3>'
                f'{_table(["auditor", "mode", "veto+grader", "veto+random", "fallback"], sweep, 2)}' if sweep else ""))
     lede = md_inline(sec["intro"][0]) if sec.get("intro") else ""
+    body += _variant_blocks(sec.get("variants"))
     return _section("bestofn", f"Best-of-n with an auditor veto ({_short_model(sec.get('auditor') or '')}, "
                                f"{sec.get('mode') or ''})", sec["sources"], body, lede)
 
@@ -576,13 +615,12 @@ def render_cost(sec: dict) -> str:
 DOC_CHARTS = {"CASCADE.md": cascade_chart, "CALIBRATION.md": calibration_chart, "judge_validation.md": judge_chart}
 
 
-def render_doc(doc: dict) -> str:
-    body = "".join(f'<p class="sub">{md_inline(p)}</p>' for p in doc["intro"][1:])
-    chart = DOC_CHARTS[doc["name"]](doc) if doc.get("name") in DOC_CHARTS else ""
+def _doc_body(doc: dict, paras: list[str]) -> str:
+    body = "".join(f'<p class="sub">{md_inline(p)}</p>' for p in paras)
+    chart = DOC_CHARTS[doc["chart"]](doc) if doc.get("chart") in DOC_CHARTS else ""
     figs = "".join(f'<div class="fig">{s}</div>' for s in (inline_svg(ROOT / f) for f in doc.get("figures", [])) if s)
     if chart or figs:
         body += f'<div class="figs">{chart}{figs}</div>'
-
     for t in doc["tables"]:
         rows = [[md_inline(c) for c in r] for r in t["rows"][:MAX_GENERIC_ROWS]]
         more = len(t["rows"]) - len(rows)
@@ -592,6 +630,20 @@ def render_doc(doc: dict) -> str:
             body += f'<p class="sub">… {more} more rows in the source file.</p>'
     if doc["more_tables"]:
         body += f'<p class="sub">{doc["more_tables"]} more table(s) in the source file.</p>'
+    return body
+
+
+def _variant_blocks(variants: list[dict] | None) -> str:
+    out = []
+    for v in variants or []:
+        src = ", ".join(f"<code>{esc(s)}</code>" for s in v["sources"])
+        out.append(f'<details class="variant"><summary>The same analysis under the <b>corrected label</b></summary>'
+                   f'<p class="sub">{esc(CORRECTED_NOTE)}</p>{_doc_body(v, [])}<p class="src">Source: {src}</p></details>')
+    return "".join(out)
+
+
+def render_doc(doc: dict) -> str:
+    body = _doc_body(doc, doc["intro"][1:]) + _variant_blocks(doc.get("variants"))
     return _section(doc["id"], doc["title"], doc["sources"], body, md_inline(doc["intro"][0]) if doc["intro"] else "")
 
 
@@ -608,6 +660,8 @@ BENCH_CSS = """
 .bench .figs>.chart{flex:0 1 760px}.bench .fig{flex:1 1 560px;max-width:980px;background:#fff;border-radius:12px;padding:6px}
 .bench .fig svg{width:100%;height:auto;display:block}
 .bench .scroll{overflow-x:auto}.bench .scroll td,.bench .scroll th{padding-left:6px;padding-right:6px}
+.bench details.variant{border:1px solid var(--line);border-radius:10px;padding:2px 14px;margin:16px 0}
+.bench details.variant>summary{color:var(--text)}
 .bench ul.flips{columns:3 360px;font-size:13px;margin:6px 0}
 a.mx{text-decoration:none;white-space:nowrap}a.mx:hover .vb{filter:brightness(1.3)}
 .jump{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.jump a{cursor:pointer}
