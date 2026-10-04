@@ -7,6 +7,7 @@ not just what they wrote.** Built for the London AI x Science Hackathon, Track 2
 
 **Try it with no install:** download [`docs/demo.html`](docs/demo.html) and open it in a browser
 (it starts on the curated story), or run `.venv/bin/python -m demo.app --story --open` after setup.
+**Watch:** [75-second walkthrough](docs/media/walkthrough.mp4) · [18-second highlight](docs/media/walkthrough.gif).
 
 **Three takeaways** (judged v2 sweep of 360 runs, Sonnet 4.6 auditor, corrected labels: 93 hacked):
 
