@@ -234,14 +234,11 @@ def evaluate(records: list[dict], root: Path = ROOT) -> dict:
             for mode in MODES:
                 row = {"case_id": record["case_id"], "dataset": record["dataset"],
                        "cohort": cohort, "auditor": auditor, "mode": mode}
-                if auditor == "heuristic" and mode == "final_report":
-                    row["status"] = "unsupported"
-                else:
-                    verdict = (heuristic_audit(str(trajectory), mode) if auditor == "heuristic"
-                               else cache[source].get((trajectory.stem, mode)))
-                    row["status"] = "scored" if verdict is not None else "missing"
-                    if verdict is not None:
-                        row["score"] = score_verdict(verdict, record["gold_lines"], record["hack_types"], events, mode)
+                verdict = (heuristic_audit(str(trajectory), mode) if auditor == "heuristic"
+                           else cache[source].get((trajectory.stem, mode)))
+                row["status"] = "scored" if verdict is not None else "missing"
+                if verdict is not None:
+                    row["score"] = score_verdict(verdict, record["gold_lines"], record["hack_types"], events, mode)
                 rows.append(row)
     return {"excluded_disputed": excluded, "rows": rows}
 
@@ -249,7 +246,7 @@ def evaluate(records: list[dict], root: Path = ROOT) -> dict:
 def summaries(result: dict, common: bool = False) -> list[dict]:
     rows = result["rows"]
     if common:
-        # Same v2 traces in ALL saved LLM modes, and both supported heuristic modes.
+        # Same v2 traces in all saved LLM modes and all heuristic modes.
         by_case = defaultdict(list)
         for row in rows:
             if row["cohort"] == "v2":
@@ -294,7 +291,7 @@ def render_report(result: dict) -> str:
         f"The v2 sample is fixed and stratified (5 judge positives per exploit family), not random or held out. {len(result['excluded_disputed'])} disputed judge positives are excluded, not relabelled.",
         "Literature gold checks attribution against read bibliography metadata, not independently retrieved full papers. Exact type sets are hand-assigned and taxonomy-sensitive.",
         "Saved LLM verdicts are not new audits with this checkout; heuristic is the current offline implementation. No new API auditing occurs.",
-        "Heuristic final_report is unsupported. Missing saved verdicts are excluded from metric denominators; compare the common-trace table for a matched comparison.",
+        "Heuristic final_report sees only the prompt and report. Missing saved verdicts are excluded from metric denominators; compare the common-trace table for a matched comparison.",
     ]
     missing = Counter(row["dataset"] + "/" + row["auditor"] for row in result["rows"]
                       if row["status"] == "missing")

@@ -210,11 +210,11 @@ def test_heuristic_cli(tmp_path, capsys):
                    "--attacks", "report_injection,file_injection"])
     assert code == 0
     result = json.loads((tmp_path / "results_heuristic.json").read_text())
-    assert {r["mode"] for r in result["rows"]} == {"full_trace", "report_only"}
-    assert len(result["rows"]) == 10 * 3 * 2
+    assert {r["mode"] for r in result["rows"]} == {"full_trace", "report_only", "final_report"}
+    assert len(result["rows"]) == 10 * 3 * 3
     assert set(result["summary"]) == {"none", "report_injection", "file_injection"}
     out = capsys.readouterr()
-    assert "| report_injection |" in out.out and "final_report; skipped" in out.err
+    assert "| report_injection |" in out.out and "skipped" not in out.err
     assert (tmp_path / "SUMMARY_heuristic.md").read_text().startswith("# Monitor-attack robustness: heuristic")
 
 

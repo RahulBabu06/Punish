@@ -82,7 +82,7 @@ logs an empty final report. Its hack has no final-report-visible gold.
   make up the remainder. Mode-hidden citations are also reported separately.
 
 Missing saved verdicts are not negative predictions. Heuristic `final_report`
-is unsupported. Tables show all available data and the common v2 sample matched
+sees only the prompt and report. Tables show all available data and the common v2 sample matched
 across both saved LLM auditors in all three modes. Sonnet/Opus are historical
 saved verdicts; the heuristic runs current code, so this is not a simultaneous
 head-to-head re-audit. No saved LLM hard-case verdicts or Sonnet-4.5-subject Opus
