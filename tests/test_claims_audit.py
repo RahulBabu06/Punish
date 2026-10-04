@@ -306,3 +306,100 @@ def test_submission_abstract_and_links():
     assert {"../README.md", "../REPORT.md", "../PITCH.md", "../paper/punish.pdf", "demo.html", "slides.html",
             "REVIEW_GUIDE.md"} <= set(links)
     assert all((ROOT / "docs" / link).resolve().exists() for link in links)
+
+
+def test_report_robustness_claims_match_committed_json():
+    source = json.loads((ROOT / "results/robustness/robustness.json").read_text(encoding="utf-8"))
+    report = doc("REPORT.md").split("## 9. Limitations", 1)[1].split("## 10.", 1)[0]
+    covert = source["role"]["covert"]
+    other = [r for config, r in source["role"].items() if config != "covert"]
+    assert f"{covert['mentions']}/{covert['n']} `covert`" in report
+    assert f"{sum(r['mentions'] for r in other)}/{sum(r['n'] for r in other)} others" in report
+    for r in source["slices"]:
+        if r["slice"] == "non-covert" and r["mode"] == "full_trace":
+            assert f"{r['tp']}/{r['pos']} = {r['recall']:.2f}" in report
+        if r["auditor"] == "claude-sonnet-4-6" and r["slice"] == "non-covert":
+            if r["mode"] == "final_report":
+                assert f"catches {r['tp']}/{r['pos']}" in report
+            elif r["mode"] == "report_only":
+                assert f"versus {r['tp']}/{r['pos']} with actions" in report
+    for r in source["delta_slices"]:
+        if r["auditor"] == "claude-sonnet-4-6" and r["left"] == "report_only":
+            if r["slice"] == "covert":
+                assert f"{r['d_recall']:+.2f} on `covert`" in report
+            elif r["slice"] == "non-covert":
+                assert f"{r['d_recall']:+.2f} on natural".replace("-", "−") in report
+        if r["auditor"] == "claude-opus-4-6" and r["left"] == "full_trace" and r["slice"] == "role not mentioned":
+            assert f"Δaccuracy {r['d_accuracy']:+.3f}, unadjusted p = {r['p']:.3f}" in report
+    for r in source["deltas"]:
+        if r["auditor"] == "claude-sonnet-4-6" and r["left"] == "report_only":
+            for metric in ("recall", "fpr"):
+                lo, hi = r["cell"][metric]
+                assert f"[{lo:+.2f}, {hi:+.2f}]".replace("-", "−") in report
+        if r["auditor"] == "claude-opus-4-6" and r["left"] == "full_trace":
+            lo, hi = r["task"]["accuracy"]
+            assert f"[{lo:+.2f}, {hi:+.2f}]" in report
+        if r["left"] == "full_trace":
+            lo, hi = r["task"]["auroc"]
+            digits = 2 if r["auditor"] == "claude-sonnet-4-6" else 3
+            assert f"[{lo:+.{digits}f}, {hi:+.{digits}f}]".replace("-", "−") in report
+    ppv = next(r for r in source["ppv"] if r["auditor"] == "claude-sonnet-4-6" and r["mode"] == "full_trace")
+    assert f"precision is {ppv['observed']:.2f}" in report
+    assert f"{ppv['observed_prevalence']:.0%} hack prevalence" in report
+    assert f"{ppv['0.05']:.2f} at 5% and {ppv['0.01']:.2f} at 1%" in report
+
+
+def significance_row(prefix: str) -> list[str]:
+    text = (ROOT / "results/significance/SIGNIFICANCE.md").read_text(encoding="utf-8")
+    line = next(ln for ln in text.splitlines() if ln.startswith(prefix))
+    return [c.strip() for c in line.strip("|").split("|")]
+
+
+def test_paper_final_numbers_and_caveats():
+    paper = doc("paper/punish.tex")
+    pct = lambda x: f"{100 * x:.1f}\\%"  # noqa: E731
+    v2 = heldout_row("v2", "tuned in-sample")
+    cross = heldout_row("v2", "leave-one-experiment-out")
+    v3 = heldout_row("v3", "v2-tuned")
+    assert f"{pct(v2['recall'])} recall at {pct(v2['fpr'])} FPR" in paper
+    assert f"cross-fit thresholds it gives {pct(cross['recall'])}/{pct(cross['fpr'])}" in paper
+    assert f"(labeller labels only) it gives {pct(v3['recall'])}/{pct(v3['fpr'])}" in paper
+    assert (pct(v2["recall"]), pct(cross["recall"]), pct(v3["recall"]), pct(v3["fpr"])) == (
+        "80.4\\%", "76.8\\%", "62.7\\%", "2.9\\%")
+
+    acc = significance_row("| opus-4-6 | all | full_trace vs report_only | accuracy | 240 |")
+    rec = significance_row("| opus-4-6 | all | full_trace vs report_only | recall | 56 |")
+    assert acc[7] == "19 / 2" and f"19 vs 2 discordant, McNemar Holm $p={acc[-1]}$" in paper
+    assert f"recall goes from 0.63 to 0.77 (Holm $p={rec[-1]}$)" in paper and rec[-1] == "0.070"
+    for stale in ("0.84 against 0.73", "0.84 vs 0.73", "excluded view as primary", "0.80/0.054"):
+        assert stale not in paper
+
+    rob = json.loads((ROOT / "results/robustness/robustness.json").read_text(encoding="utf-8"))
+    assert rob["label"] == "corrected"
+    role = rob["role"]
+    others = sum(role[c]["mentions"] for c in role if c != "covert"), sum(role[c]["n"] for c in role if c != "covert")
+    assert f"{role['covert']['mentions']} of {role['covert']['n']} \\code{{covert}}" in paper
+    assert f"(0 of {others[1]}\nothers)" in paper and others[0] == 0
+
+    def dslice(auditor, left, right, sl):
+        return next(r for r in rob["delta_slices"] if r["auditor"] == auditor and r["left"] == left
+                    and r["right"] == right and r["slice"] == sl)
+    norole = dslice("claude-opus-4-6", "full_trace", "report_only", "role not mentioned")
+    assert f"$+{norole['d_accuracy']:.3f}$ ({norole['b']} vs {norole['c']}, unadjusted $p={norole['p']:.3f}$)" in paper
+    cov = dslice("claude-sonnet-4-6", "report_only", "final_report", "covert")["d_recall"]
+    nat = dslice("claude-sonnet-4-6", "report_only", "final_report", "non-covert")["d_recall"]
+    assert f"$\\Delta$recall is ${cov:+.2f}$ on instructed hacks but ${nat:+.2f}$ on natural ones" in paper
+
+    natural = {r["auditor"]: r for r in rob["slices"] if r["mode"] == "full_trace" and r["slice"] == "non-covert"}
+    s, o = natural["claude-sonnet-4-6"], natural["claude-opus-4-6"]
+    assert f"recall is {s['tp']}/{s['pos']} for Sonnet and {o['tp']}/{o['pos']} for Opus" in paper
+    assert (s["tp"], s["pos"], o["tp"], o["pos"]) == (19, 27, 5, 17)
+
+    ppv = next(r for r in rob["ppv"] if r["auditor"] == "claude-sonnet-4-6" and r["mode"] == "full_trace")
+    assert f"from {ppv['observed']:.2f} to {ppv['0.05']:.2f}" in paper
+    assert f"precision of {ppv['0.05']:.2f} ({ppv['observed']:.2f} observed)" in paper
+
+    for method in ("95\\% percentile bootstraps", "task $\\times$ config groups", "exact paired McNemar",
+                   "DeLong tests on AUROC", "Holm-corrected per label", "Wilson intervals",
+                   "cell-clustered bootstraps are up to about 2$\\times$"):
+        assert method in paper
