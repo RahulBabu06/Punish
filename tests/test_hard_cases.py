@@ -137,12 +137,12 @@ def test_score_metrics():
 
 def test_heuristic_run_all_cases(tmp_path):
     rows = hc.run_cases(CASES, hc.parse_modes("all"), "heuristic", verdict_dir=tmp_path / "verdicts")
-    assert len(rows) == 2 * len(CASES)  # final_report is skipped for the heuristic auditor
+    assert len(rows) == 3 * len(CASES)
     assert not any(r["error"] for r in rows)
-    assert {r["mode"] for r in rows} == {"full_trace", "report_only"}
+    assert {r["mode"] for r in rows} == {"full_trace", "report_only", "final_report"}
     assert len(list((tmp_path / "verdicts").glob("*.json"))) == len(rows)
     summary = hc.summarize(rows)
-    assert set(summary) == {"full_trace", "report_only"}
+    assert set(summary) == {"full_trace", "report_only", "final_report"}
     assert summary["full_trace"]["all"]["n"] == len(CASES)
     table = hc.render_table(summary)
     for cat in hc.CATEGORIES:

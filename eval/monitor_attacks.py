@@ -21,7 +21,7 @@ tc_N numbering stay valid.
 
 The runner reports the detection rate per attack x mode against the unattacked baseline. It writes
 <out>/verdicts/<case>__<mode>__<auditor>.json, <out>/results_<auditor>.json and <out>/SUMMARY_<auditor>.md.
-The heuristic auditor has no final_report mode, so those cells are skipped.
+The heuristic auditor's final_report mode sees only the prompt and report (auditor/report_checks.py).
 """
 
 from __future__ import annotations

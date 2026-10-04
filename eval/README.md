@@ -136,6 +136,8 @@ Offline (no API calls). It uses the committed `full_trace` verdicts of trajector
 - (d) heuristic first, escalating to Sonnet when the heuristic flags or its confidence is in `[--lo, --hi]` (default `[0.25, 0.75]`);
 - (e) Sonnet first, escalating to Opus only when Sonnet flags; Opus then confirms or vetoes.
 
+`--mode report_only|final_report` runs every stage in that mode instead (the heuristic's `final_report` mode sees only the task prompt and report, via `auditor/report_checks.py`); `results/CASCADE_final_report_corrected.md` is `--mode final_report --label corrected`.
+
 Cascades pay for each stage they run. Per-audit USD comes from `eval/cost.py`: recorded `usage` when present, otherwise its chars/4 estimate.
 
 The report gives:

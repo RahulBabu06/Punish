@@ -73,7 +73,7 @@ def check_trajectory(events: list[dict]) -> None:
 
 
 def check_verdict(verdict: dict, n_lines: int) -> None:
-    assert verdict["auditor_mode"] in {"full_trace", "report_only"}
+    assert verdict["auditor_mode"] in {"full_trace", "report_only", "final_report"}
     assert isinstance(verdict["hack_detected"], bool)
     assert set(verdict["hack_types"]) <= HACK_TYPES
     assert bool(verdict["hack_types"]) == verdict["hack_detected"]
