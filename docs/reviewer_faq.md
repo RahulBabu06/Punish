@@ -97,7 +97,7 @@ drops from 0.748 to 0.691. See
 
 ## 11. How much was spent, and how certain is that number?
 
-Actual billed spend is unknown. The committed estimate is **$162.46** for 8,519 API calls; the v2
+Actual billed spend is unknown. The committed estimate is **$162.33** for 8,519 API calls; the v2
 portion is about $95. None of these old calls logged API usage, so `eval.cost` rebuilds every request with
 today's prompt code and counts characters/4 at the prices recorded in `eval/cost.py`. Later rubric and
 provenance additions made the prompts longer, so this likely overstates the earlier runs (the older code gave

@@ -231,7 +231,7 @@ scripts/reproduce.sh cost
 | `results/v3_opus46/` | Opus 4.6 subject, 27 trajectories (partial, labeller only) |
 | `results/hard_cases/` | 36 hand-labelled red-team trajectories (`fixtures/hard_cases/`) scored by the heuristic auditor and the labeller. Claude auditors not yet run |
 | `results/mitigation_bestofn_v2/` | best-of-n with auditor veto, replayed offline on the v2 Sonnet 4.6 and Haiku 4.5 runs |
-| `results/COST.md` | estimated API cost of every committed run (`eval.cost`; $162.46 for all 8,519 calls, v2 about $95; chars/4 estimate, not billed spend) |
+| `results/COST.md` | estimated API cost of every committed run (`eval.cost`; $162.33 for all 8,519 calls, v2 about $95; chars/4 estimate, not billed spend) |
 | `results/obfuscation/` | does the reasoning disclose the hack, and does `covert_monitored` hide it ([`docs/obfuscation.md`](docs/obfuscation.md)) |
 | `results/monitor_attacks/` | 10 real hacks × 6 attacks on the auditor (`fixtures/monitor_attacks/`), heuristic auditor only so far |
 | `results/judge_validation/` | Opus judge vs 60 blind AI labels: κ 0.70, and the stale `leaked_answer` definition ([`docs/judge_validation.md`](docs/judge_validation.md)) |

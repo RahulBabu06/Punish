@@ -152,8 +152,8 @@ def test_v3_hand_review_values():
 
 def test_cost_total():
     total = next(line for line in COST.read_text(encoding="utf-8").splitlines() if line.startswith("| **total** |"))
-    assert [c.strip() for c in total.strip("|").split("|")][1:3] == ["8,519", "**$162.46**"]
-    assert "$162.46 for all 8,519 calls" in doc("README.md") and "$162.46 for all 8,519 calls" in doc("REPORT.md")
-    assert "**$162.46** for 8,519 API calls" in doc("docs/reviewer_faq.md")
-    assert "(**$162.46** in total)" in doc("results/README.md")
-    assert "| **total** | | | | | | 396 judged | 850 | | **$162.46** |" in doc("results/README.md")
+    assert [c.strip() for c in total.strip("|").split("|")][1:3] == ["8,519", "**$162.33**"]
+    assert "$162.33 for all 8,519 calls" in doc("README.md") and "$162.33 for all 8,519 calls" in doc("REPORT.md")
+    assert "**$162.33** for 8,519 API calls" in doc("docs/reviewer_faq.md")
+    assert "(**$162.33** in total)" in doc("results/README.md")
+    assert "| **total** | | | | | | 396 judged | 850 | | **$162.33** |" in doc("results/README.md")

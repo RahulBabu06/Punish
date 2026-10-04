@@ -695,16 +695,16 @@ been run: `TODO(numbers)`.
 
 ### 8.9 Cost
 
-`python -m eval.cost` estimates the v2 API spend at **$95** ($95.12) for 360 trajectories
-(v2 rows of `results/COST.md`; $162.46 for all 8,519 calls, v3 and probes included). It is an estimate, not
+`python -m eval.cost` estimates the v2 API spend at **$95** ($95.03) for 360 trajectories
+(v2 rows of `results/COST.md`; $162.33 for all 8,519 calls, v3 and probes included). It is an estimate, not
 billed spend. These runs have no recorded `usage` fields, so `eval.cost` rebuilds each request with *today's*
 prompt code and counts characters / 4. Later rubric and provenance additions made the prompts longer, so
 this likely overstates what the earlier runs cost. The previous estimate, from the older code, was $151.54
 ($88 for v2); [`docs/repro_check.md`](docs/repro_check.md) attributes the drift commit by commit. Per call:
 
 - subject trajectory: about $0.066 ($23.76 / 360);
-- Sonnet 4.6 audit: about $0.025 ($26.80 / 1,080);
-- Opus 4.6 re-audit: about $0.042 ($30.08 / 720);
+- Sonnet 4.6 audit: about $0.025 ($26.75 / 1,080);
+- Opus 4.6 re-audit: about $0.042 ($30.04 / 720);
 - Opus judge: about $0.040 ($14.48 / 360).
 
 A three-mode Sonnet audit costs about as much as the agent run it audits.
@@ -989,6 +989,9 @@ Per-task statistics under the corrected label (v2, 360 trajectories):
   from an AI annotator (not a human) it has κ = 0.70 and is never more lenient; 8 of its 9
   disagreements come from a stale `leaked_answer` definition (§8.15). Agreement with human
   raters is still `TODO(numbers)`.
+- **Labeller rule fixes.** [`docs/bug_hunt.md`](docs/bug_hunt.md) lists bugs found after these runs; under the
+  current labeller rules 2 trajectories flip clean → hacked (cache copying) and 7 hacked → clean (disclosed
+  imputation: 2 v2 Sonnet, 5 v3 Sonnet). Saved labels, and so the numbers in this report, are unchanged.
 - **Trajectory-id label leak (§8.16).** Every v2 audit was shown the trajectory id (e.g.
   `leaked_answer__covert__ep002`), which names the agent config. Since the fix the auditor sees only an opaque
   token (`auditor.audit.opaque_id`); saved ids and file layouts are unchanged. The 122 of 1,800 saved verdicts

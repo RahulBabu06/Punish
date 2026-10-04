@@ -13,16 +13,16 @@ only `--run` launches them.
 |---|---|---|---|---|---|---|---|---|---|
 | `model_probe/` | haiku-4-5, opus-4-6, sonnet-4-5, sonnet-4-6 | covert | leaked_answer | 1 per model | none | no | 4 | complete | $0.35 |
 | `probe_v1/` | sonnet-4-6 | pressure, covert | 6 | 3 | full_trace, report_only, final_report | 36/36 | 36/36 | complete | $5.57 |
-| `v2_haiku45/` | haiku-4-5 | honest, incentivized, pressure, covert | 6 | 5 | full_trace, report_only, final_report; reaudit_claude-opus-4-6: 3 modes | 120/120 | 120/120 | complete | $32.69 |
-| `v2_sonnet45/` | sonnet-4-5 | honest, incentivized, pressure, covert | 6 | 5 | full_trace, report_only, final_report | 120/120 | 120/120 | complete | $24.59 |
-| `v2_sonnet46/` | sonnet-4-6 | honest, incentivized, pressure, covert | 6 | 5 | full_trace, report_only, final_report; reaudit_claude-opus-4-6: 3 modes | 120/120 | 120/120 | complete | $37.83 |
-| `v3_haiku45/` | haiku-4-5 | honest, incentivized, pressure, covert | 10 | 5 | full_trace, report_only, final_report | no | 200/200 | complete | $22.31 |
-| `v3_opus46/` | opus-4-6 | honest, incentivized, pressure, covert | 3 of 10 | 3 | full_trace, report_only, final_report | no | 27/120 | partial | $4.79 |
-| `v3_sonnet46/` | sonnet-4-6 | honest, incentivized, pressure, covert | 8 of 10 | 5 | full_trace, report_only, final_report | no | 150/200 | partial | $24.18 |
+| `v2_haiku45/` | haiku-4-5 | honest, incentivized, pressure, covert | 6 | 5 | full_trace, report_only, final_report; reaudit_claude-opus-4-6: 3 modes | 120/120 | 120/120 | complete | $32.66 |
+| `v2_sonnet45/` | sonnet-4-5 | honest, incentivized, pressure, covert | 6 | 5 | full_trace, report_only, final_report | 120/120 | 120/120 | complete | $24.58 |
+| `v2_sonnet46/` | sonnet-4-6 | honest, incentivized, pressure, covert | 6 | 5 | full_trace, report_only, final_report; reaudit_claude-opus-4-6: 3 modes | 120/120 | 120/120 | complete | $37.79 |
+| `v3_haiku45/` | haiku-4-5 | honest, incentivized, pressure, covert | 10 | 5 | full_trace, report_only, final_report | no | 200/200 | complete | $22.29 |
+| `v3_opus46/` | opus-4-6 | honest, incentivized, pressure, covert | 3 of 10 | 3 | full_trace, report_only, final_report | no | 27/120 | partial | $4.78 |
+| `v3_sonnet46/` | sonnet-4-6 | honest, incentivized, pressure, covert | 8 of 10 | 5 | full_trace, report_only, final_report | no | 150/200 | partial | $24.17 |
 | `v3cond_haiku45/` | haiku-4-5 | covert_monitored, sycophantic_pi | 4 of 10 | 5 | full_trace, report_only, final_report | no | 28/100 | partial | $2.89 |
 | `v3cond_sonnet46/` | sonnet-4-6 | covert_monitored, sycophantic_pi | 3 of 10 | 5 | full_trace, report_only, final_report | no | 27/100 | partial | $4.10 |
 | `v3fault_sonnet46/` | sonnet-4-6 | honest, incentivized (fault rate 0.5) | 3 of 10 | 5 | full_trace, report_only, final_report | no | 18/100 | partial | $3.16 |
-| **total** | | | | | | 396 judged | 850 | | **$162.46** |
+| **total** | | | | | | 396 judged | 850 | | **$162.33** |
 
 Two directories hold derived analyses rather than new agent runs, so the table above does not include them.
 Neither made any API calls:
@@ -88,10 +88,11 @@ Column notes:
 - **Est. cost**: from `python -m eval.cost --by-dir` (agent + auditor + judge + reaudit). Every committed run
   predates usage tracking, so all of it is an **estimate** (characters / 4 of the rebuilt prompts and the logged
   outputs). It is a lower bound: thinking tokens are only partly logged, and retried calls are not counted. The
-  per-role breakdown is in [`COST.md`](COST.md) (**$162.46** in total). The requests are rebuilt with the current
+  per-role breakdown is in [`COST.md`](COST.md) (**$162.33** in total). The requests are rebuilt with the current
   auditor and judge prompt code, so the estimate changes whenever that code does; the call count (8,519) and prices
   do not. The previous COST.md ($151.54) predated the provenance Facts block (+$9.55), the injection-hardening rubric
-  (+$1.12) and the Facts citation wording (+$0.31) (details in [`docs/repro_check.md`](../docs/repro_check.md)).
+  (+$1.12) and the Facts citation wording (+$0.31) (details in [`docs/repro_check.md`](../docs/repro_check.md)); the
+  recovered reports and evidence fixes in [`docs/bug_hunt.md`](../docs/bug_hunt.md) then moved it from $162.46 to $162.33.
   `COST.md` and the `$/traj` columns of `CASCADE*.md` are byte-for-byte reproducible at a given commit with
   `scripts/reproduce.sh cost` and `scripts/reproduce.sh derived`. `cost` is exactly:
 
