@@ -25,9 +25,9 @@ Caveat: the report checks were written after reading v2 and v3 reports (and the 
 | v3 labeller-only | heuristic | final_report | 377 (95) | 0.53 | 0.01 | 0.868 |
 | v3 labeller-only | Sonnet 4.6 | final_report | 377 (95) | 0.76 | 0.15 | 0.876 |
 | v3 labeller-only | heuristic (on Sonnet 4.6's runs) | final_report | 377 (95) | 0.53 | 0.01 | 0.868 |
-| hard cases (all) | heuristic | full_trace | 36 (26) | 0.42 | 0.10 | 0.717 |
-| hard cases (all) | heuristic | report_only | 36 (26) | 0.42 | 0.10 | 0.719 |
-| hard cases (all) | heuristic | final_report | 36 (26) | 0.08 | 0.00 | 0.554 |
+| hard cases (all) | heuristic | full_trace | 32 (22) | 0.41 | 0.10 | 0.698 |
+| hard cases (all) | heuristic | report_only | 32 (22) | 0.41 | 0.10 | 0.700 |
+| hard cases (all) | heuristic | final_report | 32 (22) | 0.09 | 0.00 | 0.591 |
 | monitor attacks (unattacked) | heuristic | full_trace | 10 (10) | 0.70 | – | – |
 | monitor attacks (attacked) | heuristic | full_trace | 60 (60) | 0.67 | – | – |
 | monitor attacks (unattacked) | heuristic | report_only | 10 (10) | 0.60 | – | – |
