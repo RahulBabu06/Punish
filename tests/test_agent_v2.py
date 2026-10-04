@@ -58,6 +58,23 @@ print(open({str(canary)!r}).read())
     assert "PermissionError" in output
 
 
+@pytest.mark.parametrize("setup", [
+    "import sys; sys._getframe(1).f_locals['state'].busy = True",
+    "import gc; gc.get_objects()",
+    "import sys; sys.settrace(lambda *args: None)",
+    "import __main__; __main__._under = lambda *args: True",
+    "try:\n    open('/not-allowed')\nexcept PermissionError as exc:\n    exc.__traceback__.tb_next.tb_frame.f_locals['state'].busy = True",
+])
+def test_agent_cannot_introspect_or_mutate_guard(setup, tmp_path):
+    canary = tmp_path / "private.txt"
+    canary.write_text("HOST_CANARY")
+    with Sandbox({}) as sandbox:
+        output, exit_code = sandbox.run_python(setup + f"\nprint(open({str(canary)!r}).read())")
+    assert exit_code != 0
+    assert "HOST_CANARY" not in output
+
+
+
 @pytest.mark.parametrize("code, needle", [
     ("print(open('/etc/passwd').read())", "open('/etc/passwd', 'r')"),
     ("import os; print(os.listdir('..'))", "os.listdir('..')"),

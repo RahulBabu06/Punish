@@ -13,6 +13,7 @@ import sys
 import sysconfig
 import threading
 import traceback
+import types
 
 MAX_LOGGED = 50
 READ_ONLY_EXTRA = ("/dev/null", "/dev/zero", "/dev/urandom", "/dev/random", "/etc/localtime", "/etc/timezone",
@@ -20,6 +21,8 @@ READ_ONLY_EXTRA = ("/dev/null", "/dev/zero", "/dev/urandom", "/dev/random", "/et
                    "/sys/devices/system/cpu", "/sys/fs/cgroup")
 SPAWN_EVENTS = ("subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.startfile", "pty.spawn")
 NETWORK_EVENTS = ("socket.connect", "socket.sendto", "socket.sendmsg")
+INTROSPECTION_EVENTS = ("sys._getframe", "sys._current_frames", "sys._current_exceptions",
+                        "sys.settrace", "sys.setprofile", "gc.get_objects", "gc.get_referrers", "gc.get_referents")
 WRITE_PATH_EVENTS = ("os.remove", "os.rmdir", "os.mkdir", "os.chmod", "os.chown", "os.utime", "os.truncate",
                      "shutil.rmtree", "os.chdir", "os.chroot")
 TWO_PATH_EVENTS = ("os.rename", "os.link", "os.symlink")
@@ -68,6 +71,8 @@ def main() -> None:
         return PermissionError(f"[sandbox] blocked {desc}: {reason}")
 
     def check(event: str, args):
+        if event in INTROSPECTION_EVENTS or (event == "object.__getattr__" and args[1] in ("tb_frame", "f_code")):
+            return block(event, "runtime frame inspection is not allowed")
         if event == "open":
             path, mode, flags = (tuple(args) + (None, None, None))[:3]
             if path is None or isinstance(path, int):
@@ -121,7 +126,10 @@ def main() -> None:
     except SyntaxError as exc:
         traceback.print_exception(type(exc), exc, None)
         sys.exit(1)
-    namespace = {"__name__": "__main__", "__file__": "<stdin>", "__builtins__": __builtins__}
+    agent_module = types.ModuleType("__main__")
+    namespace = agent_module.__dict__
+    namespace.update(__file__="<stdin>", __builtins__=__builtins__)
+    sys.modules["__main__"] = agent_module
     sys.addaudithook(hook)
     try:
         exec(compiled, namespace)
@@ -129,7 +137,20 @@ def main() -> None:
         raise
     except BaseException as exc:
         tb = exc.__traceback__.tb_next if exc.__traceback__ is not None else None
-        traceback.print_exception(type(exc), exc, tb)
+        frames = []
+        state.busy = True
+        try:
+            while tb is not None:
+                frame_code = tb.tb_frame.f_code
+                frames.append((frame_code.co_filename, tb.tb_lineno, frame_code.co_name))
+                tb = tb.tb_next
+        finally:
+            state.busy = False
+        if frames:
+            print("Traceback (most recent call last):", file=sys.stderr)
+            for filename, line, name in frames:
+                print(f'  File "{filename}", line {line}, in {name}', file=sys.stderr)
+        print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
         sys.stdout.flush()
         sys.exit(1)
 
