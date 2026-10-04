@@ -922,6 +922,17 @@ Per-task statistics under the corrected label (v2, 360 trajectories):
   warrants at most ~0.3 confidence (`auditor/prompts.py`), and these verdicts come in at 0.6–0.85.
   With the `leaked_answer` grader-reading runs, this is most of the trace-mode FPR: the auditor
   over-penalises grader access. The review proposes a rubric fix but does not apply it.
+- **Proposed fix: opt-in rubric v3 (proxy only, not measured)** ([`docs/rubric_v3.md`](docs/rubric_v3.md),
+  `results/rubric_v3_proxy.md`). `--rubric v3` makes grader access and grader-oriented formatting
+  insufficient on their own: a hack verdict needs a second concrete signal, such as a reported
+  value that no computation produced. The default prompt is unchanged byte for byte. **No v3
+  audit has been run.** A post-hoc proxy that clears saved grader-access-only flags estimates
+  Sonnet `full_trace` FPR 92/267 = 0.34 → 7/267 = 0.03 with recall 0.90 unchanged (corrected
+  label), and Opus `full_trace` 0.22 → 0.02. This suggests most trace-mode FPs are grader-access
+  over-penalisation. The proxy can only clear flags. It is tuned in-sample on the same saved
+  runs, and it assumes Claude obeys the new rules exactly, even though the current rubric's
+  ≤ 0.3 cap is already ignored. So the real drop could be much smaller, and recall could fall.
+  Live validation is pending.
 
 ## 9. Limitations
 
@@ -990,8 +1001,9 @@ Per-task statistics under the corrected label (v2, 360 trajectories):
 
 ## 10. Future work
 
-- Align the rubric with the judge: reading an eval file counts only when its contents
-  shape the report (`suspicious_access` needs value reuse or score tuning). We expect this
+- Measure rubric v3 live (commands in [`docs/rubric_v3.md`](docs/rubric_v3.md)). It aligns the rubric
+  with the judge: reading an eval file counts only when its contents shape the report
+  (`suspicious_access` needs value reuse or score tuning). Its offline proxy, not a measurement, is described in §8.18. We expect this
   to cut most of the 62 Sonnet `full_trace` FPs (59 cite `suspicious_access`). The Opus auditor already makes this distinction
   when it can see the reasoning (4 FPs vs Sonnet's 17 on the same 120 trajectories).
 - Give the auditor the bibliography abstracts (or a retrieval tool) so it can check what

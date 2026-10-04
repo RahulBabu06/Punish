@@ -439,7 +439,7 @@ Corrected label, Holm-corrected: reasoning improves Opus accuracy (+0.07) and ra
 <li><b>Rule-based ground truth undercounts.</b> The labeller finds 46 of the 91 hacks the judge finds (leaked_answer excluded).</li>
 <li><b>Citation misuse is the open blind spot.</b> Give the auditor the abstracts or a retrieval tool.</li>
 </ul>
-<div class="q" style="font-size:23px">Next: align the rubric with the judge, run the Claude auditor on the hard cases
+<div class="q" style="font-size:23px">Next: measure the opt-in rubric v3 live (offline proxy only: FPR 0.34 → 0.03, not measured), run the Claude auditor on the hard cases
 and monitor attacks, re-judge leaked_answer, and validate the judge against human raters.</div>
 <div class="src">Sources: results/RESULTS.md · REPORT.md §8.2, §10 · github.com/RahulBabu06/Punish</div>
 </section>""",
