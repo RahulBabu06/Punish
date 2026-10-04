@@ -177,3 +177,13 @@ def test_server_rejects_bad_requests(server, tiny_results):
     assert status(base + "/story?step=x") == 400
     code, _, body = get(base + "/")
     assert code == 200 and "exp1" in body
+
+
+def test_port_in_use_is_a_clear_error_not_a_traceback(capsys):
+    from demo.app import main
+    srv = make_server(AppConfig(), "127.0.0.1", 0)
+    try:
+        assert main(["--port", str(srv.server_address[1])]) == 2
+    finally:
+        srv.server_close()
+    assert "is already in use" in capsys.readouterr().err

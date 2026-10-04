@@ -11,6 +11,7 @@ Dependency-free: stdlib ``http.server`` + Server-Sent Events + one inline HTML p
 from __future__ import annotations
 
 import argparse
+import errno
 import html
 import json
 import sys
@@ -804,7 +805,14 @@ def main(argv: list[str] | None = None) -> int:
     if not config.defaults.live and not config.defaults.trajectory.exists():
         print(f"error: trajectory not found: {config.defaults.trajectory}", file=sys.stderr)
         return 2
-    server = make_server(config, args.host, args.port)
+    try:
+        server = make_server(config, args.host, args.port)
+    except OSError as e:
+        if e.errno != errno.EADDRINUSE:
+            raise
+        print(f"error: port {args.port} is already in use (another demo.app running?); "
+              f"stop it or pass --port {args.port + 1}", file=sys.stderr)
+        return 2
     server.verbose = args.verbose
     host = "localhost" if args.host in {"127.0.0.1", "0.0.0.0"} else args.host
     base = f"http://{host}:{server.server_address[1]}"
