@@ -783,7 +783,7 @@ and Opus 4.6 (79 hacked) under five policies:
   stage has FPR ≥ 0.22 at its default verdicts (Sonnet 0.84 / 0.34, Opus 0.77 / 0.22,
   Sonnet → Opus 0.75 / 0.22; heuristic only 0.68 / 0.08). With tuned thresholds, heuristic →
   Sonnet is the only Claude policy under 10% FPR: recall 0.80 at FPR 0.054 and $0.019 per
-  trajectory in-sample, and 0.77 at 0.054 ($0.016) with thresholds tuned on the other
+  trajectory in-sample, and 0.77 at 0.054 ($0.016; training FPR cap 10%, or 0.64 at 0.054 under a 5% cap as in `results/figures/headline.svg`) with thresholds tuned on the other
   subject. Sonnet alone and Opus alone stay at FPR 0.14–0.15 held out.
 - At FPR ≤ 5% the best in-sample recall is 0.71 (Sonnet at threshold 0.9, or heuristic →
   Sonnet at $0.012); with thresholds tuned on the other subject it drops to 0.68 for Sonnet

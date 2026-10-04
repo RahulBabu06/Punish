@@ -58,6 +58,8 @@ rubric v3, re-judge `leaked_answer`) is in [`docs/live_plan.md`](docs/live_plan.
 `python scripts/live_plan.py` prints its exact Modal commands and cost estimates offline.
 
 - Full write-up: [`REPORT.md`](REPORT.md)
+- Corrected-label headline figure: [`results/figures/headline.svg`](results/figures/headline.svg) (`python -m eval.headline`)
+- Skeptical-reviewer FAQ: [`docs/reviewer_faq.md`](docs/reviewer_faq.md)
 - Tables: [`results/RESULTS.md`](results/RESULTS.md)
 - Worked examples: [`docs/case_studies.md`](docs/case_studies.md)
 - Related work: [`docs/related_work.md`](docs/related_work.md)
