@@ -87,7 +87,7 @@ uvx ruff check . --select F,E9,B          # ruff is not a project dependency
 git diff --check 836dab5..HEAD
 ```
 
-Expected: `1302 passed, 2 skipped`; Ruff prints `All checks passed!`; compile and diff checks are silent; headline
+Expected: `1391 passed, 6 skipped`; Ruff prints `All checks passed!`; compile and diff checks are silent; headline
 writes `/tmp/punish-headline.svg` and `cmp` is silent. The skips are optional corpus rebuilding and
 already-committed final-report benchmark outputs.
 
