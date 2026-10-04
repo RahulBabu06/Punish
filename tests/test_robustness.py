@@ -120,3 +120,10 @@ def test_cli_cohort_v3_writes_suffixed_outputs(tmp_path):
     assert rb.main(["--cohort", "v3", "--repeats", "5", "--out", str(tmp_path)]) == 0
     assert sorted(p.name for p in tmp_path.iterdir()) == ["ROBUSTNESS_v3.md", "robustness_v3.json"]
     assert json.loads((tmp_path / "robustness_v3.json").read_text())["label"] == "labeller"
+
+
+def test_reproduce_derived_regenerates_both_cohorts():
+    script = (Path(__file__).resolve().parents[1] / "scripts/reproduce.sh").read_text(encoding="utf-8")
+    derived = script[script.index("cmd_derived() {"):script.index("\n}\n", script.index("cmd_derived() {"))]
+    assert '"$PY" -m eval.robustness --out results/robustness' in derived
+    assert '"$PY" -m eval.robustness --cohort v3 --out results/robustness' in derived

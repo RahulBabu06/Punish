@@ -8,7 +8,8 @@
 #   scripts/reproduce.sh cost          estimated API spend per results dir -> results/COST.md
 #   scripts/reproduce.sh sweep         print the exact Modal commands behind each committed results dir
 #   scripts/reproduce.sh derived       committed label/mode variants: mitigation, calibration, cascade, obfuscation,
-#                                      cascade held-out check + headline figure, judge validation and error tables
+#                                      cascade held-out check + headline figure, judge validation, error tables and
+#                                      robustness (v2 corrected + v3 labeller-only)
 #                                      (explicit paths; --label tags the filenames)
 #   scripts/reproduce.sh export-demo   single self-contained static HTML demo -> docs/demo.html (demo.export)
 #   scripts/reproduce.sh all           test + analyze + cost + derived + sweep + export-demo
@@ -105,13 +106,16 @@ cmd_derived() {
   # shellcheck disable=SC2086
   "$PY" -m eval.errors $v2 --tags docs/error_tags.json --correction results/leaked_answer_correction.json \
     --out results/errors_v2_corrected/ERRORS.md >/dev/null
+  # robustness (docs/methodology_review.md): clustered CIs, covert vs natural, role leak, PPV at lower prevalence
+  "$PY" -m eval.robustness --out results/robustness >/dev/null
+  "$PY" -m eval.robustness --cohort v3 --out results/robustness >/dev/null
 }
 
 cmd_sweep() { setup; "$PY" scripts/sweep_commands.py "$@"; }
 
 cmd_export_demo() { setup; "$PY" -m demo.export "$@"; }
 
-usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
 
 target="${1:-help}"
 shift || true
