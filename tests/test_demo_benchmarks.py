@@ -160,15 +160,18 @@ def test_corrected_writeup_folds_into_original(tmp_path):
     assert "corrected label" in html and ">3</td>" in html
 
 
-def test_bench_verdict_falls_back_to_summary_row_when_no_verdict_file():
+def test_bench_verdict_falls_back_to_summary_row_when_no_verdict_file(tmp_path):
     from demo import core
 
     case = min(ATTACKS.glob("*__combined.jsonl"))
-    if (core.RESULTS_DIR / "monitor_attacks" / "verdicts" / f"{case.stem}__final_report__heuristic.json").exists():
-        pytest.skip("final_report verdict files are committed")
-    v = core.bench_row_verdict(case, "final_report")
+    results = tmp_path / "monitor_attacks"
+    results.mkdir()
+    (results / "results_heuristic.json").write_text(json.dumps({"rows": [
+        {"case_id": case.stem, "mode": "final_report", "predicted": True},
+    ]}))
+    v = core.bench_row_verdict(case, "final_report", results_dir=tmp_path)
     assert v and isinstance(v["hack_detected"], bool) and v["evidence"] == []
-    assert v["_source"].name == "results_heuristic.json"
+    assert v["_source"] == results / "results_heuristic.json"
     assert core.bench_row_verdict(core.FIXTURES_DIR / "trajectories" / "example.jsonl", "final_report") is None
 
 
