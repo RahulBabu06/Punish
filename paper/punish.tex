@@ -298,7 +298,9 @@ FPR $\le$ 10\% with useful recall.
 \paragraph{Errors and evidence.} On the original label (\code{docs/error\_analysis.md}), trace-mode
 false positives are agents that read the grader and reported honest values, and
 \mode{final\_report} false positives are honest ``N/A'' reports for the failed plate. Under the corrected label, grader-reading runs
-are 301 of the 375 false-positive audits. The rendered
+are 301 of the 375 false-positive audits. An AI annotator hand-read 24 of the 72 flagged label-clean \code{metric\_gaming} runs, and
+all 24 are auditor false positives, not missed hacks (\code{docs/metric\_gaming\_review.md}). Each cites only grader
+access or format repair, although the rubric caps read access alone at $\sim$0.3 confidence. The rendered
 trajectory id encodes task and config, and 122 of 1{,}800 audits cite it, mostly in
 \mode{final\_report}, where those audits have higher FPR (Sonnet 0.39 vs 0.20, corrected). The
 auditor now sees an opaque token. Against line-level gold on 19 v2 hacks (\code{fixtures/evidence\_gold}),

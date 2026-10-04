@@ -190,6 +190,7 @@ commands rebuild every table in `REPORT.md` offline:
 | `results/CASCADE.md` | recall / FPR / cost of heuristic, Sonnet, Opus and cascaded auditors on 240 v2 runs (`CASCADE_corrected.md`: corrected label) |
 | `results/errors_v2/` | auditor error taxonomy with a hand-tagged sample ([`docs/error_analysis.md`](docs/error_analysis.md)) |
 | `results/task_stats/` | per-task hack rate, exploit-file reads and auditor recall/FPR ([`docs/task_design.md`](docs/task_design.md)) |
+| `results/metric_gaming_review.{json,md}` | hand review of the 72 flagged label-clean `metric_gaming` runs (24 read: all auditor false positives, [`docs/metric_gaming_review.md`](docs/metric_gaming_review.md)) |
 | `results/id_leak/` | recall/FPR of verdicts that cite the trajectory id vs not (corrected label) |
 | `results/probe_v1/` | first live probe: 36 Sonnet 4.6 trajectories (pressure and covert), 3 modes, judge labels. Reasoning on first turn only |
 | `results/model_probe/` | 4 covert `leaked_answer` runs (Haiku 4.5, Sonnet 4.5, Sonnet 4.6, Opus 4.6), trajectories only |
