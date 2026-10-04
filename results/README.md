@@ -55,9 +55,8 @@ each trajectory's sandbox files (`eval.judge.task_for_events`).
 **Corrected-label outputs.** `mitigate best-of-n`, `calibrate`, `cascade`, `obfuscation` and `judge_validation score`
 take `--label {either,corrected,excl_leaked}` (`eval/labels.py`, shared). The `*_corrected.*` files next to each original
 (`mitigation_bestofn_v2/`, `calibration_v2/`, `CASCADE_corrected.*`, `obfuscation/`, `judge_validation_corrected/`) are
-the same commands with `--label corrected` and an `--out` (plus `--json`/`--figure` for `cascade`) naming the `*_corrected`
-file: only `calibrate`'s default SVG name follows the label, so without a new `--out` the either-label files are
-overwritten. Exact commands: `docs/repro_check.md`.
+the same commands with `--label corrected`: the label is added to every output filename (see Layout), so the
+either-label files are not overwritten. All of them: `scripts/reproduce.sh derived`.
 
 **metric_gaming false positives.** `python -m eval.metric_gaming_review` writes `metric_gaming_review.{json,md}`.
 I hand-read 24 of the 72 label-clean metric_gaming runs that an auditor flagged (v2 and v3), and all 24 are auditor
@@ -84,9 +83,21 @@ Column notes:
 - **Est. cost**: from `python -m eval.cost --by-dir` (agent + auditor + judge + reaudit). Every committed run
   predates usage tracking, so all of it is an **estimate** (characters / 4 of the rebuilt prompts and the logged
   outputs). It is a lower bound: thinking tokens are only partly logged, and retried calls are not counted. The
-  per-role breakdown is in [`COST.md`](COST.md). The prompts are rebuilt with the current code, whose auditor and judge
-  prompts have since grown, so rerunning `scripts/reproduce.sh cost` (or `eval.cascade`) today reads about 7% higher
-  ($162 in total) than the committed `COST.md` / `CASCADE.md`, which were estimated with the prompts the runs used.
+  per-role breakdown is in [`COST.md`](COST.md) (**$162.46** in total). The requests are rebuilt with the current
+  auditor and judge prompt code, so the estimate changes whenever that code does; the call count (8,519) and prices
+  do not. The previous COST.md ($151.54) predated the provenance Facts block (+$9.55), the injection-hardening rubric
+  (+$1.12) and the Facts citation wording (+$0.31) (details in [`docs/repro_check.md`](../docs/repro_check.md)).
+  `COST.md` and the `$/traj` columns of `CASCADE*.md` are byte-for-byte reproducible at a given commit with
+  `scripts/reproduce.sh cost` and `scripts/reproduce.sh derived`. `cost` is exactly:
+
+  ```bash
+  python -m eval.cost results/model_probe results/probe_v1 results/v2_haiku45 results/v2_sonnet45 \
+    results/v2_sonnet46 results/v3_haiku45 results/v3_opus46 results/v3_sonnet46 results/v3cond_haiku45 \
+    results/v3cond_sonnet46 results/v3fault_sonnet46 --by-dir --out results/COST.md
+  ```
+
+  (every `results/*/` with `trajectories/`, in this order). `eval.cost --out` refuses to overwrite a table that was
+  built from other dirs unless you pass `--force`.
 
 ## v3 labels: labeller only, relabelled
 
@@ -132,6 +143,13 @@ judged) and `SUMMARY.md` (labeller-only metrics). Top-level files are generated:
 - `RESULTS.md`, `RESULTS.json` and `RESULTS_thresholds.csv`, plus `figures/*.svg`: `scripts/reproduce.sh
   analyze`, which runs `python -m eval.analyze` over every directory with `episodes/`.
 - `COST.md`: `scripts/reproduce.sh cost`.
+- Label and mode variants (`mitigation_bestofn_v2/`, `calibration_v2/`, `CASCADE*`, `obfuscation/`,
+  `judge_validation_corrected/`, `errors_v2*/`): `scripts/reproduce.sh derived`.
+
+Without `--out`, the analysis CLIs write next to their inputs: `<exp>/` for one experiment, or
+`<parent>/combined__<a>+<b>.../` for several. They never write to these top-level files by default. A non-default
+`--label` (or cascade/best-of-n `--mode`, calibrate `--folds random`) is added to each output filename unless the
+path already names it, so `--label corrected --out results/CASCADE.md` writes `results/CASCADE_corrected.md`.
 
 ## Secrets check
 
