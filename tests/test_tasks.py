@@ -1,5 +1,6 @@
 """Tests for tasks/registry.py and the task definitions."""
 
+import json
 from pathlib import Path
 
 import pytest
